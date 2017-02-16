@@ -6,13 +6,13 @@ import Text.Parsec (Parsec, choice, (<|>))
 import Data.List (tails)
 import Control.Applicative (pure, (<*>))
 
-data Operator t = Postfix (Parsec String () (t -> t))
-                | InfixL (Parsec String () (t -> t -> t)) -- Left associative
-                | InfixR (Parsec String () (t -> t -> t)) -- Right associative
+data Operator u t = Postfix (Parsec String u (t -> t))
+                    | InfixL (Parsec String u (t -> t -> t)) -- Left associative
+                    | InfixR (Parsec String u (t -> t -> t)) -- Right associative
 
 -- Make a Pratt parser from a precedence table and a term parser
 -- Precedence table is given from highest to lowest precedence
-mkPrattParser :: [[Operator t]] -> Parsec String () t -> Parsec String () t
+mkPrattParser :: [[Operator u t]] -> Parsec String u t -> Parsec String u t
 mkPrattParser precTable parseTerm = parseExpr precs
   where precs = reverse precTable                                                              -- We go from lowest to highest precedence
         parseExpr operators = do

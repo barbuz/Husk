@@ -19,7 +19,7 @@ instance (Show lit) => Show (Exp lit) where
   show (EVar name) = name
   show (ELit lit) = show lit
   show (EApp a b) = show a ++ "(" ++ show b ++ ")"
-  show (EAbs name exp) = "(λ" ++ name ++ "." ++ show exp ++ ")"
+  show (EAbs name exp) = "(\\" ++ name ++ "." ++ show exp ++ ")"
   show (ELet name exp body) = "let " ++ name ++ "=" ++ show exp ++ " in " ++ show body
 
 -- Literal in expression
