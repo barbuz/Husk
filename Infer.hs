@@ -20,7 +20,7 @@ nullSub = Map.empty
 
 -- Composition of substitutions
 composeSub :: Sub -> Sub -> Sub
-composeSub s1 s2 = (Map.map (applySub s1) s2) `Map.union` s1
+composeSub s1 s2 = Map.map (applySub s2) s1 `Map.union` Map.map (applySub s1) s2
 
 -- Things that have type vars and support substitution
 class Types a where
@@ -134,7 +134,7 @@ infer _ (ELit lits) = do lit <- lift lits
 
 -- Lambda abstraction: add new unbound variable to environment, recurse to body, substitute back
 infer env (EAbs name exp) =
-  do newVar <- newTVar "a"
+  do newVar <- newTVar "b"
      let TypeEnv envMinusName = remove env name
          newEnv = TypeEnv $ Map.union envMinusName $ Map.singleton name $ Scheme [] newVar
      (sub, typ, newExp) <- infer newEnv exp
@@ -142,7 +142,7 @@ infer env (EAbs name exp) =
 
 -- Application: infer function type and argument type, then unify
 infer env exp@(EApp fun arg) =
-  do newVar <- newTVar "a"
+  do newVar <- newTVar "c"
      (funSub, funTyp, funExp) <- infer env fun
      (argSub, argTyp, argExp) <- infer (applySub funSub env) arg
      uniSub <- unify (applySub argSub funTyp) (TFun argTyp newVar)

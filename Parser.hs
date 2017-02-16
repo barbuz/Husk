@@ -99,15 +99,27 @@ integer = do
   i <- many1 digit
   return $ ELit [Lit i $ Scheme [] $ TConc TInt]
 
--- Parse a lambda
+-- Parse a generalized lambda
 lambda :: Parser (Exp [Lit])
 lambda = do
-  char 'λ'
-  var <- pushNewVar
-  expr <- expression
-  popVar
+  lam <- oneOf "λμκφψχ"
+  let numArgs = case lam of
+        'λ' -> 1
+        'μ' -> 2
+        'κ' -> 3
+        'φ' -> 1
+        'ψ' -> 2
+        'χ' -> 3
+  expr <- iterate lambdify expression !! numArgs
   rParen
-  return $ EAbs var expr
+  return $ if lam `elem` "φψχ" then EApp fixExpr expr else expr
+  where
+    lambdify parser = do
+      var <- pushNewVar
+      expr <- parser
+      popVar
+      return $ EAbs var expr
+    fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
 
 -- Parse a lambda argument
 lambdaArg :: Parser (Exp [Lit])
