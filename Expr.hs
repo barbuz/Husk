@@ -29,6 +29,16 @@ data Lit = Lit String Scheme
 instance Show Lit where
   show (Lit n s) = n
 
+-- Convert expression to Haskell code
+expToHaskell :: Exp Lit -> String
+expToHaskell (EVar name) = name
+expToHaskell (ELit (Lit name typ))
+  | Scheme _ (TFun _ _) <- typ = "func_" ++ name
+  | otherwise = name
+expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
+expToHaskell (EAbs name exp) = "(\\ " ++ name ++ " -> " ++ expToHaskell exp ++ ")"
+expToHaskell (ELet name exp body) = "(let " ++ name ++ " = " ++ expToHaskell exp ++ " in " ++ expToHaskell body ++ ")"
+
 -- Type of expression with unbound variables
 data Type = TVar TLabel
           | TConc Conc
