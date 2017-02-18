@@ -1,4 +1,5 @@
 import Data.Function (fix)
+import System.Environment (getArgs)
 
 func_fix :: (a -> a) -> a
 func_fix = fix

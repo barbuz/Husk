@@ -57,6 +57,14 @@ data Conc = TInt
           | TBool
   deriving (Eq, Ord, Show)
 
+-- Convert type to Haskell code
+typeToHaskell :: Type -> String
+typeToHaskell (TVar name) = name
+typeToHaskell (TConc TInt) = "Integer"
+typeToHaskell (TConc TBool) = "Bool"
+typeToHaskell (TList t) = "[" ++ typeToHaskell t ++ "]"
+typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t ++ ")"
+
 -- Type of expression with universally quantified variables
 data Scheme = Scheme [TLabel] Type
   deriving (Eq, Ord)

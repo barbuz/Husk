@@ -1,10 +1,12 @@
 
 -- Parser for recognizing types of inputs
 
+module InputParser where
+
 import Expr
 import Infer
 import Text.Parsec
-import Data.List (intercalate)
+import Data.List (intercalate,nub)
 import Control.Monad (foldM)
 
 type InputParser = Parsec String () (Maybe (String, Type))
@@ -18,8 +20,12 @@ unifyInputs _ _ = Nothing
 
 integer :: InputParser
 integer = do
+  minus <- optionMaybe $ char '-'
   digits <- many1 digit
-  return $ Just (digits, TConc TInt)
+  let number = case minus of
+        Just _  -> '-' : digits
+        Nothing -> digits
+  return $ Just (number, TConc TInt)
 
 list :: InputParser
 list = do

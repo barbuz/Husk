@@ -157,14 +157,19 @@ infer env (ELet name exp body) =
        (bodySub, bodyTyp, bodyExp) <- infer (applySub expSub newEnv) body
        return (expSub `composeSub` bodySub, bodyTyp, ELet name expExp bodyExp)
 
--- Main type inference functions
+-- Main type inference function
 typeInference :: Map.Map ELabel Scheme -> Exp [Lit] -> Infer (Type, Exp Lit)
 typeInference env exp =
   do (sub, typ, newExp) <- infer (TypeEnv env) exp
      return (applySub sub typ, newExp)
 
-inferType :: Exp [Lit] -> [(Type, Exp Lit)]
-inferType exp = map fst $ runInfer $ typeInference Map.empty exp
+-- Infer type under a constraint
+inferType :: Scheme -> Exp [Lit] -> [(Type, Exp Lit)]
+inferType typeConstr exp = map fst $ runInfer $ do
+  (typ, infExp) <- typeInference Map.empty exp
+  genType <- instantiate typeConstr
+  constrSub <- unify genType typ
+  return (applySub constrSub typ, infExp)
 
 -- TESTS
 
