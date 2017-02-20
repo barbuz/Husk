@@ -76,14 +76,19 @@ builtins = map (fmap ELit)
    (';', [Lit "pure" $ Scheme ["x"] $ TVar "x" ~> TList (TVar "x")]),
    (':', [Lit "pair" $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TList (TVar "x"),
           Lit "cons" $ Scheme ["x"] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "snoc" $ Scheme ["x"] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x"),
-          Lit "cat"  $ Scheme ["x"] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x")]),
+          Lit "cat"  $ Scheme ["x"] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x"),
+          Lit "snoc" $ Scheme ["x"] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
    ('m', [Lit "map"  $ Scheme ["x", "y"] $
            (TVar "x" ~> TVar "y") ~>
            (TList (TVar "x") ~> TList (TVar "y")),
           Lit "zip"  $ Scheme ["x", "y", "z"] $
            (TVar "x" ~> TVar "y" ~> TVar "z") ~>
-           (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))])]
+           (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))]),
+   ('<', [Lit "lt"   $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TConc TBool]),
+   ('>', [Lit "gt"   $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TConc TBool]),
+   ('=', [Lit "eq"   $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TConc TBool]),
+   ('?', [Lit "if"   $ Scheme ["x"] $ TConc TBool ~> TVar "x" ~> TVar "x" ~> TVar "x"])
+  ]
 
 -- Parse a builtin
 builtin :: Parser (Exp [Lit])

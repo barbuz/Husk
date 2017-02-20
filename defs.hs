@@ -46,3 +46,14 @@ func_map = map
 func_zip :: (a -> b -> c) -> [a] -> [b] -> [c]
 func_zip = zipWith
 
+func_lt :: Ord a => a -> a -> Bool
+func_lt = (<)
+
+func_gt :: Ord a => a -> a -> Bool
+func_gt = (>)
+
+func_eq :: Eq a => a -> a -> Bool
+func_eq = (==)
+
+func_if :: Bool -> a -> a -> a
+func_if a b c = if a then b else c
