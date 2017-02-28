@@ -54,7 +54,11 @@ expression :: Parser (Exp [Lit])
 expression = mkPrattParser opTable term
   where term = between (char '(') rParen expression <|> builtin <|> integer <|> lambda <|> lambdaArg
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
-        invisibleOp = ELit [Lit "com2" $ Scheme ["x", "y", "z", "u"] $ CType [] $
+        invisibleOp = ELit [Lit "com3" $ Scheme ["x", "y", "z", "u", "v"] $ CType [] $
+                             (TVar "u" ~> TVar "v") ~>
+                             (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "u") ~>
+                             (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "v"),
+                            Lit "com2" $ Scheme ["x", "y", "z", "u"] $ CType [] $
                              (TVar "z" ~> TVar "u") ~>
                              (TVar "x" ~> TVar "y" ~> TVar "z") ~>
                              (TVar "x" ~> TVar "y" ~> TVar "u"),
@@ -80,10 +84,12 @@ builtins = map (fmap ELit)
           Lit "snoc" $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
    ('m', [Lit "map"  $ Scheme ["x", "y"] $ CType [] $
            (TVar "x" ~> TVar "y") ~>
-           (TList (TVar "x") ~> TList (TVar "y")),
-          Lit "zip"  $ Scheme ["x", "y", "z"] $ CType [] $
+           (TList (TVar "x") ~> TList (TVar "y"))]),
+   ('z', [Lit "zip"  $ Scheme ["x", "y", "z"] $ CType [] $
            (TVar "x" ~> TVar "y" ~> TVar "z") ~>
            (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))]),
+   ('F', [Lit "fixp" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+                       (TVar "x" ~> TVar "x") ~> TVar "x" ~> TVar "x"]),
    ('<', [Lit "lt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
                        TVar "x" ~> TVar "x" ~> TConc TInt]),
    ('>', [Lit "gt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $

@@ -16,6 +16,11 @@ boolToNum = fromInteger . toInteger . fromEnum
 func_fix :: (a -> a) -> a
 func_fix = fix
 
+func_fixp :: Concrete a => (a -> a) -> a -> a
+func_fixp f a = go a $ f a
+  where go x y | x == y    = y
+               | otherwise = go y $ f y
+
 func_app :: (a -> b) -> a -> b
 func_app = id
 
@@ -24,6 +29,9 @@ func_com = (.)
 
 func_com2 :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 func_com2 f g x = f . g x
+
+func_com3 :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
+func_com3 f g x y = f . g x y
 
 func_add :: Integer -> Integer -> Integer
 func_add = (+)
@@ -69,3 +77,4 @@ func_eq x y = boolToNum $ x == y
 
 func_if :: Concrete a => a -> b -> b -> b
 func_if a b c = if isTruthy a then b else c
+
