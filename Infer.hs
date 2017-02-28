@@ -8,8 +8,9 @@ import Expr
 import qualified Data.Set as Set
 import Data.Set ((\\))
 import qualified Data.Map as Map
+import Data.List (nub)
 import Control.Monad.State
-
+import Control.Monad (when, guard)
 
 -- Type substitution: map from type vars to types
 type Sub = Map.Map TLabel Type
@@ -39,6 +40,14 @@ instance Types Type where
   applySub s (TList t)    = TList $ applySub s t
   applySub _ t            = t
 
+instance Types TClass where
+  freeVars (Concrete t) = freeVars t
+  applySub s (Concrete t) = Concrete $ applySub s t
+
+instance Types CType where
+  freeVars (CType _ typ) = freeVars typ -- TODO: is this correct?
+  applySub s (CType cons typ) = CType (applySub s cons) (applySub s typ)
+
 instance Types Scheme where
   freeVars (Scheme vars t) = freeVars t \\ Set.fromList vars
   applySub s (Scheme vars t) = Scheme vars $ applySub (foldr Map.delete s vars) t
@@ -59,9 +68,9 @@ remove :: TypeEnv -> ELabel -> TypeEnv
 remove (TypeEnv env) var = TypeEnv $ Map.delete var env
 
 -- Universally quantify all type variables in type that are not bound in environment
-generalize :: TypeEnv -> Type -> Scheme
-generalize env t = Scheme vars t
-  where vars = Set.toList $ freeVars t \\ freeVars env
+generalize :: TypeEnv -> CType -> Scheme
+generalize env ct = Scheme vars ct
+  where vars = Set.toList $ freeVars ct \\ freeVars env
 
 -- State for generating unique type vars
 data VarSupply = VarSupply {varSupply :: Int}
@@ -81,19 +90,19 @@ newTVar prefix = do
   return $ TVar $ prefix ++ show (varSupply s)
 
 -- Replace all bound variables with newly generated ones
-instantiate :: Scheme -> Infer Type
-instantiate (Scheme vars t) = do
+instantiate :: Scheme -> Infer CType
+instantiate (Scheme vars ct) = do
   newVars <- mapM (\_ -> newTVar "a") vars
   let s = Map.fromList $ zip vars newVars
-  return $ applySub s t
+  return $ applySub s ct
 
 -- Bind a type variable to a type, return substitution
 -- Fails if var occurs in the type (infinite type)
 varBind :: TLabel -> Type -> Infer Sub
 varBind name typ
-  | typ == TVar name               = return nullSub
-  | name `Set.member` freeVars typ = fail ""
-  | otherwise                      = return $ Map.singleton name typ
+  | TVar var <- typ, var == name = return nullSub
+  | name `Set.member` freeVars typ         = fail ""
+  | otherwise                              = return $ Map.singleton name typ
 
 -- Most general unifier of two types
 -- Returns substitution that makes them equal
@@ -109,8 +118,16 @@ unify typ (TVar name)              = varBind name typ
 unify (TConc a) (TConc b) | a == b = return nullSub
 unify _ _                          = fail ""
 
+-- Check typeclass constraints; remove those that hold, keep indeterminate ones, fail if any don't hold
+checkCons :: [TClass] -> Infer [TClass]
+checkCons [] = return []
+checkCons (c:cs) = case holds c of
+  Just True  -> checkCons cs
+  Just False -> fail ""
+  Nothing    -> (c :) <$> checkCons cs
+
 -- Infer type of literal
-inferLit :: Lit -> Infer (Sub, Type, Exp Lit)
+inferLit :: Lit -> Infer (Sub, CType, Exp Lit)
 inferLit lit@(Lit name typ) = do newTyp <- instantiate typ
                                  return (nullSub, newTyp, ELit lit)
 
@@ -118,9 +135,9 @@ inferLit lit@(Lit name typ) = do newTyp <- instantiate typ
 -- All free expression variables must be bound in environment (otherwise it crashes)
 -- Returns list of:
 -- types of expression variables, type of whole expression, non-overloaded expression
-infer :: TypeEnv -> Exp [Lit] -> Infer (Sub, Type, Exp Lit)
+infer :: TypeEnv -> Exp [Lit] -> Infer (Sub, CType, Exp Lit)
 
--- Variable: find type in environment, return it
+-- Variable: find type in environment, combine constraints, return type
 infer (TypeEnv env) (EVar name) = 
   case Map.lookup name env of
     Nothing    -> error $ "unbound variable: " ++ name
@@ -136,40 +153,46 @@ infer _ (ELit lits) = do lit <- lift lits
 infer env (EAbs name exp) =
   do newVar <- newTVar "b"
      let TypeEnv envMinusName = remove env name
-         newEnv = TypeEnv $ Map.union envMinusName $ Map.singleton name $ Scheme [] newVar
-     (sub, typ, newExp) <- infer newEnv exp
-     return (sub, TFun (applySub sub newVar) typ, EAbs name newExp)
+         newEnv = TypeEnv $ Map.union envMinusName $ Map.singleton name $ Scheme [] $ CType [] newVar
+     (sub, CType cons typ, newExp) <- infer newEnv exp
+     return (sub, CType cons $ TFun (applySub sub newVar) typ, EAbs name newExp)
 
--- Application: infer function type and argument type, then unify
+-- Application: infer function type and argument type, unify with function, check and reduce constraints
 infer env exp@(EApp fun arg) =
   do newVar <- newTVar "c"
-     (funSub, funTyp, funExp) <- infer env fun
-     (argSub, argTyp, argExp) <- infer (applySub funSub env) arg
+     (funSub, CType funCons funTyp, funExp) <- infer env fun
+     (argSub, CType argCons argTyp, argExp) <- infer (applySub funSub env) arg
      uniSub <- unify (applySub argSub funTyp) (TFun argTyp newVar)
-     return (uniSub `composeSub` argSub `composeSub` funSub, applySub uniSub newVar, EApp funExp argExp)
+     let resSub = uniSub `composeSub` argSub `composeSub` funSub
+     cons <- checkCons $ nub $ applySub resSub $ funCons ++ argCons
+     return (resSub, CType cons $ applySub resSub newVar, EApp funExp argExp)
 
--- Let binding: infer type of binding, generalize to polymorphic type, infer body
+-- Let binding: infer type of var, generalize to polytype, infer body, check and reduce constraints
 infer env (ELet name exp body) =
-    do (expSub, expTyp, expExp) <- infer env exp
+    do (expSub, expTyp@(CType expCons _), expExp) <- infer env exp
        let TypeEnv envMinusName = remove env name
            expPoly = generalize (applySub expSub env) expTyp
            newEnv = TypeEnv $ Map.insert name expPoly envMinusName
-       (bodySub, bodyTyp, bodyExp) <- infer (applySub expSub newEnv) body
-       return (expSub `composeSub` bodySub, bodyTyp, ELet name expExp bodyExp)
+       (bodySub, bodyTyp@(CType bodyCons _), bodyExp) <- infer (applySub expSub newEnv) body
+       let resSub = expSub `composeSub` bodySub
+       cons <- checkCons $ nub $ applySub resSub $ expCons ++ bodyCons
+       return (resSub, bodyTyp, ELet name expExp bodyExp)
 
 -- Main type inference function
-typeInference :: Map.Map ELabel Scheme -> Exp [Lit] -> Infer (Type, Exp Lit)
+typeInference :: Map.Map ELabel Scheme -> Exp [Lit] -> Infer (Sub, CType, Exp Lit)
 typeInference env exp =
   do (sub, typ, newExp) <- infer (TypeEnv env) exp
-     return (applySub sub typ, newExp)
+     return (sub, applySub sub typ, newExp)
 
 -- Infer type under a constraint
-inferType :: Scheme -> Exp [Lit] -> [(Type, Exp Lit)]
-inferType typeConstr exp = map fst $ runInfer $ do
-  (typ, infExp) <- typeInference Map.empty exp
-  genType <- instantiate typeConstr
+inferType :: Bool -> Scheme -> Exp [Lit] -> [(CType, Exp Lit)]
+inferType constrainRes typeConstr exp = map fst $ runInfer $ do
+  (infSub, CType infCons typ, infExp) <- typeInference Map.empty exp
+  CType conCons genType <- instantiate typeConstr
   constrSub <- unify genType typ
-  return (applySub constrSub typ, infExp)
+  resCons <- checkCons $ nub $ applySub (infSub `composeSub` constrSub) $ infCons ++ conCons
+  when constrainRes $ guard $ null resCons
+  return (CType resCons $ applySub constrSub typ, infExp)
 
 -- TESTS
 
@@ -182,12 +205,17 @@ e1 = ELet "id"
      (EApp (EVar "id") (EVar "id"))
 
 e2 = EApp
-     (ELit [Lit "add" $ Scheme [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "or" $ Scheme [] $ TFun (TConc TBool) (TConc TBool)])
-     (ELit [Lit "2" $ Scheme [] $ TConc TInt])
+     (ELit [Lit "add" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Lit "or" $ Scheme [] $ CType [] $ TFun (TConc TBool) (TConc TBool)])
+     (ELit [Lit "2" $ Scheme [] $ CType [] $ TConc TInt])
 
 e3 = EApp
-     (ELit [Lit "add" $ Scheme [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "or" $ Scheme [] $ TFun (TConc TBool) (TConc TBool)])
-     (ELit [Lit "True" $ Scheme [] $ TConc TBool])
+     (ELit [Lit "add" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Lit "or" $ Scheme [] $ CType [] $ TFun (TConc TBool) (TConc TBool)])
+     (ELit [Lit "True" $ Scheme [] $ CType [] $ TConc TBool])
+
+e4 = EApp
+     (ELit [Lit "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TInt)) (TList (TConc TInt)),
+            Lit "not" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TFun (TVar "x") (TConc TInt)])
+     (ELit [Lit "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
 

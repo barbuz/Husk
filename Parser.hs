@@ -54,40 +54,44 @@ expression :: Parser (Exp [Lit])
 expression = mkPrattParser opTable term
   where term = between (char '(') rParen expression <|> builtin <|> integer <|> lambda <|> lambdaArg
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
-        invisibleOp = ELit [Lit "com2" $ Scheme ["x", "y", "z", "u"] $
+        invisibleOp = ELit [Lit "com2" $ Scheme ["x", "y", "z", "u"] $ CType [] $
                              (TVar "z" ~> TVar "u") ~>
                              (TVar "x" ~> TVar "y" ~> TVar "z") ~>
                              (TVar "x" ~> TVar "y" ~> TVar "u"),
-                            Lit "com"  $ Scheme ["x", "y", "z"] $
+                            Lit "com"  $ Scheme ["x", "y", "z"] $ CType [] $
                              (TVar "y" ~> TVar "z") ~>
                              (TVar "x" ~> TVar "y") ~>
                              (TVar "x" ~> TVar "z"),
-                            Lit "app"  $ Scheme ["x", "y"] $
+                            Lit "app"  $ Scheme ["x", "y"] $ CType [] $
                              (TVar "x" ~> TVar "y") ~>
                              (TVar "x" ~> TVar "y")]
 
 -- List of builtin commands
 builtins :: [(Char, Exp [Lit])]
 builtins = map (fmap ELit)
-  [('+', [Lit "add"  $ Scheme [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   ('-', [Lit "sub"  $ Scheme [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   ('_', [Lit "neg"  $ Scheme [] $ TConc TInt ~> TConc TInt]),
-   ('*', [Lit "mul"  $ Scheme [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   (';', [Lit "pure" $ Scheme ["x"] $ TVar "x" ~> TList (TVar "x")]),
-   (':', [Lit "pair" $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TList (TVar "x"),
-          Lit "cons" $ Scheme ["x"] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "cat"  $ Scheme ["x"] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "snoc" $ Scheme ["x"] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
-   ('m', [Lit "map"  $ Scheme ["x", "y"] $
+  [('+', [Lit "add"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
+   ('-', [Lit "sub"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
+   ('_', [Lit "neg"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt]),
+   ('*', [Lit "mul"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
+   (';', [Lit "pure" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x")]),
+   (':', [Lit "pair" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TVar "x" ~> TList (TVar "x"),
+          Lit "cons" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x"),
+          Lit "cat"  $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x"),
+          Lit "snoc" $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
+   ('m', [Lit "map"  $ Scheme ["x", "y"] $ CType [] $
            (TVar "x" ~> TVar "y") ~>
            (TList (TVar "x") ~> TList (TVar "y")),
-          Lit "zip"  $ Scheme ["x", "y", "z"] $
+          Lit "zip"  $ Scheme ["x", "y", "z"] $ CType [] $
            (TVar "x" ~> TVar "y" ~> TVar "z") ~>
            (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))]),
-   ('<', [Lit "lt"   $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TConc TBool]),
-   ('>', [Lit "gt"   $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TConc TBool]),
-   ('=', [Lit "eq"   $ Scheme ["x"] $ TVar "x" ~> TVar "x" ~> TConc TBool]),
-   ('?', [Lit "if"   $ Scheme ["x"] $ TConc TBool ~> TVar "x" ~> TVar "x" ~> TVar "x"])
+   ('<', [Lit "lt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+                       TVar "x" ~> TVar "x" ~> TConc TInt]),
+   ('>', [Lit "gt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+                       TVar "x" ~> TVar "x" ~> TConc TInt]),
+   ('=', [Lit "eq"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+                       TVar "x" ~> TVar "x" ~> TConc TInt]),
+   ('?', [Lit "if"   $ Scheme ["x", "y"] $ CType [Concrete (TVar "x")] $
+                       TVar "x" ~> TVar "y" ~> TVar "y" ~> TVar "y"])
   ]
 
 -- Parse a builtin
@@ -102,7 +106,7 @@ builtin = do
 integer :: Parser (Exp [Lit])
 integer = do
   i <- many1 digit
-  return $ ELit [Lit i $ Scheme [] $ TConc TInt]
+  return $ ELit [Lit i $ Scheme [] $ CType [] $ TConc TInt]
 
 -- Parse a generalized lambda
 lambda :: Parser (Exp [Lit])
@@ -124,7 +128,7 @@ lambda = do
       expr <- parser
       popVar
       return $ EAbs var expr
-    fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
+    fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
 
 -- Parse a lambda argument
 lambdaArg :: Parser (Exp [Lit])

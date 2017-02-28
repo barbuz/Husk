@@ -1,6 +1,18 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
 
+class (Show a, Read a, Eq a, Ord a) => Concrete a where
+  isTruthy :: a -> Bool
+
+instance Concrete Integer where
+  isTruthy = (/= 0)
+
+instance Concrete a => Concrete [a] where
+  isTruthy = (/= [])
+
+boolToNum :: (Num a) => Bool -> a
+boolToNum = fromInteger . toInteger . fromEnum
+
 func_fix :: (a -> a) -> a
 func_fix = fix
 
@@ -46,14 +58,14 @@ func_map = map
 func_zip :: (a -> b -> c) -> [a] -> [b] -> [c]
 func_zip = zipWith
 
-func_lt :: Ord a => a -> a -> Bool
-func_lt = (<)
+func_lt :: Concrete a => a -> a -> Integer
+func_lt x y = boolToNum $ x < y
 
-func_gt :: Ord a => a -> a -> Bool
-func_gt = (>)
+func_gt :: Concrete a => a -> a -> Integer
+func_gt x y = boolToNum $ x > y
 
-func_eq :: Eq a => a -> a -> Bool
-func_eq = (==)
+func_eq :: Concrete a => a -> a -> Integer
+func_eq x y = boolToNum $ x == y
 
-func_if :: Bool -> a -> a -> a
-func_if a b c = if a then b else c
+func_if :: Concrete a => a -> b -> b -> b
+func_if a b c = if isTruthy a then b else c
