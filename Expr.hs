@@ -56,6 +56,7 @@ instance Show Type where
 
 -- Concrete type
 data Conc = TInt
+          | TChar
           | TBool
   deriving (Eq, Ord, Show)
 
@@ -84,6 +85,7 @@ holds (Concrete (TFun _ _)) = Just False
 typeToHaskell :: Type -> String
 typeToHaskell (TVar name) = name
 typeToHaskell (TConc TInt) = "Integer"
+typeToHaskell (TConc TChar) = "Char"
 typeToHaskell (TConc TBool) = "Bool"
 typeToHaskell (TList t) = "[" ++ typeToHaskell t ++ "]"
 typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t ++ ")"

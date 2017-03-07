@@ -1,11 +1,15 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
+import Data.Char (ord)
 
 class (Show a, Read a, Eq a, Ord a) => Concrete a where
   isTruthy :: a -> Bool
 
 instance Concrete Integer where
   isTruthy = (/= 0)
+ 
+instance Concrete Char where
+  isTruthy = (/= 0).ord
 
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
