@@ -52,7 +52,7 @@ rParen = (char ')' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> look
 -- Parse an expression
 expression :: Parser (Exp [Lit])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> integer <|> character <|> lambda <|> lambdaArg
+  where term = between (char '(') rParen expression <|> builtin <|> integer <|> character <|> str <|> lambda <|> lambdaArg
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
         invisibleOp = ELit [Lit "com3" $ Scheme ["x", "y", "z", "u", "v"] $ CType [] $
                              (TVar "u" ~> TVar "v") ~>
@@ -120,6 +120,14 @@ character = do
   quote <- char '\''
   c <- anyChar
   return $ ELit [Lit (show c) $ Scheme [] $ CType [] $ TConc TChar]
+
+-- Parse a string
+str :: Parser (Exp [Lit])
+str = do
+  quote <- char '"'
+  s <- many $ noneOf "\""
+  quote2 <- char '"'
+  return $ ELit [Lit (show s) $ Scheme [] $ CType [] $ TList (TConc TChar)]
 
 -- Parse a generalized lambda
 lambda :: Parser (Exp [Lit])
