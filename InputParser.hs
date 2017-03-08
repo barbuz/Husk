@@ -27,6 +27,20 @@ integer = do
         Nothing -> digits
   return $ Just (number, TConc TInt)
 
+character :: InputParser
+character = do
+  char '\''
+  c <- noneOf "\\'" <|> (fmap (\c -> if c == 'n' then '\n' else c) $ char '\\' >> oneOf "\\'n")
+  char '\''
+  return $ Just (show c, TConc TChar)
+
+str :: InputParser
+str = do
+  char '"'
+  chars <- many $ noneOf "\\\"" <|> (fmap (\c -> if c == 'n' then '\n' else c) $ char '\\' >> oneOf "\\\"n")
+  char '"'
+  return $ Just (show chars, TList (TConc TChar))
+
 list :: InputParser
 list = do
   char '['
@@ -39,7 +53,7 @@ list = do
     return (outStr, TList outType)
 
 inputVal :: InputParser
-inputVal = try integer <|> list
+inputVal = try integer <|> try character <|> try str <|> list
 
 input :: InputParser
 input = do
@@ -54,8 +68,9 @@ input = do
                return $ (str, newTyp)
 
 inputType :: Parsec String () Type
-inputType = integerT <|> varT <|> listT
+inputType = integerT <|> charT <|> varT <|> listT
   where integerT = char 'I' >> return (TConc TInt)
+        charT = char 'C' >> return (TConc TChar)
         varT = lower >>= \c-> return (TVar [c])
         listT = char 'L' >> fmap TList inputType
 
