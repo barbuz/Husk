@@ -5,8 +5,11 @@ import Expr
 import PrattParser
 import Text.Parsec
 import Text.Parsec.Char
+import Control.Monad (forM)
 import qualified Data.Map as Map
 import Data.List (elemIndex)
+
+import Debug.Trace
 
 -- Convenience alias for TFun
 infixr 9 ~>
@@ -14,17 +17,18 @@ infixr 9 ~>
 
 -- Parser state
 data PState = PState {varStack :: [ELabel],
-                      varSupply :: Int}
+                      varSupply :: Int,
+                      lineNum :: Int}
 
 -- Parser type
 type Parser = Parsec String PState
 
 -- Unwrapped parser, giving strings for errors
 parseExpr :: String -> Either String (Exp [Lit])
-parseExpr str = case runParser expression initState "" str of
+parseExpr str = trace str $ case runParser multiline initState "" str of
   Left err -> Left $ show err
   Right val -> Right val
-  where initState = PState [] 0
+  where initState = PState [] 0 1
 
 -- Generate and push a new expression variable
 pushNewVar :: Parser ELabel
@@ -35,9 +39,15 @@ pushNewVar = do
                 varSupply = varSupply stat + 1}
   return var
 
--- Peek at a variable from the stack
+-- Peek at a variable from the stack; extend stack if necessary
 peekVar :: Int -> Parser ELabel
-peekVar i = (!! i) . varStack <$> getState
+peekVar ix = do
+  len <- length . varStack <$> getState
+  if ix >= len
+    then do
+      vars <- forM [0..ix-len] $ const pushNewVar
+      return $ last vars
+    else (!! ix) . varStack <$> getState
 
 -- Pop a variable off the stack
 popVar :: Parser ()
@@ -49,10 +59,34 @@ popVar = do
 rParen :: Parser ()
 rParen = (char ')' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
 
+-- Parse a multiline expression; first line is "main line"
+multiline :: Parser (Exp [Lit])
+multiline = do
+  lines <- sepBy1 parseLine endOfLine
+  eof
+  let (_, folded) = foldr1 (\(num1, expr1) (num2, expr2) -> (num1, ELet ("sub" ++ show num2) expr2 expr1)) lines
+  return $ ELet "sub1" folded $ EVar "sub1"
+  where parseLine :: Parser (Int, Exp [Lit])
+        parseLine = do state <- getState
+                       putState state{lineNum = lineNum state + 1}
+                       lineExpr $ lineNum state
+
+-- Parse a line of Husk code
+lineExpr :: Int -> Parser (Int, Exp [Lit])
+lineExpr lineNum = do
+  state <- getState
+  putState state{varStack = []}
+  expr <- expression
+  overflowVars <- varStack <$> getState
+  let lambdified = foldr EAbs expr overflowVars
+      --fixified = EApp fixExpr $ EAbs ("line" ++ show lineNum) lambdified
+  return (lineNum, lambdified)
+  where fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
+
 -- Parse an expression
 expression :: Parser (Exp [Lit])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> integer <|> character <|> str <|> lambda <|> lambdaArg
+  where term = between (char '(') rParen expression <|> builtin <|> integer <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
         invisibleOp = ELit [Lit "com3" $ Scheme ["x", "y", "z", "u", "v"] $ CType [] $
                              (TVar "u" ~> TVar "v") ~>
@@ -159,3 +193,11 @@ lambdaArg = do
   var <- peekVar ix
   return $ EVar var
   where sups = "¹²³⁴⁵⁶⁷⁸⁹"
+
+-- Parse a subscript; used as line numbers and built-in constants
+subscript :: Parser (Exp [Lit])
+subscript = do
+  sub <- oneOf subs
+  let Just ix = elemIndex sub subs
+  return $ EVar ("sub" ++ show (ix + 1))
+  where subs = "₁₂₃₄₅₆₇₈₉"

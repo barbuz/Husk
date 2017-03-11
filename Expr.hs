@@ -22,7 +22,7 @@ instance (Show lit) => Show (Exp lit) where
   show (ELit lit) = show lit
   show (EApp a b) = show a ++ "(" ++ show b ++ ")"
   show (EAbs name exp) = "(\\" ++ name ++ "." ++ show exp ++ ")"
-  show (ELet name exp body) = "let " ++ name ++ "=" ++ show exp ++ " in " ++ show body
+  show (ELet name exp body) = "let " ++ name ++ "=(" ++ show exp ++ ") in " ++ show body
 
 -- Literal in expression
 data Lit = Lit String Scheme
