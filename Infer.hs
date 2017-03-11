@@ -167,9 +167,10 @@ infer env exp@(EApp fun arg) =
      cons <- checkCons $ nub $ applySub resSub $ funCons ++ argCons
      return (resSub, CType cons $ applySub resSub newVar, EApp funExp argExp)
 
--- Let binding: infer type of var, generalize to polytype, infer body, check and reduce constraints
+-- Let binding: infer type of var from fix-enhanced exp, generalize to polytype, infer body, check and reduce constraints
 infer env (ELet name exp body) =
-    do (expSub, expTyp@(CType expCons _), expExp) <- infer env exp
+    do let fixExp = EApp fixE $ EAbs name exp
+       (expSub, expTyp@(CType expCons _), EApp _ (EAbs _ expExp)) <- infer env fixExp
        let TypeEnv envMinusName = remove env name
            expPoly = generalize (applySub expSub env) expTyp
            newEnv = TypeEnv $ Map.insert name expPoly envMinusName
@@ -177,6 +178,7 @@ infer env (ELet name exp body) =
        let resSub = expSub `composeSub` bodySub
        cons <- checkCons $ nub $ applySub resSub $ expCons ++ bodyCons
        return (resSub, bodyTyp, ELet name expExp bodyExp)
+         where fixE = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
 
 -- Main type inference function
 typeInference :: Map.Map ELabel Scheme -> Exp [Lit] -> Infer (Sub, CType, Exp Lit)
@@ -219,3 +221,7 @@ e4 = EApp
             Lit "not" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TFun (TVar "x") (TConc TInt)])
      (ELit [Lit "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
 
+e5 = EAbs "f" $
+     ELet "x"
+     (EApp (EVar "f") (EVar "x"))
+     (EVar "x")
