@@ -48,6 +48,10 @@ data Type = TVar TLabel
           | TFun Type Type
   deriving (Eq, Ord)
 
+-- Convenience alias for TFun
+infixr 9 ~>
+(~>) = TFun
+
 instance Show Type where
   show (TVar name) = name
   show (TConc c) = show c

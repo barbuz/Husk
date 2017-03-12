@@ -2,18 +2,13 @@
 module Parser where
 
 import Expr
+import Builtins
 import PrattParser
 import Text.Parsec
 import Text.Parsec.Char
 import Control.Monad (forM)
 import qualified Data.Map as Map
 import Data.List (elemIndex)
-
-import Debug.Trace
-
--- Convenience alias for TFun
-infixr 9 ~>
-(~>) = TFun
 
 -- Parser state
 data PState = PState {varStack :: [ELabel],
@@ -25,7 +20,7 @@ type Parser = Parsec String PState
 
 -- Unwrapped parser, giving strings for errors
 parseExpr :: String -> Either String (Exp [Lit])
-parseExpr str = trace str $ case runParser multiline initState "" str of
+parseExpr str = case runParser multiline initState "" str of
   Left err -> Left $ show err
   Right val -> Right val
   where initState = PState [] 0 1
@@ -80,72 +75,19 @@ lineExpr lineNum = do
   overflowVars <- varStack <$> getState
   let lambdified = foldr EAbs expr overflowVars
   return (lineNum, lambdified)
-  where fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
 
 -- Parse an expression
 expression :: Parser (Exp [Lit])
 expression = mkPrattParser opTable term
   where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
-        invisibleOp = ELit [Lit "com3" $ Scheme ["x", "y", "z", "u", "v"] $ CType [] $
-                             (TVar "u" ~> TVar "v") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "u") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "v"),
-                            Lit "com2" $ Scheme ["x", "y", "z", "u"] $ CType [] $
-                             (TVar "z" ~> TVar "u") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "z") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "u"),
-                            Lit "com"  $ Scheme ["x", "y", "z"] $ CType [] $
-                             (TVar "y" ~> TVar "z") ~>
-                             (TVar "x" ~> TVar "y") ~>
-                             (TVar "x" ~> TVar "z"),
-                            Lit "app"  $ Scheme ["x", "y"] $ CType [] $
-                             (TVar "x" ~> TVar "y") ~>
-                             (TVar "x" ~> TVar "y")]
-
--- List of builtin commands
-builtins :: [(Char, Exp [Lit])]
-builtins = map (fmap ELit)
-  [('+', [Lit "add"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n",
-          Lit "addID" $ Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble,
-          Lit "addDI" $ Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble]),
-   ('-', [Lit "sub"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n",
-          Lit "subID" $ Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble,
-          Lit "subDI" $ Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble]),
-   ('_', [Lit "neg"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n"]),
-   ('*', [Lit "mul"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n",
-          Lit "mulID" $ Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble,
-          Lit "mulDI" $ Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble]),
-   (';', [Lit "pure"  $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x")]),
-   (':', [Lit "pair"  $ Scheme ["x"] $ CType [] $ TVar "x" ~> TVar "x" ~> TList (TVar "x"),
-          Lit "cons"  $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "cat"   $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "snoc"  $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
-   ('m', [Lit "map"   $ Scheme ["x", "y"] $ CType [] $
-           (TVar "x" ~> TVar "y") ~>
-           (TList (TVar "x") ~> TList (TVar "y"))]),
-   ('z', [Lit "zip"  $ Scheme ["x", "y", "z"] $ CType [] $
-           (TVar "x" ~> TVar "y" ~> TVar "z") ~>
-           (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))]),
-   ('F', [Lit "fixp" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-                       (TVar "x" ~> TVar "x") ~> TVar "x" ~> TVar "x"]),
-   ('<', [Lit "lt"   $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-                       TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('>', [Lit "gt"   $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-                       TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('=', [Lit "eq"   $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-                       TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('?', [Lit "if"   $ Scheme ["x", "y"] $ CType [(Concrete, TVar "x")] $
-                       TVar "x" ~> TVar "y" ~> TVar "y" ~> TVar "y"])
-  ]
+        invisibleOp = bins "com3 com2 com app"
 
 -- Parse a builtin
 builtin :: Parser (Exp [Lit])
 builtin = do
-  label <- oneOf $ map fst builtins
-  case lookup label builtins of
-    Just expr -> return expr
-    Nothing -> error "Unreachable condition."
+  label <- oneOf commands
+  return $ cmd label
 
 -- Parse a number (integer or float)
 number :: Parser (Exp [Lit])
@@ -185,14 +127,13 @@ lambda = do
         'χ' -> 3
   expr <- iterate lambdify expression !! numArgs
   rParen
-  return $ if lam `elem` "φψχ" then EApp fixExpr expr else expr
+  return $ if lam `elem` "φψχ" then EApp (bins "fix") expr else expr
   where
     lambdify parser = do
       var <- pushNewVar
       expr <- parser
       popVar
       return $ EAbs var expr
-    fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
 
 -- Parse a lambda argument
 lambdaArg :: Parser (Exp [Lit])
