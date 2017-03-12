@@ -58,8 +58,8 @@ func_sub  = (-)
 func_subID :: Integer -> Double -> Double
 func_subID a b = fromInteger a - b
 
-func_addDI :: Double -> Integer -> Double
-func_addDI a b = a - fromInteger b
+func_subDI :: Double -> Integer -> Double
+func_subDI a b = a - fromInteger b
 
 func_neg :: Number n => n -> n
 func_neg x = -x
