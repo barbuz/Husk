@@ -85,7 +85,7 @@ lineExpr lineNum = do
 -- Parse an expression
 expression :: Parser (Exp [Lit])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> integer <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
+  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
         invisibleOp = ELit [Lit "com3" $ Scheme ["x", "y", "z", "u", "v"] $ CType [] $
                              (TVar "u" ~> TVar "v") ~>
@@ -147,11 +147,15 @@ builtin = do
     Just expr -> return expr
     Nothing -> error "Unreachable condition."
 
--- Parse an integer
-integer :: Parser (Exp [Lit])
-integer = do
-  i <- many1 digit
-  return $ ELit [Lit i $ Scheme [] $ CType [] $ TConc TInt]
+-- Parse a number (integer or float)
+number :: Parser (Exp [Lit])
+number = do
+  prefix <- many1 digit
+  maybeSuffix <- optionMaybe $ char '.' >> many digit
+  case maybeSuffix of
+    Nothing     -> return $ ELit [Lit prefix $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n"]
+    Just []     -> return $ ELit [Lit (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
+    Just suffix -> return $ ELit [Lit (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
  
 -- Parse a character
 character :: Parser (Exp [Lit])
