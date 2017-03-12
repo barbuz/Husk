@@ -14,6 +14,12 @@ instance Concrete Char where
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
 
+class (Num n) => Number n
+
+instance Number Integer
+
+instance Number Double
+
 boolToNum :: (Num a) => Bool -> a
 boolToNum = fromInteger . toInteger . fromEnum
 
@@ -37,17 +43,35 @@ func_com2 f g x = f . g x
 func_com3 :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
 func_com3 f g x y = f . g x y
 
-func_add :: Integer -> Integer -> Integer
+func_add :: Number n => n -> n -> n
 func_add = (+)
 
-func_sub :: Integer -> Integer -> Integer
+func_addID :: Integer -> Double -> Double
+func_addID a b = fromInteger a + b
+
+func_addDI :: Double -> Integer -> Double
+func_addDI a b = a + fromInteger b
+
+func_sub :: Number n => n -> n -> n
 func_sub  = (-)
 
-func_neg :: Integer -> Integer
+func_subID :: Integer -> Double -> Double
+func_subID a b = fromInteger a - b
+
+func_addDI :: Double -> Integer -> Double
+func_addDI a b = a - fromInteger b
+
+func_neg :: Number n => n -> n
 func_neg x = -x
 
-func_mul :: Integer -> Integer -> Integer
+func_mul :: Number n => n -> n -> n
 func_mul = (*)
+
+func_mulID :: Integer -> Double -> Double
+func_mulID a b = fromInteger a * b
+
+func_mulDI :: Double -> Integer -> Double
+func_mulDI a b = a * fromInteger b
 
 func_pure :: a -> [a]
 func_pure = (: [])

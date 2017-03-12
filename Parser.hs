@@ -79,7 +79,6 @@ lineExpr lineNum = do
   expr <- expression
   overflowVars <- varStack <$> getState
   let lambdified = foldr EAbs expr overflowVars
-      --fixified = EApp fixExpr $ EAbs ("line" ++ show lineNum) lambdified
   return (lineNum, lambdified)
   where fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
 
@@ -107,30 +106,36 @@ expression = mkPrattParser opTable term
 -- List of builtin commands
 builtins :: [(Char, Exp [Lit])]
 builtins = map (fmap ELit)
-  [('+', [Lit "add"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   ('-', [Lit "sub"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   ('_', [Lit "neg"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt]),
-   ('*', [Lit "mul"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   (';', [Lit "pure" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x")]),
-   (':', [Lit "pair" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TVar "x" ~> TList (TVar "x"),
-          Lit "cons" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "cat"  $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "snoc" $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
-   ('m', [Lit "map"  $ Scheme ["x", "y"] $ CType [] $
+  [('+', [Lit "add"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n",
+          Lit "addID" $ Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble,
+          Lit "addDI" $ Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble]),
+   ('-', [Lit "sub"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n",
+          Lit "subID" $ Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble,
+          Lit "subDI" $ Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble]),
+   ('_', [Lit "neg"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n"]),
+   ('*', [Lit "mul"   $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n",
+          Lit "mulID" $ Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble,
+          Lit "mulDI" $ Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble]),
+   (';', [Lit "pure"  $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x")]),
+   (':', [Lit "pair"  $ Scheme ["x"] $ CType [] $ TVar "x" ~> TVar "x" ~> TList (TVar "x"),
+          Lit "cons"  $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x"),
+          Lit "cat"   $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x"),
+          Lit "snoc"  $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
+   ('m', [Lit "map"   $ Scheme ["x", "y"] $ CType [] $
            (TVar "x" ~> TVar "y") ~>
            (TList (TVar "x") ~> TList (TVar "y"))]),
    ('z', [Lit "zip"  $ Scheme ["x", "y", "z"] $ CType [] $
            (TVar "x" ~> TVar "y" ~> TVar "z") ~>
            (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))]),
-   ('F', [Lit "fixp" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+   ('F', [Lit "fixp" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
                        (TVar "x" ~> TVar "x") ~> TVar "x" ~> TVar "x"]),
-   ('<', [Lit "lt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+   ('<', [Lit "lt"   $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
                        TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('>', [Lit "gt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+   ('>', [Lit "gt"   $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
                        TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('=', [Lit "eq"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
+   ('=', [Lit "eq"   $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $
                        TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('?', [Lit "if"   $ Scheme ["x", "y"] $ CType [Concrete (TVar "x")] $
+   ('?', [Lit "if"   $ Scheme ["x", "y"] $ CType [(Concrete, TVar "x")] $
                        TVar "x" ~> TVar "y" ~> TVar "y" ~> TVar "y"])
   ]
 

@@ -19,7 +19,7 @@ parseProg constrainRes prog types = inferType constrainRes (foldr typeConstr res
           Scheme (nub $ vars ++ toAscList (freeVars typ1)) $
           CType cons $
           TFun typ1 typ2
-        cons = if constrainRes then [Concrete (TVar "x")] else []
+        cons = if constrainRes then [(Concrete, TVar "x")] else []
         resType = Scheme ["x"] $ CType cons $ TVar "x"
 
 -- Command line option flags

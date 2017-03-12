@@ -56,44 +56,55 @@ instance Show Type where
 
 -- Concrete type
 data Conc = TInt
+          | TDouble
           | TChar
-          | TBool
   deriving (Eq, Ord, Show)
 
 -- Type with typeclass constraints
-data CType = CType [TClass] Type
+data CType = CType [(TClass, Type)] Type
   deriving (Eq, Ord)
 
 instance Show CType where
   show (CType cons typ) = show cons ++ "=>" ++ show typ
 
 -- Possible typeclass constraints
-data TClass = Concrete Type
+data TClass = Concrete
+            | Number
   deriving (Eq, Ord, Show)
 
--- Check typeclass constraint
--- Just True  ==> Constraint holds and can be removed
--- Just False ==> Constraint doesn't hold
--- Nothing    ==> Can't determine yet
-holds :: TClass -> Maybe Bool
-holds (Concrete (TVar _))   = Nothing
-holds (Concrete (TConc _))  = Just True
-holds (Concrete (TList t))  = holds $ Concrete t
-holds (Concrete (TFun _ _)) = Just False
+-- Check typeclass constraint, return list of "simpler" constraints that are equivalent to it
+-- Nothing ==> Constraint doesn't hold
+-- Just [] ==> Constraint holds (equivalent to no constraints)
+-- Just cs ==> Equivalent to all cs holding
+holds :: (TClass, Type) -> Maybe [(TClass, Type)]
+holds c@(Concrete, TVar _) = Just [c]
+holds (Concrete, TConc _)  = Just []
+holds (Concrete, TList t)  = holds (Concrete, t)
+holds (Concrete, TFun _ _) = Nothing
+holds c@(Number, TVar _)      = Just [c]
+holds (Number, TConc TInt)    = Just []
+holds (Number, TConc TDouble) = Just []
+holds (Number, _)             = Nothing
+
+-- Default typeclass instances
+defInst :: TClass -> Type
+defInst Concrete = TConc TInt
+defInst Number   = TConc TInt
 
 -- Convert type to Haskell code
 typeToHaskell :: Type -> String
 typeToHaskell (TVar name) = name
 typeToHaskell (TConc TInt) = "Integer"
+typeToHaskell (TConc TDouble) = "Double"
 typeToHaskell (TConc TChar) = "Char"
-typeToHaskell (TConc TBool) = "Bool"
 typeToHaskell (TList t) = "[" ++ typeToHaskell t ++ "]"
 typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t ++ ")"
 
 -- Convert classed type to Haskell code
 cTypeToHaskell :: CType -> String
 cTypeToHaskell (CType [] typ) = typeToHaskell typ
-cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map show cons) ++ ") => " ++ typeToHaskell typ
+cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map showCons cons) ++ ") => " ++ typeToHaskell typ
+  where showCons (con, typ) = show con ++ " " ++ typeToHaskell typ
 
 -- Type of expression with universally quantified variables
 data Scheme = Scheme [TLabel] CType
