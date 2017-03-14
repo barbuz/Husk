@@ -7,7 +7,10 @@ class (Show a, Read a, Eq a, Ord a) => Concrete a where
 
 instance Concrete Integer where
   isTruthy = (/= 0)
- 
+
+instance Concrete Double where
+  isTruthy = (/= 0)
+
 instance Concrete Char where
   isTruthy = (/= 0).ord
 
