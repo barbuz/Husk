@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord)

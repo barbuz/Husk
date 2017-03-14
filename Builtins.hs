@@ -3,7 +3,7 @@ module Builtins where
 import Expr
 
 -- Compute command from char
-cmd :: Char -> Exp [Lit]
+cmd :: Char -> Exp [Lit Scheme]
 cmd char | Just exp <- lookup char commandsList = exp
 cmd char = error $ "No builtin bound to character " ++ [char]
 
@@ -12,7 +12,7 @@ commands :: String
 commands = map fst commandsList
 
 -- Assoc list of commands that can occur in source
-commandsList :: [(Char, Exp [Lit])]
+commandsList :: [(Char, Exp [Lit Scheme])]
 commandsList = [
   ('+', bins "add addDI addID"),
   ('-', bins "sub subDI subID"),
@@ -30,7 +30,7 @@ commandsList = [
   ]
 
 -- Compute builtins from space-delimited list
-bins :: String -> Exp [Lit]
+bins :: String -> Exp [Lit Scheme]
 bins names = ELit $ map getBuiltin $ words names
   where getBuiltin name | Just typ <- lookup name builtinsList = Lit name typ
         getBuiltin name = error $ "No builtin named " ++ name

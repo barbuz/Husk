@@ -13,7 +13,7 @@ import Data.List (find, intercalate, nub)
 import Data.Set (toAscList)
 
 -- Wrapper for expression parser
-parseProg :: Bool -> String -> [Type] -> Either String [(CType, Exp Lit)]
+parseProg :: Bool -> String -> [Type] -> Either String [(CType, Exp (Lit CType))]
 parseProg constrainRes prog types = inferType constrainRes (foldr typeConstr resType types) <$> parseExpr prog
   where typeConstr typ1 (Scheme vars (CType cons typ2)) =
           Scheme (nub $ vars ++ toAscList (freeVars typ1)) $
@@ -38,7 +38,7 @@ consoleOpts = [Option ['i'] ["infer"] (NoArg InferType) "only infer type(s) of g
                Option ['f'] ["file"] (NoArg InFile) "read program from file",
                Option ['o'] ["out"] (ReqArg OutFile "FILE") "produce Haskell file of given name"]
 
-produceFile :: String -> CType -> Exp Lit -> String
+produceFile :: String -> CType -> Exp (Lit CType) -> String
 produceFile defs typ@(CType _ t) expr =
   defs ++
   "func :: " ++ cTypeToHaskell typ ++ "\n" ++

@@ -19,7 +19,7 @@ data PState = PState {varStack :: [ELabel],
 type Parser = Parsec String PState
 
 -- Unwrapped parser, giving strings for errors
-parseExpr :: String -> Either String (Exp [Lit])
+parseExpr :: String -> Either String (Exp [Lit Scheme])
 parseExpr str = case runParser multiline initState "" str of
   Left err -> Left $ show err
   Right val -> Right val
@@ -55,19 +55,19 @@ rParen :: Parser ()
 rParen = (char ')' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
 
 -- Parse a multiline expression; first line is "main line"
-multiline :: Parser (Exp [Lit])
+multiline :: Parser (Exp [Lit Scheme])
 multiline = do
   lines <- sepBy1 parseLine endOfLine
   eof
   let (_, folded) = foldr1 (\(num1, expr1) (num2, expr2) -> (num1, ELet ("sub" ++ show num2) expr2 expr1)) lines
   return $ ELet "sub1" folded $ EVar "sub1"
-  where parseLine :: Parser (Int, Exp [Lit])
+  where parseLine :: Parser (Int, Exp [Lit Scheme])
         parseLine = do state <- getState
                        putState state{lineNum = lineNum state + 1}
                        lineExpr $ lineNum state
 
 -- Parse a line of Husk code
-lineExpr :: Int -> Parser (Int, Exp [Lit])
+lineExpr :: Int -> Parser (Int, Exp [Lit Scheme])
 lineExpr lineNum = do
   state <- getState
   putState state{varStack = []}
@@ -77,20 +77,20 @@ lineExpr lineNum = do
   return (lineNum, lambdified)
 
 -- Parse an expression
-expression :: Parser (Exp [Lit])
+expression :: Parser (Exp [Lit Scheme])
 expression = mkPrattParser opTable term
   where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
         invisibleOp = bins "com3 com2 com app"
 
 -- Parse a builtin
-builtin :: Parser (Exp [Lit])
+builtin :: Parser (Exp [Lit Scheme])
 builtin = do
   label <- oneOf commands
   return $ cmd label
 
 -- Parse a number (integer or float)
-number :: Parser (Exp [Lit])
+number :: Parser (Exp [Lit Scheme])
 number = do
   prefix <- many1 digit
   maybeSuffix <- optionMaybe $ char '.' >> many digit
@@ -100,14 +100,14 @@ number = do
     Just suffix -> return $ ELit [Lit (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
  
 -- Parse a character
-character :: Parser (Exp [Lit])
+character :: Parser (Exp [Lit Scheme])
 character = do
   quote <- char '\''
   c <- anyChar
   return $ ELit [Lit (show c) $ Scheme [] $ CType [] $ TConc TChar]
 
 -- Parse a string
-str :: Parser (Exp [Lit])
+str :: Parser (Exp [Lit Scheme])
 str = do
   quote <- char '"'
   s <- many $ noneOf "\""
@@ -115,7 +115,7 @@ str = do
   return $ ELit [Lit (show s) $ Scheme [] $ CType [] $ TList (TConc TChar)]
 
 -- Parse a generalized lambda
-lambda :: Parser (Exp [Lit])
+lambda :: Parser (Exp [Lit Scheme])
 lambda = do
   lam <- oneOf "λμκφψχ"
   let numArgs = case lam of
@@ -136,7 +136,7 @@ lambda = do
       return $ EAbs var expr
 
 -- Parse a lambda argument
-lambdaArg :: Parser (Exp [Lit])
+lambdaArg :: Parser (Exp [Lit Scheme])
 lambdaArg = do
   sup <- oneOf sups
   let Just ix = elemIndex sup sups
@@ -145,7 +145,7 @@ lambdaArg = do
   where sups = "¹²³⁴⁵⁶⁷⁸⁹"
 
 -- Parse a subscript; used as line numbers and built-in constants
-subscript :: Parser (Exp [Lit])
+subscript :: Parser (Exp [Lit Scheme])
 subscript = do
   sub <- oneOf subs
   let Just ix = elemIndex sub subs

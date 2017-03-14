@@ -54,6 +54,18 @@ instance Types Scheme where
   freeVars (Scheme vars t) = freeVars t \\ Set.fromList vars
   applySub s (Scheme vars t) = Scheme vars $ applySub (foldr Map.delete s vars) t
 
+instance (Types a) => Types (Lit a) where
+  freeVars (Lit _ typ) = freeVars typ
+  applySub s (Lit name typ) = Lit name $ applySub s typ
+
+instance (Types a) => Types (Exp (Lit a)) where
+  freeVars _ = error "freeVars not implemented for expressions"
+  applySub s e@(EVar _) = e
+  applySub s (ELit l)     = ELit $ applySub s l
+  applySub s (EApp f x)   = EApp (applySub s f) (applySub s x)
+  applySub s (EAbs n e)   = EAbs n $ applySub s e
+  applySub s (ELet n e b) = ELet n (applySub s e) (applySub s b)
+
 instance (Types a) => Types [a] where
   freeVars l = foldr Set.union Set.empty $ map freeVars l
   applySub s = map $ applySub s
@@ -102,9 +114,9 @@ instantiate (Scheme vars ct) = do
 -- Fails if var occurs in the type (infinite type)
 varBind :: TLabel -> Type -> Infer Sub
 varBind name typ
-  | TVar var <- typ, var == name = return nullSub
-  | name `Set.member` freeVars typ         = fail ""
-  | otherwise                              = return $ Map.singleton name typ
+  | TVar var <- typ, var == name   = return nullSub
+  | name `Set.member` freeVars typ = fail ""
+  | otherwise                      = return $ Map.singleton name typ
 
 -- Most general unifier of two types
 -- Returns substitution that makes them equal
@@ -128,15 +140,15 @@ checkCons (c:cs) = case holds c of
   Nothing  -> fail ""
 
 -- Infer type of literal
-inferLit :: Lit -> Infer (Sub, CType, Exp Lit)
+inferLit :: Lit Scheme -> Infer (Sub, CType, Exp (Lit CType))
 inferLit lit@(Lit name typ) = do newTyp <- instantiate typ
-                                 return (nullSub, newTyp, ELit lit)
+                                 return (nullSub, newTyp, ELit $ Lit name newTyp)
 
 -- Infer type of []-overloaded expression
 -- All free expression variables must be bound in environment (otherwise it crashes)
 -- Returns list of:
 -- types of expression variables, type of whole expression, non-overloaded expression
-infer :: TypeEnv -> Exp [Lit] -> Infer (Sub, CType, Exp Lit)
+infer :: TypeEnv -> Exp [Lit Scheme] -> Infer (Sub, CType, Exp (Lit CType))
 
 -- Variable: find type in environment, combine constraints, return type
 infer (TypeEnv env) (EVar name) = 
@@ -156,7 +168,7 @@ infer env (EAbs name exp) =
      let TypeEnv envMinusName = remove env name
          newEnv = TypeEnv $ Map.union envMinusName $ Map.singleton name $ Scheme [] $ CType [] newVar
      (sub, CType cons typ, newExp) <- infer newEnv exp
-     return (sub, CType cons $ TFun (applySub sub newVar) typ, EAbs name newExp)
+     return (sub, CType cons $ TFun (applySub sub newVar) typ, EAbs name (applySub sub newExp))
 
 -- Application: infer function type and argument type, unify with function, check and reduce constraints
 infer env exp@(EApp fun arg) =
@@ -166,7 +178,7 @@ infer env exp@(EApp fun arg) =
      uniSub <- unify (applySub argSub funTyp) (TFun argTyp newVar)
      let resSub = uniSub `composeSub` argSub `composeSub` funSub
      cons <- checkCons $ nub $ applySub resSub $ funCons ++ argCons
-     return (resSub, CType cons $ applySub resSub newVar, EApp funExp argExp)
+     return (resSub, CType cons $ applySub resSub newVar, EApp (applySub resSub funExp) (applySub resSub argExp))
 
 -- Let binding: infer type of var from fix-enhanced exp, generalize to polytype, infer body, check and reduce constraints
 infer env (ELet name exp body) =
@@ -178,29 +190,30 @@ infer env (ELet name exp body) =
        (bodySub, bodyTyp@(CType bodyCons _), bodyExp) <- infer (applySub expSub newEnv) body
        let resSub = expSub `composeSub` bodySub
        cons <- checkCons $ nub $ applySub resSub $ expCons ++ bodyCons
-       return (resSub, bodyTyp, ELet name expExp bodyExp)
+       return (resSub, bodyTyp, ELet name (applySub resSub expExp) (applySub resSub bodyExp))
          where fixE = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
 
 -- Main type inference function
-typeInference :: Map.Map ELabel Scheme -> Exp [Lit] -> Infer (Sub, CType, Exp Lit)
+typeInference :: Map.Map ELabel Scheme -> Exp [Lit Scheme] -> Infer (Sub, CType, Exp (Lit CType))
 typeInference env exp =
   do (sub, typ, newExp) <- infer (TypeEnv env) exp
      return (sub, applySub sub typ, newExp)
 
 -- Infer type under a constraint
-inferType :: Bool -> Scheme -> Exp [Lit] -> [(CType, Exp Lit)]
+inferType :: Bool -> Scheme -> Exp [Lit Scheme] -> [(CType, Exp (Lit CType))]
 inferType constrainRes typeConstr exp = map fst $ runInfer $ do
   (infSub, CType infCons typ, infExp) <- typeInference Map.empty exp
-  resTyp <-
+  let subExp = applySub infSub infExp
+  (resTyp, resExp) <-
     if constrainRes
     then do
       CType conCons genType <- instantiate typeConstr
       constrSub <- (composeSub infSub) <$> unify genType typ
       resCons <- checkCons $ nub $ applySub constrSub $ infCons ++ conCons
       defSub <- foldr defCons (return constrSub) resCons
-      return $ CType [] $ applySub defSub typ
-    else return $ applySub infSub $ CType infCons typ
-  return (resTyp, infExp)
+      return (CType [] $ applySub defSub typ, applySub defSub subExp)
+    else return (applySub infSub $ CType infCons typ, subExp)
+  return (resTyp, resExp)
   where defCons (con, typ) msub = do
           sub <- msub
           instSub <- unify (defInst con) typ
@@ -235,3 +248,9 @@ e5 = EAbs "f" $
      ELet "x"
      (EApp (EVar "f") (EVar "x"))
      (EVar "x")
+
+e6 = EApp
+     (EApp
+      (ELit [Lit "com" $ Scheme ["a","b","c"] $ CType [] $ (TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> (TVar "a" ~> TVar "c")])
+      (ELit [Lit "consume" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TVar "x" ~> TConc TInt]))
+     (ELit [Lit "produce" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TConc TInt ~> TVar "x"])

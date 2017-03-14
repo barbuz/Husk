@@ -25,21 +25,11 @@ instance (Show lit) => Show (Exp lit) where
   show (ELet name exp body) = "let " ++ name ++ "=(" ++ show exp ++ ") in " ++ show body
 
 -- Literal in expression
-data Lit = Lit String Scheme
+data Lit a = Lit String a
   deriving (Eq, Ord)
 
-instance Show Lit where
+instance Show (Lit a) where
   show (Lit n s) = n
-
--- Convert expression to Haskell code
-expToHaskell :: Exp Lit -> String
-expToHaskell (EVar name) = name
-expToHaskell (ELit (Lit name typ))
-  | Scheme _ (CType _ (TFun _ _)) <- typ = "func_" ++ name
-  | otherwise = name
-expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
-expToHaskell (EAbs name exp) = "(\\ " ++ name ++ " -> " ++ expToHaskell exp ++ ")"
-expToHaskell (ELet name exp body) = "(let " ++ name ++ " = " ++ expToHaskell exp ++ " in " ++ expToHaskell body ++ ")"
 
 -- Type of expression with unbound variables
 data Type = TVar TLabel
@@ -95,6 +85,13 @@ defInst :: TClass -> Type
 defInst Concrete = TConc TInt
 defInst Number   = TConc TInt
 
+-- Type of expression with universally quantified variables
+data Scheme = Scheme [TLabel] CType
+  deriving (Eq, Ord)
+
+instance Show Scheme where
+  show (Scheme vs t) = concatMap (\name -> "forall " ++ name ++ ".") vs ++ show t
+
 -- Convert type to Haskell code
 typeToHaskell :: Type -> String
 typeToHaskell (TVar name) = name
@@ -110,10 +107,13 @@ cTypeToHaskell (CType [] typ) = typeToHaskell typ
 cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map showCons cons) ++ ") => " ++ typeToHaskell typ
   where showCons (con, typ) = show con ++ " " ++ typeToHaskell typ
 
--- Type of expression with universally quantified variables
-data Scheme = Scheme [TLabel] CType
-  deriving (Eq, Ord)
-
-instance Show Scheme where
-  show (Scheme vs t) = concatMap (\name -> "forall " ++ name ++ ".") vs ++ show t
+-- Convert expression to Haskell code
+expToHaskell :: Exp (Lit CType) -> String
+expToHaskell (EVar name) = name
+expToHaskell (ELit (Lit name typ))
+  | (CType _ (TFun _ _)) <- typ = "(func_" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
+  | otherwise = "(" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
+expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
+expToHaskell (EAbs name exp) = "(\\ " ++ name ++ " -> " ++ expToHaskell exp ++ ")"
+expToHaskell (ELet name exp body) = "(let " ++ name ++ " = " ++ expToHaskell exp ++ " in " ++ expToHaskell body ++ ")"
 
