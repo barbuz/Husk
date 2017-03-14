@@ -111,3 +111,11 @@ func_eq x y = boolToNum $ x == y
 func_if :: Concrete a => a -> b -> b -> b
 func_if a b c = if isTruthy a then b else c
 
+func_S :: (a->b->c)->(a->b)->a->c
+func_S x y z = x z (y z)
+
+func_K :: a->b->a
+func_K x _ = x
+
+func_I :: a->a
+func_I x = x

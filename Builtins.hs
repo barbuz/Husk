@@ -26,7 +26,10 @@ commandsList = [
   ('<', bins "lt"),
   ('>', bins "gt"),
   ('=', bins "eq"),
-  ('?', bins "if")
+  ('?', bins "if"),
+  ('S', bins "S"),
+  ('K', bins "K"),
+  ('I', bins "I")
   ]
 
 -- Compute builtins from space-delimited list
@@ -83,6 +86,13 @@ builtinsList = [
   ("fix",   Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"),
   ("fixp",  Scheme ["x"] $ CType [(Concrete, TVar "x")] $
             (TVar "x" ~> TVar "x") ~> TVar "x" ~> TVar "x"),
+  
+  -- Combinators
+  ("S",     Scheme ["a","b","c"] $ CType [] $
+            (TVar "a" ~> TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> TVar "a" ~> TVar "c"),
+  ("K",     Scheme ["a","b"] $ CType [] $
+            TVar "a" ~> TVar "b" ~> TVar "a"),
+  ("I",     Scheme ["a"] $ CType [] $ TVar "a" ~> TVar "a"),
 
   -- Boolean functions and comparisons
   ("lt",    Scheme ["x"] $ CType [(Concrete, TVar "x")] $
