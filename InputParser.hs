@@ -27,6 +27,17 @@ integer = do
         Nothing -> digits
   return $ Just (number, TConc TInt)
 
+double :: InputParser
+double = do
+  minus <- optionMaybe $ char '-'
+  prefix <- many1 digit
+  char '.'
+  suffix <- many1 digit
+  let number = case minus of
+        Just _  -> '-' : prefix ++ "." ++ suffix
+        Nothing -> prefix ++ "." ++ suffix
+  return $ Just (number, TConc TDouble)
+
 character :: InputParser
 character = do
   char '\''
@@ -53,7 +64,7 @@ list = do
     return (outStr, TList outType)
 
 inputVal :: InputParser
-inputVal = try integer <|> try character <|> try str <|> list
+inputVal = try double <|> try integer <|> try character <|> try str <|> list
 
 input :: InputParser
 input = do
@@ -68,11 +79,12 @@ input = do
                return $ (str, newTyp)
 
 inputType :: Parsec String () Type
-inputType = integerT <|> charT <|> varT <|> listT
+inputType = integerT <|> doubleT <|> charT <|> varT <|> listT
   where integerT = char 'I' >> return (TConc TInt)
-        charT = char 'C' >> return (TConc TChar)
-        varT = lower >>= \c-> return (TVar [c])
-        listT = char 'L' >> fmap TList inputType
+        doubleT  = char 'D' >> return (TConc TDouble)
+        charT    = char 'C' >> return (TConc TChar)
+        varT     = lower >>= \c-> return (TVar [c])
+        listT    = char 'L' >> fmap TList inputType
 
 parseInput :: Int -> String -> Either String (Maybe (String, Type))
 parseInput inputIndex str =

@@ -8,6 +8,7 @@ import InputParser
 import System.Environment (getArgs)
 import System.Console.GetOpt
 import System.Process
+import System.IO
 import Data.List (find, intercalate, nub)
 import Data.Set (toAscList)
 
@@ -18,7 +19,7 @@ parseProg constrainRes prog types = inferType constrainRes (foldr typeConstr res
           Scheme (nub $ vars ++ toAscList (freeVars typ1)) $
           CType cons $
           TFun typ1 typ2
-        cons = if constrainRes then [Concrete (TVar "x")] else []
+        cons = if constrainRes then [(Concrete, TVar "x")] else []
         resType = Scheme ["x"] $ CType cons $ TVar "x"
 
 -- Command line option flags
@@ -56,7 +57,10 @@ main = do
   case parsedArgs of
     (opts, (progOrFile : progArgs), []) -> do
       prog <- if InFile `elem` opts
-              then readFile progOrFile
+              then do
+                handle <- openFile progOrFile ReadMode
+                hSetEncoding handle utf8
+                hGetContents handle
               else return progOrFile
       if InferType `elem` opts
         then case parseProg False prog [] of

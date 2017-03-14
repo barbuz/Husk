@@ -2,29 +2,28 @@
 module Parser where
 
 import Expr
+import Builtins
 import PrattParser
 import Text.Parsec
 import Text.Parsec.Char
+import Control.Monad (forM)
 import qualified Data.Map as Map
 import Data.List (elemIndex)
 
--- Convenience alias for TFun
-infixr 9 ~>
-(~>) = TFun
-
 -- Parser state
 data PState = PState {varStack :: [ELabel],
-                      varSupply :: Int}
+                      varSupply :: Int,
+                      lineNum :: Int}
 
 -- Parser type
 type Parser = Parsec String PState
 
 -- Unwrapped parser, giving strings for errors
 parseExpr :: String -> Either String (Exp [Lit])
-parseExpr str = case runParser expression initState "" str of
+parseExpr str = case runParser multiline initState "" str of
   Left err -> Left $ show err
   Right val -> Right val
-  where initState = PState [] 0
+  where initState = PState [] 0 1
 
 -- Generate and push a new expression variable
 pushNewVar :: Parser ELabel
@@ -35,9 +34,15 @@ pushNewVar = do
                 varSupply = varSupply stat + 1}
   return var
 
--- Peek at a variable from the stack
+-- Peek at a variable from the stack; extend stack if necessary
 peekVar :: Int -> Parser ELabel
-peekVar i = (!! i) . varStack <$> getState
+peekVar ix = do
+  len <- length . varStack <$> getState
+  if ix >= len
+    then do
+      vars <- forM [0..ix-len] $ const pushNewVar
+      return $ last vars
+    else (!! ix) . varStack <$> getState
 
 -- Pop a variable off the stack
 popVar :: Parser ()
@@ -49,70 +54,50 @@ popVar = do
 rParen :: Parser ()
 rParen = (char ')' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
 
+-- Parse a multiline expression; first line is "main line"
+multiline :: Parser (Exp [Lit])
+multiline = do
+  lines <- sepBy1 parseLine endOfLine
+  eof
+  let (_, folded) = foldr1 (\(num1, expr1) (num2, expr2) -> (num1, ELet ("sub" ++ show num2) expr2 expr1)) lines
+  return $ ELet "sub1" folded $ EVar "sub1"
+  where parseLine :: Parser (Int, Exp [Lit])
+        parseLine = do state <- getState
+                       putState state{lineNum = lineNum state + 1}
+                       lineExpr $ lineNum state
+
+-- Parse a line of Husk code
+lineExpr :: Int -> Parser (Int, Exp [Lit])
+lineExpr lineNum = do
+  state <- getState
+  putState state{varStack = []}
+  expr <- expression
+  overflowVars <- varStack <$> getState
+  let lambdified = foldr EAbs expr overflowVars
+  return (lineNum, lambdified)
+
 -- Parse an expression
 expression :: Parser (Exp [Lit])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> integer <|> character <|> str <|> lambda <|> lambdaArg
+  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
         opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
-        invisibleOp = ELit [Lit "com3" $ Scheme ["x", "y", "z", "u", "v"] $ CType [] $
-                             (TVar "u" ~> TVar "v") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "u") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "v"),
-                            Lit "com2" $ Scheme ["x", "y", "z", "u"] $ CType [] $
-                             (TVar "z" ~> TVar "u") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "z") ~>
-                             (TVar "x" ~> TVar "y" ~> TVar "u"),
-                            Lit "com"  $ Scheme ["x", "y", "z"] $ CType [] $
-                             (TVar "y" ~> TVar "z") ~>
-                             (TVar "x" ~> TVar "y") ~>
-                             (TVar "x" ~> TVar "z"),
-                            Lit "app"  $ Scheme ["x", "y"] $ CType [] $
-                             (TVar "x" ~> TVar "y") ~>
-                             (TVar "x" ~> TVar "y")]
-
--- List of builtin commands
-builtins :: [(Char, Exp [Lit])]
-builtins = map (fmap ELit)
-  [('+', [Lit "add"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   ('-', [Lit "sub"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   ('_', [Lit "neg"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt]),
-   ('*', [Lit "mul"  $ Scheme [] $ CType [] $ TConc TInt ~> TConc TInt ~> TConc TInt]),
-   (';', [Lit "pure" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x")]),
-   (':', [Lit "pair" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TVar "x" ~> TList (TVar "x"),
-          Lit "cons" $ Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "cat"  $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x"),
-          Lit "snoc" $ Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")]),
-   ('m', [Lit "map"  $ Scheme ["x", "y"] $ CType [] $
-           (TVar "x" ~> TVar "y") ~>
-           (TList (TVar "x") ~> TList (TVar "y"))]),
-   ('z', [Lit "zip"  $ Scheme ["x", "y", "z"] $ CType [] $
-           (TVar "x" ~> TVar "y" ~> TVar "z") ~>
-           (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))]),
-   ('F', [Lit "fixp" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
-                       (TVar "x" ~> TVar "x") ~> TVar "x" ~> TVar "x"]),
-   ('<', [Lit "lt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
-                       TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('>', [Lit "gt"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
-                       TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('=', [Lit "eq"   $ Scheme ["x"] $ CType [Concrete (TVar "x")] $
-                       TVar "x" ~> TVar "x" ~> TConc TInt]),
-   ('?', [Lit "if"   $ Scheme ["x", "y"] $ CType [Concrete (TVar "x")] $
-                       TVar "x" ~> TVar "y" ~> TVar "y" ~> TVar "y"])
-  ]
+        invisibleOp = bins "com3 com2 com app"
 
 -- Parse a builtin
 builtin :: Parser (Exp [Lit])
 builtin = do
-  label <- oneOf $ map fst builtins
-  case lookup label builtins of
-    Just expr -> return expr
-    Nothing -> error "Unreachable condition."
+  label <- oneOf commands
+  return $ cmd label
 
--- Parse an integer
-integer :: Parser (Exp [Lit])
-integer = do
-  i <- many1 digit
-  return $ ELit [Lit i $ Scheme [] $ CType [] $ TConc TInt]
+-- Parse a number (integer or float)
+number :: Parser (Exp [Lit])
+number = do
+  prefix <- many1 digit
+  maybeSuffix <- optionMaybe $ char '.' >> many digit
+  case maybeSuffix of
+    Nothing     -> return $ ELit [Lit prefix $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n"]
+    Just []     -> return $ ELit [Lit (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
+    Just suffix -> return $ ELit [Lit (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
  
 -- Parse a character
 character :: Parser (Exp [Lit])
@@ -142,14 +127,13 @@ lambda = do
         'χ' -> 3
   expr <- iterate lambdify expression !! numArgs
   rParen
-  return $ if lam `elem` "φψχ" then EApp fixExpr expr else expr
+  return $ if lam `elem` "φψχ" then EApp (bins "fix") expr else expr
   where
     lambdify parser = do
       var <- pushNewVar
       expr <- parser
       popVar
       return $ EAbs var expr
-    fixExpr = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"]
 
 -- Parse a lambda argument
 lambdaArg :: Parser (Exp [Lit])
@@ -159,3 +143,11 @@ lambdaArg = do
   var <- peekVar ix
   return $ EVar var
   where sups = "¹²³⁴⁵⁶⁷⁸⁹"
+
+-- Parse a subscript; used as line numbers and built-in constants
+subscript :: Parser (Exp [Lit])
+subscript = do
+  sub <- oneOf subs
+  let Just ix = elemIndex sub subs
+  return $ EVar ("sub" ++ show (ix + 1))
+  where subs = "₁₂₃₄₅₆₇₈₉"

@@ -2,6 +2,8 @@
 -- Backtracking Damas-Milner-style type inference engine (algorithm W)
 -- Modified from https://github.com/wh5a/Algorithm-W-Step-By-Step
 
+{-# LANGUAGE FlexibleInstances #-}
+
 module Infer where
 
 import Expr
@@ -40,9 +42,9 @@ instance Types Type where
   applySub s (TList t)    = TList $ applySub s t
   applySub _ t            = t
 
-instance Types TClass where
-  freeVars (Concrete t) = freeVars t
-  applySub s (Concrete t) = Concrete $ applySub s t
+instance Types (TClass, Type) where
+  freeVars (_, t) = freeVars t
+  applySub s (con, t) = (con, applySub s t)
 
 instance Types CType where
   freeVars (CType _ typ) = freeVars typ -- TODO: is this correct?
@@ -119,12 +121,11 @@ unify (TConc a) (TConc b) | a == b = return nullSub
 unify _ _                          = fail ""
 
 -- Check typeclass constraints; remove those that hold, keep indeterminate ones, fail if any don't hold
-checkCons :: [TClass] -> Infer [TClass]
+checkCons :: [(TClass, Type)] -> Infer [(TClass, Type)]
 checkCons [] = return []
 checkCons (c:cs) = case holds c of
-  Just True  -> checkCons cs
-  Just False -> fail ""
-  Nothing    -> (c :) <$> checkCons cs
+  Just cs' -> (cs' ++) <$> checkCons cs
+  Nothing  -> fail ""
 
 -- Infer type of literal
 inferLit :: Lit -> Infer (Sub, CType, Exp Lit)
@@ -167,9 +168,10 @@ infer env exp@(EApp fun arg) =
      cons <- checkCons $ nub $ applySub resSub $ funCons ++ argCons
      return (resSub, CType cons $ applySub resSub newVar, EApp funExp argExp)
 
--- Let binding: infer type of var, generalize to polytype, infer body, check and reduce constraints
+-- Let binding: infer type of var from fix-enhanced exp, generalize to polytype, infer body, check and reduce constraints
 infer env (ELet name exp body) =
-    do (expSub, expTyp@(CType expCons _), expExp) <- infer env exp
+    do let fixExp = EApp fixE $ EAbs name exp
+       (expSub, expTyp@(CType expCons _), EApp _ (EAbs _ expExp)) <- infer env fixExp
        let TypeEnv envMinusName = remove env name
            expPoly = generalize (applySub expSub env) expTyp
            newEnv = TypeEnv $ Map.insert name expPoly envMinusName
@@ -177,6 +179,7 @@ infer env (ELet name exp body) =
        let resSub = expSub `composeSub` bodySub
        cons <- checkCons $ nub $ applySub resSub $ expCons ++ bodyCons
        return (resSub, bodyTyp, ELet name expExp bodyExp)
+         where fixE = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
 
 -- Main type inference function
 typeInference :: Map.Map ELabel Scheme -> Exp [Lit] -> Infer (Sub, CType, Exp Lit)
@@ -188,11 +191,20 @@ typeInference env exp =
 inferType :: Bool -> Scheme -> Exp [Lit] -> [(CType, Exp Lit)]
 inferType constrainRes typeConstr exp = map fst $ runInfer $ do
   (infSub, CType infCons typ, infExp) <- typeInference Map.empty exp
-  CType conCons genType <- instantiate typeConstr
-  constrSub <- unify genType typ
-  resCons <- checkCons $ nub $ applySub (infSub `composeSub` constrSub) $ infCons ++ conCons
-  when constrainRes $ guard $ null resCons
-  return (CType resCons $ applySub constrSub typ, infExp)
+  resTyp <-
+    if constrainRes
+    then do
+      CType conCons genType <- instantiate typeConstr
+      constrSub <- (composeSub infSub) <$> unify genType typ
+      resCons <- checkCons $ nub $ applySub constrSub $ infCons ++ conCons
+      defSub <- foldr defCons (return constrSub) resCons
+      return $ CType [] $ applySub defSub typ
+    else return $ applySub infSub $ CType infCons typ
+  return (resTyp, infExp)
+  where defCons (con, typ) msub = do
+          sub <- msub
+          instSub <- unify (defInst con) typ
+          return $ instSub `composeSub` sub
 
 -- TESTS
 
@@ -205,17 +217,21 @@ e1 = ELet "id"
      (EApp (EVar "id") (EVar "id"))
 
 e2 = EApp
-     (ELit [Lit "add" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "or" $ Scheme [] $ CType [] $ TFun (TConc TBool) (TConc TBool)])
+     (ELit [Lit "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Lit "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
      (ELit [Lit "2" $ Scheme [] $ CType [] $ TConc TInt])
 
 e3 = EApp
-     (ELit [Lit "add" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "or" $ Scheme [] $ CType [] $ TFun (TConc TBool) (TConc TBool)])
-     (ELit [Lit "True" $ Scheme [] $ CType [] $ TConc TBool])
+     (ELit [Lit "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Lit "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
+     (ELit [Lit "'a'" $ Scheme [] $ CType [] $ TConc TChar])
 
 e4 = EApp
      (ELit [Lit "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TInt)) (TList (TConc TInt)),
-            Lit "not" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TFun (TVar "x") (TConc TInt)])
+            Lit "not" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TFun (TVar "x") (TConc TInt)])
      (ELit [Lit "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
 
+e5 = EAbs "f" $
+     ELet "x"
+     (EApp (EVar "f") (EVar "x"))
+     (EVar "x")
