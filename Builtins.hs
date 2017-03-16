@@ -1,6 +1,33 @@
-module Builtins where
+module Builtins (bins, cmd, commands) where
 
 import Expr
+
+-- Utilities for writing types
+[x,y,z,u,v,w,n,m] = map (TVar . pure) "xyzuvwnm"
+
+int :: Type
+int = TConc TInt
+
+dbl :: Type
+dbl = TConc TDouble
+
+chr :: Type
+chr = TConc TChar
+
+lst :: Type -> Type
+lst = TList
+
+con :: Type -> (TClass, Type)
+con typ = (Concrete, typ)
+
+num :: Type -> (TClass, Type)
+num typ = (Number, typ)
+
+forall :: String -> [(TClass, Type)] -> Type -> Scheme
+forall vars cons typ = Scheme (map pure vars) $ CType cons typ
+
+simply :: Type -> Scheme
+simply typ = forall "" [] typ
 
 -- Compute command from char
 cmd :: Char -> Exp [Lit Scheme]
@@ -27,9 +54,9 @@ commandsList = [
   ('>', bins "gt"),
   ('=', bins "eq"),
   ('?', bins "if"),
-  ('S', bins "S"),
-  ('K', bins "K"),
-  ('I', bins "I")
+  ('S', bins "hook"),
+  ('K', bins "const"),
+  ('I', bins "id")
   ]
 
 -- Compute builtins from space-delimited list
@@ -43,64 +70,42 @@ builtinsList :: [(String, Scheme)]
 builtinsList = [
 
   -- Arithmetic
-  ("add",   Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n"),
-  ("addID", Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble),
-  ("addDI", Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble),
-  ("sub",   Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n"),
-  ("subID", Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble),
-  ("subDI", Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble),
-  ("mul",   Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n" ~> TVar "n"),
-  ("mulID", Scheme [] $ CType [] $ TConc TInt ~> TConc TDouble ~> TConc TDouble),
-  ("mulDI", Scheme [] $ CType [] $ TConc TDouble ~> TConc TInt ~> TConc TDouble),
-  ("neg",   Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n" ~> TVar "n"),
+  ("add",   forall "n" [num n] $ n ~> n ~> n),
+  ("addID", simply $ int ~> dbl ~> dbl),
+  ("addDI", simply $ dbl ~> int ~> dbl),
+  ("sub",   forall "n" [num n] $ n ~> n ~> n),
+  ("subID", simply $ int ~> dbl ~> dbl),
+  ("subDI", simply $ dbl ~> int ~> dbl),
+  ("mul",   forall "n" [num n] $ n ~> n ~> n),
+  ("mulID", simply $ int ~> dbl ~> dbl),
+  ("mulDI", simply $ dbl ~> int ~> dbl),
+  ("neg",   forall "n" [num n] $ n ~> n),
 
   -- List manipulation
-  ("pure",  Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x")),
-  ("pair",  Scheme ["x"] $ CType [] $ TVar "x" ~> TVar "x" ~> TList (TVar "x")),
-  ("cons",  Scheme ["x"] $ CType [] $ TVar "x" ~> TList (TVar "x") ~> TList (TVar "x")),
-  ("cat",   Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TList (TVar "x") ~> TList (TVar "x")),
-  ("snoc",  Scheme ["x"] $ CType [] $ TList (TVar "x") ~> TVar "x" ~> TList (TVar "x")),
+  ("pure",  forall "x" [] $ x ~> lst x),
+  ("pair",  forall "x" [] $ x ~> x ~> lst x),
+  ("cons",  forall "x" [] $ x ~> lst x ~> lst x),
+  ("cat",   forall "x" [] $ lst x ~> lst x ~> lst x),
+  ("snoc",  forall "x" [] $ lst x ~> x ~> lst x),
 
   -- Higher order functions
-  ("com3",  Scheme ["x", "y", "z", "u", "v"] $ CType [] $
-            (TVar "u" ~> TVar "v") ~>
-            (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "u") ~>
-            (TVar "x" ~> TVar "y" ~> TVar "z" ~> TVar "v")),
-  ("com2",  Scheme ["x", "y", "z", "u"] $ CType [] $
-            (TVar "z" ~> TVar "u") ~>
-            (TVar "x" ~> TVar "y" ~> TVar "z") ~>
-            (TVar "x" ~> TVar "y" ~> TVar "u")),
-  ("com",   Scheme ["x", "y", "z"] $ CType [] $
-            (TVar "y" ~> TVar "z") ~>
-            (TVar "x" ~> TVar "y") ~>
-            (TVar "x" ~> TVar "z")),
-  ("app",   Scheme ["x", "y"] $ CType [] $
-            (TVar "x" ~> TVar "y") ~>
-            (TVar "x" ~> TVar "y")),
-  ("map",   Scheme ["x", "y"] $ CType [] $
-            (TVar "x" ~> TVar "y") ~>
-            (TList (TVar "x") ~> TList (TVar "y"))),
-  ("zip",   Scheme ["x", "y", "z"] $ CType [] $
-            (TVar "x" ~> TVar "y" ~> TVar "z") ~>
-            (TList (TVar "x") ~> TList (TVar "y") ~> TList (TVar "z"))),
-  ("fix",   Scheme ["x"] $ CType [] $ (TVar "x" ~> TVar "x") ~> TVar "x"),
-  ("fixp",  Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-            (TVar "x" ~> TVar "x") ~> TVar "x" ~> TVar "x"),
+  ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
+  ("com2",  forall "xyzu" [] $ (z ~> u) ~> (x ~> y ~> z) ~> (x ~> y ~> u)),
+  ("com",   forall "xyz" [] $ (y ~> z) ~> (x ~> y) ~> (x ~> z)),
+  ("app",   forall "xy" [] $ (x ~> y) ~> (x ~> y)),
+  ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
+  ("zip",   forall "xyz" [] $ (x ~> y ~> z) ~> (lst x ~> lst y ~> lst z)),
+  ("fix",   forall "x" [] $ (x ~> x) ~> x),
+  ("fixp",  forall "x" [con x] $ (x ~> x) ~> x ~> x),
   
   -- Combinators
-  ("S",     Scheme ["a","b","c"] $ CType [] $
-            (TVar "a" ~> TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> TVar "a" ~> TVar "c"),
-  ("K",     Scheme ["a","b"] $ CType [] $
-            TVar "a" ~> TVar "b" ~> TVar "a"),
-  ("I",     Scheme ["a"] $ CType [] $ TVar "a" ~> TVar "a"),
+  ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
+  ("const", forall "xy" [] $ x ~> y ~> x),
+  ("id",    forall "x" [] $ x ~> x),
 
   -- Boolean functions and comparisons
-  ("lt",    Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-            TVar "x" ~> TVar "x" ~> TConc TInt),
-  ("gt",    Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-            TVar "x" ~> TVar "x" ~> TConc TInt),
-  ("eq",    Scheme ["x"] $ CType [(Concrete, TVar "x")] $
-            TVar "x" ~> TVar "x" ~> TConc TInt),
-  ("if",    Scheme ["x", "y"] $ CType [(Concrete, TVar "x")] $
-            TVar "x" ~> TVar "y" ~> TVar "y" ~> TVar "y")
+  ("lt",    forall "x" [con x] $ x ~> x ~> int),
+  ("gt",    forall "x" [con x] $ x ~> x ~> int),
+  ("eq",    forall "x" [con x] $ x ~> x ~> int),
+  ("if",    forall "xy" [con x] $ x ~> y ~> y ~> y)
   ]
