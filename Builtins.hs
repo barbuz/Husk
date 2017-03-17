@@ -44,11 +44,18 @@ commandsList = [
   ('+', bins "add addDI addID"),
   ('-', bins "sub subDI subID"),
   ('*', bins "mul mulDI mulID"),
+  ('/', bins "div"),
+  ('÷', bins "idiv"),
+  ('%', bins "mod modDI modID"),
   ('_', bins "neg"),
+  ('i', bins "inv"),
   (';', bins "pure"),
   (':', bins "cat cons snoc pair"),
   ('m', bins "map"),
   ('z', bins "zip"),
+  ('f', bins "filter select"),
+  ('#', bins "len"),
+  ('ƒ', bins "fix"),
   ('F', bins "fixp"),
   ('<', bins "lt"),
   ('>', bins "gt"),
@@ -79,7 +86,13 @@ builtinsList = [
   ("mul",   forall "n" [num n] $ n ~> n ~> n),
   ("mulID", simply $ int ~> dbl ~> dbl),
   ("mulDI", simply $ dbl ~> int ~> dbl),
+  ("div",   forall "mn" [num m,num n] $ m ~> n ~> dbl),
+  ("idiv",  forall "mn" [num m,num n] $ m ~> n ~> int),
+  ("mod",   forall "n" [num n] $ n ~> n ~> n),
+  ("modID", simply $ int ~> dbl ~> dbl),
+  ("modDI", simply $ dbl ~> int ~> dbl),
   ("neg",   forall "n" [num n] $ n ~> n),
+  ("inv",   forall "n" [num n] $ n ~> dbl),
 
   -- List manipulation
   ("pure",  forall "x" [] $ x ~> lst x),
@@ -87,6 +100,7 @@ builtinsList = [
   ("cons",  forall "x" [] $ x ~> lst x ~> lst x),
   ("cat",   forall "x" [] $ lst x ~> lst x ~> lst x),
   ("snoc",  forall "x" [] $ lst x ~> x ~> lst x),
+  ("len",   forall "x" [] $ lst x ~> int),
 
   -- Higher order functions
   ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
@@ -97,6 +111,8 @@ builtinsList = [
   ("zip",   forall "xyz" [] $ (x ~> y ~> z) ~> (lst x ~> lst y ~> lst z)),
   ("fix",   forall "x" [] $ (x ~> x) ~> x),
   ("fixp",  forall "x" [con x] $ (x ~> x) ~> x ~> x),
+  ("filter",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
+  ("select",forall "xy" [con x] $ lst x ~> lst y ~> lst y),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
