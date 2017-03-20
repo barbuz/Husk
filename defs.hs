@@ -3,7 +3,7 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord)
-import Data.List (genericLength)
+import Data.List (genericLength,genericIndex)
 
 class (Show a, Read a, Eq a, Ord a) => Concrete a where
   isTruthy :: a -> Bool
@@ -20,7 +20,7 @@ instance Concrete Char where
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
 
-class (Num n, Ord n) => Number n where
+class (Num n, Ord n, Show n) => Number n where
   valueOf :: n -> Either Integer Double
 
 instance Number Integer where
@@ -137,8 +137,20 @@ func_filter f = filter $ isTruthy . f
 func_select :: Concrete a => [a] -> [b] -> [b]
 func_select x y = [b | (a, b) <- zip x y, isTruthy a]
 
+func_scanl :: (b -> a -> b) -> b -> [a] -> [b]
+func_scanl = scanl
+
+func_scanr :: (a -> b -> b) -> b -> [a] -> [b]
+func_scanr = scanr
+
 func_len :: [a] -> Integer
 func_len = genericLength
+
+func_nlen :: Number a => a -> Integer
+func_nlen = genericLength.show
+
+func_index :: [a] -> Integer -> a
+func_index = genericIndex
 
 func_lt :: Concrete a => a -> a -> Integer
 func_lt x y = boolToNum $ x < y
@@ -152,6 +164,9 @@ func_eq x y = boolToNum $ x == y
 func_if :: Concrete a => a -> b -> b -> b
 func_if a b c = if isTruthy a then b else c
 
+func_not :: Concrete a => a -> Integer
+func_not a = if isTruthy a then 0 else 1
+
 func_hook :: (a -> b -> c) -> (a -> b) -> a -> c
 func_hook x y z = x z (y z)
 
@@ -161,3 +176,8 @@ func_const x _ = x
 func_id :: a -> a
 func_id x = x
 
+func_foldl :: (b -> a -> b) -> b -> [a] -> b
+func_foldl = foldl
+
+func_foldr :: (a -> b -> b) -> b -> [a] -> b
+func_foldr = foldr

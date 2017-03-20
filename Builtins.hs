@@ -53,14 +53,20 @@ commandsList = [
   (':', bins "cat cons snoc pair"),
   ('m', bins "map"),
   ('z', bins "zip"),
+  ('«', bins "foldl"),
+  ('»', bins "foldr"),
+  ('◄', bins "scanl"),
+  ('►', bins "scanr"),
   ('f', bins "filter select"),
-  ('#', bins "len"),
+  ('#', bins "len nlen"),
+  ('‼', bins "index"),
   ('ƒ', bins "fix"),
   ('F', bins "fixp"),
   ('<', bins "lt"),
   ('>', bins "gt"),
   ('=', bins "eq"),
   ('?', bins "if"),
+  ('¬', bins "not"),
   ('S', bins "hook"),
   ('K', bins "const"),
   ('I', bins "id")
@@ -101,6 +107,8 @@ builtinsList = [
   ("cat",   forall "x" [] $ lst x ~> lst x ~> lst x),
   ("snoc",  forall "x" [] $ lst x ~> x ~> lst x),
   ("len",   forall "x" [] $ lst x ~> int),
+  ("nlen",  forall "n" [num n] $ n ~> int),
+  ("index", forall "x" [] $ lst x ~> int ~> x),
 
   -- Higher order functions
   ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
@@ -113,6 +121,10 @@ builtinsList = [
   ("fixp",  forall "x" [con x] $ (x ~> x) ~> x ~> x),
   ("filter",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("select",forall "xy" [con x] $ lst x ~> lst y ~> lst y),
+  ("foldl", forall "xy" [] $ (y~>x~>y) ~> y ~> lst x ~> y),
+  ("foldr", forall "xy" [] $ (x~>y~>y) ~> y ~> lst x ~> y),
+  ("scanl", forall "xy" [] $ (y~>x~>y) ~> y ~> lst x ~> lst y),
+  ("scanr", forall "xy" [] $ (x~>y~>y) ~> y ~> lst x ~> lst y),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
@@ -123,5 +135,6 @@ builtinsList = [
   ("lt",    forall "x" [con x] $ x ~> x ~> int),
   ("gt",    forall "x" [con x] $ x ~> x ~> int),
   ("eq",    forall "x" [con x] $ x ~> x ~> int),
-  ("if",    forall "xy" [con x] $ x ~> y ~> y ~> y)
+  ("if",    forall "xy" [con x] $ x ~> y ~> y ~> y),
+  ("not",   forall "x" [con x] $ x ~> int)
   ]
