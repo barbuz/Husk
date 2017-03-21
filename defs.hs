@@ -3,24 +3,66 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord)
-import Data.List (genericLength,genericIndex)
+import Data.List (genericLength,genericIndex,findIndex)
 
 class (Show a, Read a, Eq a, Ord a) => Concrete a where
   isTruthy :: a -> Bool
+  toTruthy :: a -> Integer
+  func_lt :: a -> a -> Integer
+  func_gt :: a -> a -> Integer
+  
+  func_eq :: a -> a -> Integer
+  func_eq x y = boolToNum $ x == y
+  
+  func_neq :: a -> a -> Integer
+  
+  func_or :: a -> a -> a
+  func_or x y = if isTruthy x then x else y
+  
+  func_and :: a -> a -> a
+  func_and x y = if isTruthy x then y else x
+
+func_or' :: (Concrete a, Concrete b) => a -> b -> Integer
+func_or' x y = func_or (toTruthy x) (toTruthy y)
+
+func_and' :: (Concrete a, Concrete b) => a -> b -> Integer
+func_and' x y = func_and (toTruthy x) (toTruthy y)
 
 instance Concrete Integer where
   isTruthy = (/= 0)
+  toTruthy = id
+  func_lt x y = max 0 (y-x)
+  func_gt x y = max 0 (x-y)
+  func_neq x y = x-y
 
 instance Concrete Double where
   isTruthy = (/= 0)
+  toTruthy = roundAway
+  func_lt x y = max 0 $ roundAway(y-x)
+  func_gt x y = max 0 $ roundAway(x-y)
+  func_neq x y = roundAway $ x-y
 
 instance Concrete Char where
   isTruthy = (/= 0).ord
+  toTruthy = fromIntegral.ord
+  func_lt x y = fromIntegral $ max 0 (ord y - ord x)
+  func_gt x y = fromIntegral $ max 0 (ord x - ord y)
+  func_neq x y = fromIntegral $ (ord x)-(ord y)
 
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
+  toTruthy = genericLength
+  func_lt x y = case findIndex (uncurry (/=)) (zip x y) of
+                  Just i  ->  if x!!i < y!!i then fromIntegral i+1 else 0
+                  Nothing ->  0
+  func_gt x y = case findIndex (uncurry (/=)) (zip x y) of
+                  Just i  ->  if x!!i > y!!i then fromIntegral i+1 else 0
+                  Nothing ->  0
+  func_neq x y = case findIndex (uncurry (/=)) (zip x y) of
+                  Just i  ->  fromIntegral i+1
+                  Nothing ->  0
 
-class (Num n, Ord n, Show n) => Number n where
+class (Num n, Ord n, Show n, Read n, Concrete n) => Number n where
   valueOf :: n -> Either Integer Double
 
 instance Number Integer where
@@ -31,6 +73,9 @@ instance Number Double where
 
 boolToNum :: (Num a) => Bool -> a
 boolToNum = fromInteger . toInteger . fromEnum
+
+roundAway :: Double -> Integer
+roundAway d = if d<0 then floor d else ceiling d
 
 func_fix :: (a -> a) -> a
 func_fix = fix
@@ -152,19 +197,10 @@ func_nlen = genericLength.show
 func_index :: [a] -> Integer -> a
 func_index = genericIndex
 
-func_lt :: Concrete a => a -> a -> Integer
-func_lt x y = boolToNum $ x < y
-
-func_gt :: Concrete a => a -> a -> Integer
-func_gt x y = boolToNum $ x > y
-
-func_eq :: Concrete a => a -> a -> Integer
-func_eq x y = boolToNum $ x == y
-
 func_if :: Concrete a => a -> b -> b -> b
 func_if a b c = if isTruthy a then b else c
 
-func_not :: Concrete a => a -> Integer
+func_not :: (Concrete a, Number n) => a -> n
 func_not a = if isTruthy a then 0 else 1
 
 func_hook :: (a -> b -> c) -> (a -> b) -> a -> c
