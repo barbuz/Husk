@@ -60,6 +60,8 @@ commandsList = [
   ('f', bins "filter select"),
   ('#', bins "len nlen"),
   ('‼', bins "index"),
+  ('↑', bins "take"),
+  ('↓', bins "drop"),
   ('ƒ', bins "fix"),
   ('F', bins "fixp"),
   ('<', bins "lt"),
@@ -69,7 +71,8 @@ commandsList = [
   ('¬', bins "not"),
   ('S', bins "hook"),
   ('K', bins "const"),
-  ('I', bins "id")
+  ('I', bins "id"),
+  ('Λ', bins "list listN listF listNF")
   ]
 
 -- Compute builtins from space-delimited list
@@ -109,6 +112,8 @@ builtinsList = [
   ("len",   forall "x" [] $ lst x ~> int),
   ("nlen",  forall "n" [num n] $ n ~> int),
   ("index", forall "x" [] $ lst x ~> int ~> x),
+  ("take",  forall "x" [] $ int ~> lst x ~> lst x),
+  ("drop",  forall "x" [] $ int ~> lst x ~> lst x),
 
   -- Higher order functions
   ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
@@ -125,6 +130,10 @@ builtinsList = [
   ("foldr", forall "xy" [] $ (x~>y~>y) ~> y ~> lst x ~> y),
   ("scanl", forall "xy" [] $ (y~>x~>y) ~> y ~> lst x ~> lst y),
   ("scanr", forall "xy" [] $ (x~>y~>y) ~> y ~> lst x ~> lst y),
+  ("list",  forall "xy" [] $ y ~> (x ~> lst x ~> y) ~> lst x ~> y),
+  ("listN", forall "xy" [] $ (x ~> lst x ~> y) ~> lst x ~> y),
+  ("listF", forall "xy" [] $ y ~> ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
+  ("listNF",forall "xy" [] $ ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
