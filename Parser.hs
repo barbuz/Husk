@@ -41,7 +41,7 @@ peekVar ix = do
   if ix >= len
     then do
       vars <- forM [0..ix-len] $ const pushNewVar
-      return $ last vars
+      return $ head vars
     else (!! ix) . varStack <$> getState
 
 -- Pop a variable off the stack
@@ -72,7 +72,7 @@ lineExpr lineNum = do
   state <- getState
   putState state{varStack = []}
   expr <- expression
-  overflowVars <- varStack <$> getState
+  overflowVars <- reverse . varStack <$> getState
   let lambdified = foldr EAbs expr overflowVars
   return (lineNum, lambdified)
 
