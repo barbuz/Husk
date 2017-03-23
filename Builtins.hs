@@ -69,6 +69,8 @@ commandsList = [
   ('=', bins "eq"),
   ('?', bins "if"),
   ('¬', bins "not"),
+  ('|', bins "or or'"),
+  ('&', bins "and and'"),
   ('S', bins "hook"),
   ('K', bins "const"),
   ('I', bins "id"),
@@ -141,9 +143,13 @@ builtinsList = [
   ("id",    forall "x" [] $ x ~> x),
 
   -- Boolean functions and comparisons
-  ("lt",    forall "x" [con x] $ x ~> x ~> int),
-  ("gt",    forall "x" [con x] $ x ~> x ~> int),
-  ("eq",    forall "x" [con x] $ x ~> x ~> int),
+  ("lt",    forall "x" [con x, num n] $ x ~> x ~> n),
+  ("gt",    forall "x" [con x, num n] $ x ~> x ~> n),
+  ("eq",    forall "x" [con x, num n] $ x ~> x ~> n),
   ("if",    forall "xy" [con x] $ x ~> y ~> y ~> y),
-  ("not",   forall "x" [con x] $ x ~> int)
+  ("not",   forall "x" [con x] $ x ~> int),
+  ("or",    forall "x" [con x] $ x ~> x ~> x),
+  ("or'",   forall "x" [con x, num n] $ x ~> x ~> n),
+  ("and",   forall "x" [con x] $ x ~> x ~> x),
+  ("and'",  forall "x" [con x, num n] $ x ~> x ~> n)
   ]
