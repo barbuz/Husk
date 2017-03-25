@@ -217,3 +217,32 @@ func_foldl = foldl
 
 func_foldr :: (a -> b -> b) -> b -> [a] -> b
 func_foldr = foldr
+
+
+func_take :: Integer -> [a] -> [a]
+func_take n
+  | n >= 0    = genericTake n
+  | otherwise = reverse . genericTake (-n) . reverse
+
+func_drop :: Integer -> [a] -> [a]
+func_drop n
+  | n >= 0    = genericDrop n
+  | otherwise = reverse . genericDrop (-n) . reverse
+
+func_list :: b -> (a -> [a] -> b) -> [a] -> b
+func_list c _ [] = c
+func_list _ f (x:xs) = f x xs
+
+func_listN :: (a -> [a] -> b) -> [a] -> b
+func_listN _ []      = error "listN only supports nonempty lists."
+func_listN f (x:xs) = f x xs
+
+func_listF :: b -> (([a] -> b) -> (a -> [a] -> b)) -> [a] -> b
+func_listF c f = go
+  where go [] = c
+        go (x:xs) = f go x xs
+
+func_listNF :: (([a] -> b) -> (a -> [a] -> b)) -> [a] -> b
+func_listNF f = go
+  where go [] = error "listNF only supports nonempty lists."
+        go (x:xs) = f go x xs
