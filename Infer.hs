@@ -31,16 +31,18 @@ class Types a where
   applySub :: Sub -> a -> a
 
 instance Types Type where
-  freeVars (TVar n)     = Set.singleton n
-  freeVars (TFun t1 t2) = freeVars t1 `Set.union` freeVars t2
-  freeVars (TList t)    = freeVars t
-  freeVars _            = Set.empty
-  applySub s (TVar n)     = case Map.lookup n s of
-                              Nothing -> TVar n
-                              Just t  -> t
-  applySub s (TFun t1 t2) = TFun (applySub s t1) (applySub s t2)
-  applySub s (TList t)    = TList $ applySub s t
-  applySub _ t            = t
+  freeVars (TVar n)      = Set.singleton n
+  freeVars (TFun t1 t2)  = freeVars t1 `Set.union` freeVars t2
+  freeVars (TPair t1 t2) = freeVars t1 `Set.union` freeVars t2
+  freeVars (TList t)     = freeVars t
+  freeVars _             = Set.empty
+  applySub s (TVar n)      = case Map.lookup n s of
+                               Nothing -> TVar n
+                               Just t  -> t
+  applySub s (TFun t1 t2)  = TFun (applySub s t1) (applySub s t2)
+  applySub s (TPair t1 t2) = TPair (applySub s t1) (applySub s t2)
+  applySub s (TList t)     = TList $ applySub s t
+  applySub _ t             = t
 
 instance Types (TClass, Type) where
   freeVars (_, t) = freeVars t
@@ -126,6 +128,10 @@ unify (TFun arg1 res1) (TFun arg2 res2) =
   do argSub <- unify arg1 arg2
      resSub <- unify (applySub argSub res1) (applySub argSub res2)
      return $ argSub `composeSub` resSub
+unify (TPair l1 r1) (TPair l2 r2) =
+  do lSub <- unify l1 l2
+     rSub <- unify (applySub lSub r1) (applySub lSub r2)
+     return $ rSub `composeSub` rSub
 unify (TList t1) (TList t2)        = unify t1 t2
 unify (TVar name) typ              = varBind name typ
 unify typ (TVar name)              = varBind name typ

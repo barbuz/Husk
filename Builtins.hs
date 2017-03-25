@@ -17,6 +17,9 @@ chr = TConc TChar
 lst :: Type -> Type
 lst = TList
 
+tup :: Type -> Type -> Type
+tup = TPair
+
 con :: Type -> (TClass, Type)
 con typ = (Concrete, typ)
 
@@ -50,7 +53,8 @@ commandsList = [
   ('_', bins "neg"),
   ('i', bins "inv"),
   (';', bins "pure"),
-  (':', bins "cat cons snoc pair"),
+  (',', bins "pair"),
+  (':', bins "cat cons snoc"),
   ('m', bins "map"),
   ('z', bins "zip"),
   ('«', bins "foldl"),
@@ -62,10 +66,17 @@ commandsList = [
   ('‼', bins "index"),
   ('↑', bins "take"),
   ('↓', bins "drop"),
+  ('←', bins "head fst"),
+  ('→', bins "last snd"),
+  ('↔', bins "swap rev flip"),
+  ('h', bins "init"),
+  ('t', bins "tail"),
   ('ƒ', bins "fix"),
   ('F', bins "fixp"),
   ('<', bins "lt"),
   ('>', bins "gt"),
+  ('≤', bins "le"),
+  ('≥', bins "ge"),
   ('=', bins "eq"),
   ('≠', bins "neq"),
   ('?', bins "if"),
@@ -106,17 +117,25 @@ builtinsList = [
   ("neg",   forall "n" [num n] $ n ~> n),
   ("inv",   forall "n" [num n] $ n ~> dbl),
 
-  -- List manipulation
+  -- List and pair manipulation
   ("pure",  forall "x" [] $ x ~> lst x),
-  ("pair",  forall "x" [] $ x ~> x ~> lst x),
+  ("pair",  forall "xy" [] $ x ~> y ~> tup x y),
+  ("swap",  forall "xy" [] $ tup x y ~> tup y x),
   ("cons",  forall "x" [] $ x ~> lst x ~> lst x),
   ("cat",   forall "x" [] $ lst x ~> lst x ~> lst x),
   ("snoc",  forall "x" [] $ lst x ~> x ~> lst x),
   ("len",   forall "x" [] $ lst x ~> int),
   ("nlen",  forall "n" [num n] $ n ~> int),
+  ("head",  forall "x" [] $ lst x ~> x),
+  ("last",  forall "x" [] $ lst x ~> x),
+  ("init",  forall "x" [] $ lst x ~> lst x),
+  ("tail",  forall "x" [] $ lst x ~> lst x),
+  ("fst",   forall "xy" [] $ tup x y ~> x),
+  ("snd",   forall "xy" [] $ tup x y ~> y),
   ("index", forall "x" [] $ lst x ~> int ~> x),
   ("take",  forall "x" [] $ int ~> lst x ~> lst x),
   ("drop",  forall "x" [] $ int ~> lst x ~> lst x),
+  ("rev",   forall "x" [] $ lst x ~> lst x),
 
   -- Higher order functions
   ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
@@ -137,6 +156,7 @@ builtinsList = [
   ("listN", forall "xy" [] $ (x ~> lst x ~> y) ~> lst x ~> y),
   ("listF", forall "xy" [] $ y ~> ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   ("listNF",forall "xy" [] $ ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
+  ("flip",  forall "xyz" [] $ (x ~> y ~> z) ~> (y ~> x ~> z)),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

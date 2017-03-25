@@ -10,6 +10,8 @@ class (Show a, Read a, Eq a, Ord a) => Concrete a where
   toTruthy :: a -> Integer
   func_lt :: a -> a -> Integer
   func_gt :: a -> a -> Integer
+  func_le :: a -> a -> Integer
+  func_ge :: a -> a -> Integer
   
   func_eq :: a -> a -> Integer
   func_eq x y = boolToNum $ x == y
@@ -33,6 +35,8 @@ instance Concrete Integer where
   toTruthy = id
   func_lt x y = max 0 (y-x)
   func_gt x y = max 0 (x-y)
+  func_le x y = max 0 (y-x+1)
+  func_ge x y = max 0 (x-y+1)
   func_neq x y = x-y
 
 instance Concrete Double where
@@ -40,6 +44,8 @@ instance Concrete Double where
   toTruthy = roundAway
   func_lt x y = max 0 $ roundAway(y-x)
   func_gt x y = max 0 $ roundAway(x-y)
+  func_le x y = max 0 $ roundAway(y-x+1)
+  func_ge x y = max 0 $ roundAway(x-y+1)
   func_neq x y = roundAway $ x-y
 
 instance Concrete Char where
@@ -47,6 +53,8 @@ instance Concrete Char where
   toTruthy = fromIntegral.ord
   func_lt x y = fromIntegral $ max 0 (ord y - ord x)
   func_gt x y = fromIntegral $ max 0 (ord x - ord y)
+  func_le x y = fromIntegral $ max 0 (ord y - ord x + 1)
+  func_ge x y = fromIntegral $ max 0 (ord x - ord y + 1)
   func_neq x y = fromIntegral $ (ord x)-(ord y)
 
 instance Concrete a => Concrete [a] where
@@ -58,9 +66,24 @@ instance Concrete a => Concrete [a] where
   func_gt x y = case findIndex (uncurry (/=)) (zip x y) of
                   Just i  ->  if x!!i > y!!i then fromIntegral i+1 else 0
                   Nothing ->  0
+  func_le x y = case findIndex (uncurry (/=)) (zip x y) of
+                  Just i  ->  if x!!i < y!!i then fromIntegral i+1 else 0
+                  Nothing ->  min (genericLength x) (genericLength y) + 1
+  func_ge x y = case findIndex (uncurry (/=)) (zip x y) of
+                  Just i  ->  if x!!i > y!!i then fromIntegral i+1 else 0
+                  Nothing ->  min (genericLength x) (genericLength y) + 1
   func_neq x y = case findIndex (uncurry (/=)) (zip x y) of
                   Just i  ->  fromIntegral i+1
                   Nothing ->  0
+
+instance (Concrete a, Concrete b) => Concrete (a, b) where
+  isTruthy (x, y) = isTruthy x && isTruthy y
+  toTruthy (x, y) = toTruthy x * toTruthy y
+  func_lt (x, y) (x', y') = if x == x' then func_lt y y' else func_lt x x'
+  func_gt (x, y) (x', y') = if x == x' then func_gt y y' else func_gt x x'
+  func_le (x, y) (x', y') = if x > x' then func_lt y y' else func_le x x'
+  func_ge (x, y) (x', y') = if x < x' then func_gt y y' else func_ge x x'
+  func_neq (x, y) (x', y') = if x == x' then func_neq y y' else func_neq x x'
 
 class (Num n, Concrete n) => Number n where
   valueOf :: n -> Either Integer Double
@@ -167,8 +190,29 @@ func_snoc x y = x ++ [y]
 func_cat :: [a] -> [a] -> [a]
 func_cat = (++)
 
-func_pair :: a -> a -> [a]
-func_pair x y = [x, y]
+func_head :: [a] -> a
+func_head = head
+
+func_last :: [a] -> a
+func_last = last
+
+func_tail :: [a] -> [a]
+func_tail = tail
+
+func_init :: [a] -> [a]
+func_init = init
+
+func_pair :: a -> b -> (a, b)
+func_pair = (,)
+
+func_swap :: (a,b) -> (b,a)
+func_swap (x,y) = (y,x)
+
+func_fst :: (a,b) -> a
+func_fst = fst
+
+func_snd :: (a,b) -> b
+func_snd = snd
 
 func_map :: (a -> b) -> [a] -> [b]
 func_map = map
@@ -197,6 +241,9 @@ func_nlen = genericLength.show
 func_index :: [a] -> Integer -> a
 func_index = genericIndex
 
+func_rev :: [a] -> [a]
+func_rev = reverse
+
 func_if :: Concrete a => a -> b -> b -> b
 func_if a b c = if isTruthy a then b else c
 
@@ -211,6 +258,9 @@ func_const x _ = x
 
 func_id :: a -> a
 func_id x = x
+
+func_flip :: (a -> b -> c) -> (b -> a -> c)
+func_flip = flip
 
 func_foldl :: (b -> a -> b) -> b -> [a] -> b
 func_foldl = foldl

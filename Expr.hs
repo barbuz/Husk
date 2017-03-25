@@ -35,6 +35,7 @@ instance Show (Lit a) where
 data Type = TVar TLabel
           | TConc Conc
           | TList Type
+          | TPair Type Type
           | TFun Type Type
   deriving (Eq, Ord)
 
@@ -46,6 +47,7 @@ instance Show Type where
   show (TVar name) = name
   show (TConc c) = show c
   show (TList t) = "[" ++ show t ++ "]"
+  show (TPair a b) = "(" ++ show a ++ "," ++ show b ++ ")"
   show (TFun a b) = "(" ++ show a ++ "->" ++ show b ++ ")"
 
 -- Concrete type
@@ -71,10 +73,14 @@ data TClass = Concrete
 -- Just [] ==> Constraint holds (equivalent to no constraints)
 -- Just cs ==> Equivalent to all cs holding
 holds :: (TClass, Type) -> Maybe [(TClass, Type)]
-holds c@(Concrete, TVar _) = Just [c]
-holds (Concrete, TConc _)  = Just []
-holds (Concrete, TList t)  = holds (Concrete, t)
-holds (Concrete, TFun _ _) = Nothing
+holds c@(Concrete, TVar _)    = Just [c]
+holds (Concrete, TConc _)     = Just []
+holds (Concrete, TList t)     = holds (Concrete, t)
+holds (Concrete, TPair t1 t2) = do
+  h1 <- holds (Concrete, t1)
+  h2 <- holds (Concrete, t2)
+  return $ h1 ++ h2
+holds (Concrete, TFun _ _)    = Nothing
 holds c@(Number, TVar _)      = Just [c]
 holds (Number, TConc TInt)    = Just []
 holds (Number, TConc TDouble) = Just []
@@ -99,6 +105,7 @@ typeToHaskell (TConc TInt) = "Integer"
 typeToHaskell (TConc TDouble) = "Double"
 typeToHaskell (TConc TChar) = "Char"
 typeToHaskell (TList t) = "[" ++ typeToHaskell t ++ "]"
+typeToHaskell (TPair s t) = "(" ++ typeToHaskell s ++ "," ++ typeToHaskell t ++ ")"
 typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t ++ ")"
 
 -- Convert classed type to Haskell code
