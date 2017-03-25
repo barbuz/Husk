@@ -166,6 +166,8 @@ builtinsList = [
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> int),
   ("gt",    forall "x" [con x] $ x ~> x ~> int),
+  ("le",    forall "x" [con x] $ x ~> x ~> int),
+  ("ge",    forall "x" [con x] $ x ~> x ~> int),
   ("eq",    forall "x" [con x] $ x ~> x ~> int),
   ("neq",   forall "x" [con x] $ x ~> x ~> int),
   ("if",    forall "xy" [con x] $ x ~> y ~> y ~> y),
