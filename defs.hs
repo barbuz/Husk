@@ -60,21 +60,25 @@ instance Concrete Char where
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
   toTruthy = genericLength
-  func_lt x y = case findIndex (uncurry (/=)) (zip x y) of
-                  Just i  ->  if x!!i < y!!i then fromIntegral i+1 else 0
-                  Nothing ->  0
-  func_gt x y = case findIndex (uncurry (/=)) (zip x y) of
-                  Just i  ->  if x!!i > y!!i then fromIntegral i+1 else 0
-                  Nothing ->  0
-  func_le x y = case findIndex (uncurry (/=)) (zip x y) of
-                  Just i  ->  if x!!i < y!!i then fromIntegral i+1 else 0
-                  Nothing ->  min (genericLength x) (genericLength y) + 1
-  func_ge x y = case findIndex (uncurry (/=)) (zip x y) of
-                  Just i  ->  if x!!i > y!!i then fromIntegral i+1 else 0
-                  Nothing ->  min (genericLength x) (genericLength y) + 1
-  func_neq x y = case findIndex (uncurry (/=)) (zip x y) of
-                  Just i  ->  fromIntegral i+1
-                  Nothing ->  0
+  func_lt = go 1
+    where go n [] (_:_) = n
+          go n (x:xs) (y:ys) | x < y = n
+                             | x > y = 0
+                             | otherwise = go (n+1) xs ys
+          go _ _ _ = 0
+  func_gt x y = func_lt y x
+  func_le = go 1
+    where go n [] _ = n
+          go n (x:xs) (y:ys) | x < y = n
+                             | x > y = 0
+                             | otherwise = go (n+1) xs ys
+          go _ _ _ = 0
+  func_ge x y = func_le y x
+  func_neq = go 1
+    where go n [] [] = 0
+          go n (x:xs) (y:ys) | x /= y = n
+                             | otherwise = go (n+1) xs ys
+          go n _ _ = n
 
 instance (Concrete a, Concrete b) => Concrete (a, b) where
   isTruthy (x, y) = isTruthy x && isTruthy y
