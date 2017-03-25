@@ -131,7 +131,7 @@ unify (TFun arg1 res1) (TFun arg2 res2) =
 unify (TPair l1 r1) (TPair l2 r2) =
   do lSub <- unify l1 l2
      rSub <- unify (applySub lSub r1) (applySub lSub r2)
-     return $ rSub `composeSub` rSub
+     return $ lSub `composeSub` rSub
 unify (TList t1) (TList t2)        = unify t1 t2
 unify (TVar name) typ              = varBind name typ
 unify typ (TVar name)              = varBind name typ
