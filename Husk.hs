@@ -41,6 +41,7 @@ consoleOpts = [Option ['i'] ["infer"] (NoArg InferType) "only infer type(s) of g
 produceFile :: String -> CType -> Exp (Lit CType) -> String
 produceFile defs typ@(CType _ t) expr =
   defs ++
+  "\n"++
   "func :: " ++ cTypeToHaskell typ ++ "\n" ++
   "func = " ++ expToHaskell expr ++ "\n" ++
   "main :: IO ()\n" ++
