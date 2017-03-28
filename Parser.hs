@@ -95,16 +95,16 @@ number = do
   prefix <- many1 digit
   maybeSuffix <- optionMaybe $ char '.' >> many digit
   case maybeSuffix of
-    Nothing     -> return $ ELit [Lit prefix $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n"]
-    Just []     -> return $ ELit [Lit (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
-    Just suffix -> return $ ELit [Lit (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
+    Nothing     -> return $ ELit [Lit "" prefix $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n"]
+    Just []     -> return $ ELit [Lit "" (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
+    Just suffix -> return $ ELit [Lit "" (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
  
 -- Parse a character
 character :: Parser (Exp [Lit Scheme])
 character = do
   quote <- char '\''
   c <- anyChar
-  return $ ELit [Lit (show c) $ Scheme [] $ CType [] $ TConc TChar]
+  return $ ELit [Lit "" (show c) $ Scheme [] $ CType [] $ TConc TChar]
 
 -- Parse a string
 str :: Parser (Exp [Lit Scheme])
@@ -112,7 +112,7 @@ str = do
   quote <- char '"'
   s <- many $ noneOf "\""
   quote2 <- char '"'
-  return $ ELit [Lit (show s) $ Scheme [] $ CType [] $ TList (TConc TChar)]
+  return $ ELit [Lit "" (show s) $ Scheme [] $ CType [] $ TList (TConc TChar)]
 
 -- Parse a generalized lambda
 lambda :: Parser (Exp [Lit Scheme])

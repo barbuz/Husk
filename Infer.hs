@@ -57,8 +57,8 @@ instance Types Scheme where
   applySub s (Scheme vars t) = Scheme vars $ applySub (foldr Map.delete s vars) t
 
 instance (Types a) => Types (Lit a) where
-  freeVars (Lit _ typ) = freeVars typ
-  applySub s (Lit name typ) = Lit name $ applySub s typ
+  freeVars (Lit _ _ typ) = freeVars typ
+  applySub s (Lit prefix name typ) = Lit prefix name $ applySub s typ
 
 instance (Types a) => Types (Exp (Lit a)) where
   freeVars _ = error "freeVars not implemented for expressions"
@@ -148,8 +148,9 @@ checkCons (c:cs) = case holds c of
 
 -- Infer type of literal
 inferLit :: Lit Scheme -> Infer (Sub, CType, Exp (Lit CType))
-inferLit lit@(Lit name typ) = do newTyp <- instantiate typ
-                                 return (nullSub, newTyp, ELit $ Lit name newTyp)
+inferLit lit@(Lit prefix name typ) =
+  do newTyp <- instantiate typ
+     return (nullSub, newTyp, ELit $ Lit prefix name newTyp)
 
 -- Infer type of []-overloaded expression
 -- All free expression variables must be bound in environment (otherwise it crashes)
@@ -213,7 +214,7 @@ infer env (ELet name exp body) =
        let resSub = expSub `composeSub` bodySub
        cons <- checkCons $ nub $ applySub resSub $ expCons ++ bodyCons
        return (resSub, bodyTyp, ELet name (applySub resSub expExp) (applySub resSub bodyExp))
-         where fixE = ELit [Lit "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
+         where fixE = ELit [Lit "func_" "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
 
 -- Main type inference function
 typeInference :: Map.Map ELabel Scheme -> Exp [Lit Scheme] -> Infer (Sub, CType, Exp (Lit CType))
@@ -252,19 +253,19 @@ e1 = ELet "id"
      (EApp (EVar "id") (EVar "id"))
 
 e2 = EApp
-     (ELit [Lit "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
-     (ELit [Lit "2" $ Scheme [] $ CType [] $ TConc TInt])
+     (ELit [Lit "" "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Lit "" "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
+     (ELit [Lit "" "2" $ Scheme [] $ CType [] $ TConc TInt])
 
 e3 = EApp
-     (ELit [Lit "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
-     (ELit [Lit "'a'" $ Scheme [] $ CType [] $ TConc TChar])
+     (ELit [Lit "" "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Lit "" "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
+     (ELit [Lit "" "'a'" $ Scheme [] $ CType [] $ TConc TChar])
 
 e4 = EApp
-     (ELit [Lit "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TInt)) (TList (TConc TInt)),
-            Lit "not" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TFun (TVar "x") (TConc TInt)])
-     (ELit [Lit "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
+     (ELit [Lit "" "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TInt)) (TList (TConc TInt)),
+            Lit "" "not" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TFun (TVar "x") (TConc TInt)])
+     (ELit [Lit "" "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
 
 e5 = EAbs "f" $
      ELet "x"
@@ -273,6 +274,6 @@ e5 = EAbs "f" $
 
 e6 = EApp
      (EApp
-      (ELit [Lit "com" $ Scheme ["a","b","c"] $ CType [] $ (TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> (TVar "a" ~> TVar "c")])
-      (ELit [Lit "consume" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TVar "x" ~> TConc TInt]))
-     (ELit [Lit "produce" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TConc TInt ~> TVar "x"])
+      (ELit [Lit "" "com" $ Scheme ["a","b","c"] $ CType [] $ (TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> (TVar "a" ~> TVar "c")])
+      (ELit [Lit "" "consume" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TVar "x" ~> TConc TInt]))
+     (ELit [Lit "" "produce" $ Scheme ["x"] $ CType [(Concrete, TVar "x")] $ TConc TInt ~> TVar "x"])
