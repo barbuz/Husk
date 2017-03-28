@@ -33,45 +33,45 @@ func_and' x y = func_and (toTruthy x) (toTruthy y)
 instance Concrete Integer where
   isTruthy = (/= 0)
   toTruthy = id
-  func_lt x y = max 0 (y-x)
-  func_gt x y = max 0 (x-y)
-  func_le x y = max 0 (y-x+1)
-  func_ge x y = max 0 (x-y+1)
-  func_neq x y = x-y
+  func_lt y x = max 0 (y-x)
+  func_gt y x = max 0 (x-y)
+  func_le y x = max 0 (y-x+1)
+  func_ge y x = max 0 (x-y+1)
+  func_neq y x = abs $ x-y
 
 instance Concrete Double where
   isTruthy = (/= 0)
   toTruthy = roundAway
-  func_lt x y = max 0 $ roundAway(y-x)
-  func_gt x y = max 0 $ roundAway(x-y)
-  func_le x y = max 0 $ roundAway(y-x+1)
-  func_ge x y = max 0 $ roundAway(x-y+1)
-  func_neq x y = roundAway $ x-y
+  func_lt y x = max 0 $ roundAway(y-x)
+  func_gt y x = max 0 $ roundAway(x-y)
+  func_le y x = max 0 $ roundAway(y-x+1)
+  func_ge y x = max 0 $ roundAway(x-y+1)
+  func_neq y x = abs.roundAway $ x-y
 
 instance Concrete Char where
   isTruthy = (/= 0).ord
   toTruthy = fromIntegral.ord
-  func_lt x y = fromIntegral $ max 0 (ord y - ord x)
-  func_gt x y = fromIntegral $ max 0 (ord x - ord y)
-  func_le x y = fromIntegral $ max 0 (ord y - ord x + 1)
-  func_ge x y = fromIntegral $ max 0 (ord x - ord y + 1)
-  func_neq x y = fromIntegral $ (ord x)-(ord y)
+  func_lt y x = fromIntegral $ max 0 (ord y - ord x)
+  func_gt y x = fromIntegral $ max 0 (ord x - ord y)
+  func_le y x = fromIntegral $ max 0 (ord y - ord x + 1)
+  func_ge y x = fromIntegral $ max 0 (ord x - ord y + 1)
+  func_neq y x = abs.fromIntegral $ (ord x)-(ord y)
 
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
   toTruthy = genericLength
   func_lt = go 1
     where go n [] (_:_) = n
-          go n (x:xs) (y:ys) | x < y = n
+          go n (y:ys) (x:xs) | x < y = n
                              | x > y = 0
-                             | otherwise = go (n+1) xs ys
+                             | otherwise = go (n+1) ys xs
           go _ _ _ = 0
   func_gt x y = func_lt y x
   func_le = go 1
     where go n [] _ = n
-          go n (x:xs) (y:ys) | x < y = n
+          go n (y:ys) (x:xs) | x < y = n
                              | x > y = 0
-                             | otherwise = go (n+1) xs ys
+                             | otherwise = go (n+1) ys xs
           go _ _ _ = 0
   func_ge x y = func_le y x
   func_neq = go 1
