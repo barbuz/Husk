@@ -236,8 +236,14 @@ func_select x y = [b | (a, b) <- zip x y, isTruthy a]
 func_scanl :: (b -> a -> b) -> b -> [a] -> [b]
 func_scanl = scanl
 
+func_scanl1 :: (a -> a -> a) -> [a] -> [a]
+func_scanl1 = scanl1
+
 func_scanr :: (a -> b -> b) -> b -> [a] -> [b]
 func_scanr = scanr
+
+func_scanr1 :: (a -> a -> a) -> [a] -> [a]
+func_scanr1 = scanr1
 
 func_len :: [a] -> Integer
 func_len = genericLength
@@ -274,8 +280,14 @@ func_flip = flip
 func_foldl :: (b -> a -> b) -> b -> [a] -> b
 func_foldl = foldl
 
+func_foldl1 :: (a -> a -> a) -> [a] -> a
+func_foldl1 = foldl1
+
 func_foldr :: (a -> b -> b) -> b -> [a] -> b
 func_foldr = foldr
+
+func_foldr1 :: (a -> a -> a) -> [a] -> a
+func_foldr1 = foldr1
 
 
 func_take :: Integer -> [a] -> [a]
