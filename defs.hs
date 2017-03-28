@@ -134,13 +134,13 @@ func_addDI :: Double -> Integer -> Double
 func_addDI a b = a + fromInteger b
 
 func_sub :: Number n => n -> n -> n
-func_sub = (-)
+func_sub b a = b - a
 
 func_subID :: Integer -> Double -> Double
-func_subID a b = fromInteger a - b
+func_subID b a = a - fromInteger b
 
 func_subDI :: Double -> Integer -> Double
-func_subDI a b = a - fromInteger b
+func_subDI b a = fromInteger a - b
 
 func_mul :: Number n => n -> n -> n
 func_mul = (*)
@@ -152,28 +152,28 @@ func_mulDI :: Double -> Integer -> Double
 func_mulDI a b = a * fromInteger b
 
 func_div :: (Number m, Number n) => m -> n -> Double
-func_div a b = x / y
+func_div b a = x / y
   where x | Left n  <- valueOf a = fromInteger n
           | Right r <- valueOf a = r
         y | Left n  <- valueOf b = fromInteger n
           | Right r <- valueOf b = r
 
 func_idiv :: (Number m, Number n) => m -> n -> Integer
-func_idiv a b | Left m <- valueOf a,
+func_idiv b a | Left m <- valueOf a,
                 Left n <- valueOf b  = m `div` n
-              | Left m <- valueOf a  = func_idiv (fromInteger m :: Double) b
-              | Left n <- valueOf b  = func_idiv a (fromInteger n :: Double)
+              | Left m <- valueOf a  = func_idiv b (fromInteger m :: Double)
+              | Left n <- valueOf b  = func_idiv (fromInteger n :: Double) a
               | Right r <- valueOf a,
                 Right s <- valueOf b = floor $ r / s
 
 func_mod :: Number n => n -> n -> n
-func_mod a b = a - fromInteger (func_idiv a b) * b
+func_mod b a = a - fromInteger (func_idiv b a) * b
 
 func_modID :: Integer -> Double -> Double
-func_modID a b = fromInteger a - fromInteger (func_idiv a b) * b
+func_modID b a = a - fromInteger (func_idiv b a * b)
 
 func_modDI :: Double -> Integer -> Double
-func_modDI a b = a - fromInteger (func_idiv a b * b)
+func_modDI b a = fromInteger a - fromInteger (func_idiv b a) * b
 
 func_neg :: Number n => n -> n
 func_neg x = -x
