@@ -44,7 +44,7 @@ commands = map fst commandsList
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
 commandsList = [
-  ('+', bins "add addDI addID"),
+  ('+', bins "add addDI addID cat"),
   ('-', bins "sub subDI subID"),
   ('*', bins "mul mulDI mulID"),
   ('/', bins "div"),
@@ -54,8 +54,8 @@ commandsList = [
   ('i', bins "inv"),
   (';', bins "pure"),
   (',', bins "pair"),
-  (':', bins "cat cons snoc"),
-  ('m', bins "map"),
+  (':', bins "cons snoc"),
+  ('m', bins "map mapr"),
   ('z', bins "zip"),
   ('«', bins "foldl"),
   ('»', bins "foldr"),
@@ -64,8 +64,8 @@ commandsList = [
   ('f', bins "filter select"),
   ('#', bins "len nlen"),
   ('‼', bins "index"),
-  ('↑', bins "take"),
-  ('↓', bins "drop"),
+  ('↑', bins "take takew"),
+  ('↓', bins "drop dropw"),
   ('←', bins "head fst"),
   ('→', bins "last snd"),
   ('↔', bins "swap rev flip"),
@@ -132,9 +132,11 @@ builtinsList = [
   ("tail",  forall "x" [] $ lst x ~> lst x),
   ("fst",   forall "xy" [] $ tup x y ~> x),
   ("snd",   forall "xy" [] $ tup x y ~> y),
-  ("index", forall "x" [] $ lst x ~> int ~> x),
+  ("index", forall "x" [] $ int ~> lst x ~> x),
   ("take",  forall "x" [] $ int ~> lst x ~> lst x),
+  ("takew", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("drop",  forall "x" [] $ int ~> lst x ~> lst x),
+  ("dropw", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("rev",   forall "x" [] $ lst x ~> lst x),
 
   -- Higher order functions
@@ -143,6 +145,7 @@ builtinsList = [
   ("com",   forall "xyz" [] $ (y ~> z) ~> (x ~> y) ~> (x ~> z)),
   ("app",   forall "xy" [] $ (x ~> y) ~> (x ~> y)),
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
+  ("mapr",  forall "xy" [] $ lst (x ~> y) ~> x ~> lst y),
   ("zip",   forall "xyz" [] $ (x ~> y ~> z) ~> (lst x ~> lst y ~> lst z)),
   ("fix",   forall "x" [] $ (x ~> x) ~> x),
   ("fixp",  forall "x" [con x] $ (x ~> x) ~> x ~> x),

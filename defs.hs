@@ -221,6 +221,9 @@ func_snd = snd
 func_map :: (a -> b) -> [a] -> [b]
 func_map = map
 
+func_mapr :: [(a -> b)] -> a -> [b]
+func_mapr fs a = [f a | f<-fs]
+
 func_zip :: (a -> b -> c) -> [a] -> [b] -> [c]
 func_zip = zipWith
 
@@ -242,8 +245,10 @@ func_len = genericLength
 func_nlen :: Number a => a -> Integer
 func_nlen = genericLength.show
 
-func_index :: [a] -> Integer -> a
-func_index = genericIndex
+func_index :: Integer -> [a] -> a
+func_index i
+  | i>0       = flip genericIndex (i-1)
+  | otherwise = flip genericIndex (-i-1).reverse
 
 func_rev :: [a] -> [a]
 func_rev = reverse
@@ -278,10 +283,22 @@ func_take n
   | n >= 0    = genericTake n
   | otherwise = reverse . genericTake (-n) . reverse
 
+func_takew :: Concrete b => (a -> b) -> [a] -> [a]
+func_takew _ [] = []
+func_takew f (x:xs)
+  | isTruthy(f x) = x : func_takew f xs
+  | otherwise     = []
+
 func_drop :: Integer -> [a] -> [a]
 func_drop n
   | n >= 0    = genericDrop n
   | otherwise = reverse . genericDrop (-n) . reverse
+
+func_dropw :: Concrete b => (a -> b) -> [a] -> [a]
+func_dropw _ [] = []
+func_dropw f (x:xs)
+  | isTruthy(f x) = func_dropw f xs
+  | otherwise     = x:xs
 
 func_list :: b -> (a -> [a] -> b) -> [a] -> b
 func_list c _ [] = c
