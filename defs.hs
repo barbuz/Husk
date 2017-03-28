@@ -89,7 +89,7 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   func_ge (x, y) (x', y') = if x < x' then func_gt y y' else func_ge x x'
   func_neq (x, y) (x', y') = if x == x' then func_neq y y' else func_neq x x'
 
-class (Num n, Concrete n) => Number n where
+class (Num n, Concrete n, Enum n) => Number n where
   valueOf :: n -> Either Integer Double
 
 instance Number Integer where
@@ -251,6 +251,12 @@ func_len = genericLength
 func_nlen :: Number a => a -> Integer
 func_nlen = genericLength.show
 
+func_countf :: Concrete b => (a -> b) -> [a] -> Integer
+func_countf c = genericLength . filter (isTruthy . c)
+
+func_count :: Concrete a => a -> [a] -> Integer
+func_count x = genericLength . filter (== x)
+
 func_index :: Integer -> [a] -> a
 func_index i
   | i>0       = flip genericIndex (i-1)
@@ -258,6 +264,13 @@ func_index i
 
 func_rev :: [a] -> [a]
 func_rev = reverse
+
+func_range :: (Number n, Number m) => n -> [m]
+func_range x | Left n <- valueOf x  = [1, 2 .. fromInteger n]
+             | Right r <- valueOf x = [1, 2 .. fromInteger $ floor r]
+
+func_nats :: Number n => [n]
+func_nats = [1, 2 ..]
 
 func_if :: Concrete a => a -> b -> b -> b
 func_if a b c = if isTruthy a then b else c

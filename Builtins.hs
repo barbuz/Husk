@@ -62,7 +62,10 @@ commandsList = [
   ('◄', bins "scanl scanl1"),
   ('►', bins "scanr scanr1"),
   ('f', bins "filter select"),
-  ('#', bins "len nlen"),
+  ('L', bins "len nlen"),
+  ('#', bins "countf count"),
+  ('r', bins "range"),
+  ('N', bins "nats"),
   ('‼', bins "index"),
   ('↑', bins "take takew"),
   ('↓', bins "drop dropw"),
@@ -92,7 +95,7 @@ commandsList = [
 -- Compute builtins from space-delimited list
 bins :: String -> Exp [Lit Scheme]
 bins names = ELit $ map getBuiltin $ words names
-  where getBuiltin name | Just typ <- lookup name builtinsList = Lit name typ
+  where getBuiltin name | Just typ <- lookup name builtinsList = Lit "func_" name typ
         getBuiltin name = error $ "No builtin named " ++ name
 
 -- Assoc list of builtins
@@ -126,6 +129,8 @@ builtinsList = [
   ("snoc",  forall "x" [] $ lst x ~> x ~> lst x),
   ("len",   forall "x" [] $ lst x ~> int),
   ("nlen",  forall "n" [num n] $ n ~> int),
+  ("countf",forall "xy" [con y] $ (x ~> y) ~> lst x ~> int),
+  ("count", forall "x" [con x] $ x ~> lst x ~> int),
   ("head",  forall "x" [] $ lst x ~> x),
   ("last",  forall "x" [] $ lst x ~> x),
   ("init",  forall "x" [] $ lst x ~> lst x),
@@ -138,6 +143,8 @@ builtinsList = [
   ("drop",  forall "x" [] $ int ~> lst x ~> lst x),
   ("dropw", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("rev",   forall "x" [] $ lst x ~> lst x),
+  ("range", forall "mn" [num m,num n] $ m ~> lst n),
+  ("nats",  forall "n" [num n] $ lst n),
 
   -- Higher order functions
   ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),

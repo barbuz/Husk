@@ -27,11 +27,11 @@ instance (Show lit) => Show (Exp lit) where
   show (ELet name exp body) = "let " ++ name ++ "=(" ++ show exp ++ ") in " ++ show body
 
 -- Literal in expression
-data Lit a = Lit String a
+data Lit a = Lit String String a
   deriving (Eq, Ord)
 
 instance Show (Lit a) where
-  show (Lit n s) = n
+  show (Lit _ n s) = n
 
 -- Type of expression with unbound variables
 data Type = TVar TLabel
@@ -119,9 +119,7 @@ cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map showCons cons) ++ 
 -- Convert expression to Haskell code
 expToHaskell :: Exp (Lit CType) -> String
 expToHaskell (EVar name) = name
-expToHaskell (ELit (Lit name typ))
-  | (CType _ (TFun _ _)) <- typ = "(func_" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
-  | otherwise = "(" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
+expToHaskell (ELit (Lit prefix name typ)) = "(" ++ prefix ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
 expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
 expToHaskell (EOp _ _ _) = error "expToHaskell not defined for EOp"
 expToHaskell (EAbs name exp) = "(\\ " ++ name ++ " -> " ++ expToHaskell exp ++ ")"
