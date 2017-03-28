@@ -80,7 +80,7 @@ lineExpr lineNum = do
 expression :: Parser (Exp [Lit Scheme])
 expression = mkPrattParser opTable term
   where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
-        opTable = [[InfixL $ optional (char ' ') >> return (\a b -> EApp (EApp invisibleOp a) b)]]
+        opTable = [[InfixL $ optional (char ' ') >> return (EOp invisibleOp)]]
         invisibleOp = bins "com3 com2 com app"
 
 -- Parse a builtin

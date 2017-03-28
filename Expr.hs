@@ -13,6 +13,7 @@ type ELabel = String
 data Exp lit = EVar ELabel
              | ELit lit
              | EApp (Exp lit) (Exp lit)
+             | EOp (Exp lit) (Exp lit) (Exp lit)
              | EAbs ELabel (Exp lit)
              | ELet ELabel (Exp lit) (Exp lit)
   deriving (Eq, Ord)
@@ -21,6 +22,7 @@ instance (Show lit) => Show (Exp lit) where
   show (EVar name) = name
   show (ELit lit) = show lit
   show (EApp a b) = show a ++ "(" ++ show b ++ ")"
+  show (EOp a b c) = show $ EApp (EApp a b) c
   show (EAbs name exp) = "(\\" ++ name ++ "." ++ show exp ++ ")"
   show (ELet name exp body) = "let " ++ name ++ "=(" ++ show exp ++ ") in " ++ show body
 
@@ -121,6 +123,7 @@ expToHaskell (ELit (Lit name typ))
   | (CType _ (TFun _ _)) <- typ = "(func_" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
   | otherwise = "(" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
 expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
+expToHaskell (EOp _ _ _) = error "expToHaskell not defined for EOp"
 expToHaskell (EAbs name exp) = "(\\ " ++ name ++ " -> " ++ expToHaskell exp ++ ")"
 expToHaskell (ELet name exp body) = "(let " ++ name ++ " = " ++ expToHaskell exp ++ " in " ++ expToHaskell body ++ ")"
 

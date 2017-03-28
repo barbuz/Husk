@@ -65,6 +65,7 @@ instance (Types a) => Types (Exp (Lit a)) where
   applySub s e@(EVar _) = e
   applySub s (ELit l)     = ELit $ applySub s l
   applySub s (EApp f x)   = EApp (applySub s f) (applySub s x)
+  applySub s (EOp _ _ _)  = error "applySub not implemented for EOp"
   applySub s (EAbs n e)   = EAbs n $ applySub s e
   applySub s (ELet n e b) = ELet n (applySub s e) (applySub s b)
 
@@ -185,6 +186,21 @@ infer env exp@(EApp fun arg) =
      let resSub = uniSub `composeSub` argSub `composeSub` funSub
      cons <- checkCons $ nub $ applySub resSub $ funCons ++ argCons
      return (resSub, CType cons $ applySub resSub newVar, EApp (applySub resSub funExp) (applySub resSub argExp))
+
+-- Infix operator: infer as binary function, but in order first arg -> second arg -> operator
+-- Replace with two function applications in result
+infer env exp@(EOp op argL argR) =
+  do newVar <- newTVar "c"
+     (lSub, CType lCons lTyp, lExp) <- infer env argL
+     (rSub, CType rCons rTyp, rExp) <- infer (applySub lSub env) argR
+     let argSub = lSub `composeSub` rSub
+     (opSub, CType opCons opTyp, opExp) <- infer (applySub argSub env) op
+     uniSub <- unify (applySub argSub opTyp) (TFun lTyp $ TFun rTyp newVar)
+     let resSub = uniSub `composeSub` opSub `composeSub` argSub
+     cons <- checkCons $ nub $ applySub resSub $ opCons ++ rCons ++ lCons
+     return (resSub,
+             CType cons $ applySub resSub newVar,
+             EApp (EApp (applySub resSub opExp) (applySub resSub lExp)) (applySub resSub rExp))
 
 -- Let binding: infer type of var from fix-enhanced exp, generalize to polytype, infer body, check and reduce constraints
 infer env (ELet name exp body) =
