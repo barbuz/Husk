@@ -89,7 +89,7 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   func_ge (x, y) (x', y') = if x < x' then func_gt y y' else func_ge x x'
   func_neq (x, y) (x', y') = if x == x' then func_neq y y' else func_neq x x'
 
-class (Num n, Concrete n, Enum n) => Number n where
+class (Num n, Concrete n, Enum n, Real n) => Number n where
   valueOf :: n -> Either Integer Double
 
 instance Number Integer where
@@ -182,6 +182,16 @@ func_inv :: Number n => n -> Double
 func_inv x | Left n  <- valueOf x = recip $ fromInteger n
            | Right r <- valueOf x = recip r
 
+-- Triangular numbers: sum of all numbers in [1..n]
+func_trianI :: Integer -> Integer
+func_trianI n =  div (n*(n+1)) 2
+
+func_trianD :: Double -> Double
+func_trianD r = r*(r+1)/2
+
+func_fact :: Number n => n -> n
+func_fact n = product [1..n]
+
 func_pure :: a -> [a]
 func_pure = (: [])
 
@@ -271,6 +281,18 @@ func_range x | Left n <- valueOf x  = [1, 2 .. fromInteger n]
 
 func_nats :: Number n => [n]
 func_nats = [1, 2 ..]
+
+func_sum :: Number n => [n] -> n
+func_sum = sum
+
+func_prod :: Number n => [n] -> n
+func_prod = product
+
+func_concat :: [[a]] -> [a]
+func_concat = concat
+
+func_cartes :: [[a]] -> [[a]]
+func_cartes = mapM id
 
 func_if :: Concrete a => a -> b -> b -> b
 func_if a b c = if isTruthy a then b else c

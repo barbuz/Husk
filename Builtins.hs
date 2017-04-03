@@ -89,7 +89,9 @@ commandsList = [
   ('S', bins "hook"),
   ('K', bins "const"),
   ('I', bins "id"),
-  ('Λ', bins "list listN listF listNF")
+  ('Λ', bins "list listN listF listNF"),
+  ('Σ', bins "sum trianI trianD concat"),
+  ('Π', bins "prod fact cartes")
   ]
 
 -- Compute builtins from space-delimited list
@@ -119,6 +121,9 @@ builtinsList = [
   ("modDI", simply $ dbl ~> int ~> dbl),
   ("neg",   forall "n" [num n] $ n ~> n),
   ("inv",   forall "n" [num n] $ n ~> dbl),
+  ("trianI",simply $ int ~> int),
+  ("trianD",simply $ dbl ~> dbl),
+  ("fact",  forall "n" [num n] $ n ~> n),
 
   -- List and pair manipulation
   ("pure",  forall "x" [] $ x ~> lst x),
@@ -145,6 +150,10 @@ builtinsList = [
   ("rev",   forall "x" [] $ lst x ~> lst x),
   ("range", forall "mn" [num m,num n] $ m ~> lst n),
   ("nats",  forall "n" [num n] $ lst n),
+  ("concat",forall "x" [] $ lst (lst x) ~> lst x),
+  ("sum",   forall "n" [num n] $ lst n ~> n),
+  ("prod",  forall "n" [num n] $ lst n ~> n),
+  ("cartes",forall "x" [] $ lst (lst x) ~> lst (lst x)),
 
   -- Higher order functions
   ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
