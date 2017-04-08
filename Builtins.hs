@@ -91,7 +91,9 @@ commandsList = [
   ('I', bins "id"),
   ('Λ', bins "list listN listF listNF"),
   ('Σ', bins "sum trianI trianD concat"),
-  ('Π', bins "prod fact cartes")
+  ('Π', bins "prod fact cartes"),
+  ('§', bins "fork fork2"),
+  ('‡', bins "repeat")
   ]
 
 -- Compute builtins from space-delimited list
@@ -156,14 +158,9 @@ builtinsList = [
   ("cartes",forall "x" [] $ lst (lst x) ~> lst (lst x)),
 
   -- Higher order functions
-  ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
-  ("com2",  forall "xyzu" [] $ (z ~> u) ~> (x ~> y ~> z) ~> (x ~> y ~> u)),
-  ("com",   forall "xyz" [] $ (y ~> z) ~> (x ~> y) ~> (x ~> z)),
-  ("app",   forall "xy" [] $ (x ~> y) ~> (x ~> y)),
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
   ("mapr",  forall "xy" [] $ lst (x ~> y) ~> x ~> lst y),
   ("zip",   forall "xyz" [] $ (x ~> y ~> z) ~> (lst x ~> lst y ~> lst z)),
-  ("fix",   forall "x" [] $ (x ~> x) ~> x),
   ("fixp",  forall "x" [con x] $ (x ~> x) ~> x ~> x),
   ("filter",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("select",forall "xy" [con x] $ lst x ~> lst y ~> lst y),
@@ -179,12 +176,20 @@ builtinsList = [
   ("listN", forall "xy" [] $ (x ~> lst x ~> y) ~> lst x ~> y),
   ("listF", forall "xy" [] $ y ~> ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   ("listNF",forall "xy" [] $ ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
-  ("flip",  forall "xyz" [] $ (x ~> y ~> z) ~> (y ~> x ~> z)),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
   ("const", forall "xy" [] $ x ~> y ~> x),
   ("id",    forall "x" [] $ x ~> x),
+  ("fix",   forall "x" [] $ (x ~> x) ~> x),
+  ("flip",  forall "xyz" [] $ (x ~> y ~> z) ~> (y ~> x ~> z)),
+  ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
+  ("com2",  forall "xyzu" [] $ (z ~> u) ~> (x ~> y ~> z) ~> (x ~> y ~> u)),
+  ("com",   forall "xyz" [] $ (y ~> z) ~> (x ~> y) ~> (x ~> z)),
+  ("app",   forall "xy" [] $ (x ~> y) ~> x ~> y),
+  ("fork",  forall "xyzu" [] $ (x ~> y ~> z) ~> (u ~> x) ~> (u ~> y) ~> u ~> z),
+  ("fork2", forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> v ~> x) ~> (u ~> v ~> y) ~> u ~> v ~> z),
+  ("repeat",forall "xy" [] $ (x ~> x ~> y) ~> x ~> y),
 
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> int),
