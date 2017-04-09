@@ -110,9 +110,22 @@ character = do
 str :: Parser (Exp [Lit Scheme])
 str = do
   quote <- char '"'
-  s <- many $ noneOf "\""
-  quote2 <- char '"'
+  s <- content
+  quote2 <- (char '"' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
   return $ ELit [Lit "" (show s) $ Scheme [] $ CType [] $ TList (TConc TChar)]
+  where
+    content = do
+      codedText <- many $ noneOf "\"\n\\"
+      plainText <- return $ map decode codedText
+      maybeEscape <- optionMaybe $ char '\\' >> anyChar
+      case maybeEscape of
+        Nothing -> return plainText
+        Just c -> do plainText2 <- content; return $ plainText++c:plainText2
+    
+    decode '¶' = '\n'
+    decode '¨' = '"'
+    decode '¦' = '\\'
+    decode  c  =  c
 
 -- Parse a generalized lambda
 lambda :: Parser (Exp [Lit Scheme])
