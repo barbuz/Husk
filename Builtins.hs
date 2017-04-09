@@ -93,7 +93,7 @@ commandsList = [
   ('Σ', bins "sum trianI trianD concat"),
   ('Π', bins "prod fact cartes"),
   ('§', bins "fork fork2"),
-  ('‡', bins "repeat")
+  ('‡', bins "argdup")
   ]
 
 -- Compute builtins from space-delimited list
@@ -189,7 +189,7 @@ builtinsList = [
   ("app",   forall "xy" [] $ (x ~> y) ~> x ~> y),
   ("fork",  forall "xyzu" [] $ (x ~> y ~> z) ~> (u ~> x) ~> (u ~> y) ~> u ~> z),
   ("fork2", forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> v ~> x) ~> (u ~> v ~> y) ~> u ~> v ~> z),
-  ("repeat",forall "xy" [] $ (x ~> x ~> y) ~> x ~> y),
+  ("argdup",forall "xy" [] $ (x ~> x ~> y) ~> x ~> y),
 
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> int),

@@ -371,5 +371,5 @@ func_fork f g h x = f (g x) (h x)
 func_fork2 :: (a -> b -> c) -> (x -> y -> a) -> (x -> y -> b) -> x -> y -> c
 func_fork2 f g h x y = f (g x y) (h x y)
 
-func_repeat :: (a -> a -> b) -> a -> b
-func_repeat f x = f x x
+func_argdup :: (a -> a -> b) -> a -> b
+func_argdup f x = f x x
