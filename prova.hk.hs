@@ -294,14 +294,8 @@ func_concat = concat
 func_cartes :: [[a]] -> [[a]]
 func_cartes = mapM id
 
-func_if :: Concrete a => b -> b -> a -> b
-func_if b c a = if isTruthy a then b else c
-
-func_if2 :: Concrete a => (a->b) -> b -> a -> b
-func_if2 f b a = if isTruthy a then f a else b
-
-func_fif :: Concrete a => (x->a) -> (x->b) -> (x->b) -> x -> b
-func_fif f g h x = if isTruthy (f x) then g x else h x
+func_if :: Concrete a => a -> b -> b -> b
+func_if a b c = if isTruthy a then b else c
 
 func_not :: Concrete a => a -> Integer
 func_not a = if isTruthy a then 0 else 1
@@ -379,3 +373,7 @@ func_fork2 f g h x y = f (g x y) (h x y)
 
 func_argdup :: (a -> a -> b) -> a -> b
 func_argdup f x = f x x
+func :: (Integer -> Integer)
+func = (let sub1 = (((func_app::((a5 -> (a5 -> a5)) -> (a5 -> (a5 -> a5)))))((func_add::(Number a5) => (a5 -> (a5 -> a5)))))((1::(Number a5) => a5)) in sub1)
+main :: IO ()
+main = do{[arg1] <- getArgs; let{res = func (read arg1)}; putStrLn (show res)}
