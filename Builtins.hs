@@ -82,8 +82,7 @@ commandsList = [
   ('≥', bins "ge"),
   ('=', bins "eq"),
   ('≠', bins "neq"),
-  ('?', bins "if if2"),
-  ('¿', bins "fif"),
+  ('?', bins "if if2 fif"),
   ('¬', bins "not"),
   ('|', bins "or or'"),
   ('&', bins "and and'"),
@@ -94,7 +93,8 @@ commandsList = [
   ('Σ', bins "sum trianI trianD concat"),
   ('Π', bins "prod fact cartes"),
   ('§', bins "fork fork2"),
-  ('‡', bins "argdup")
+  ('‡', bins "argdup"),
+  ('∞', bins "iter")
   ]
 
 -- Compute builtins from space-delimited list
@@ -177,6 +177,7 @@ builtinsList = [
   ("listN", forall "xy" [] $ (x ~> lst x ~> y) ~> lst x ~> y),
   ("listF", forall "xy" [] $ y ~> ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   ("listNF",forall "xy" [] $ ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
+  ("iter",  forall "x" [] $ (x ~> x) ~> x ~> lst x),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

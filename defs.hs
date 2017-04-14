@@ -379,3 +379,6 @@ func_fork2 f g h x y = f (g x y) (h x y)
 
 func_argdup :: (a -> a -> b) -> a -> b
 func_argdup f x = f x x
+
+func_iter :: (a -> a) -> a -> [a]
+func_iter = iterate
