@@ -134,7 +134,7 @@ func_addDI :: Double -> Integer -> Double
 func_addDI a b = a + fromInteger b
 
 func_sub :: Number n => n -> n -> n
-func_sub b a = b - a
+func_sub b a = a - b
 
 func_subID :: Integer -> Double -> Double
 func_subID b a = a - fromInteger b
