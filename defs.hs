@@ -353,6 +353,12 @@ func_dropw f (x:xs)
   | isTruthy(f x) = func_dropw f xs
   | otherwise     = x:xs
 
+func_span :: Concrete b => (a -> b) -> [a] -> ([a],[a])
+func_span f xs = go f ([],xs)
+  where go f result@(hs,(t:ts)) | isTruthy(f t) = go f (hs++[t],ts)
+                                | otherwise     = result
+        go f (hs,[]) = (hs,[])
+
 func_list :: b -> (a -> [a] -> b) -> [a] -> b
 func_list c _ [] = c
 func_list _ f (x:xs) = f x xs
@@ -394,3 +400,6 @@ func_chr = chr.fromInteger
 
 func_show :: Concrete a => a -> String
 func_show = show
+
+func_empty :: [a]
+func_empty = []

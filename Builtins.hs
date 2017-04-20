@@ -69,9 +69,10 @@ commandsList = [
   ('‼', bins "index"),
   ('↑', bins "take takew"),
   ('↓', bins "drop dropw"),
+  ('↕', bins "span"),
   ('←', bins "head fst"),
   ('→', bins "last snd"),
-  ('↔', bins "swap rev flip"),
+  ('↔', bins "swap rev"),
   ('h', bins "init"),
   ('t', bins "tail"),
   ('ƒ', bins "fix"),
@@ -89,6 +90,7 @@ commandsList = [
   ('S', bins "hook"),
   ('K', bins "const"),
   ('I', bins "id"),
+  ('`', bins "flip"),
   ('Λ', bins "list listN listF listNF"),
   ('Σ', bins "sum trianI trianD concat"),
   ('Π', bins "prod fact cartes"),
@@ -97,7 +99,8 @@ commandsList = [
   ('∞', bins "rep"),
   ('¡', bins "iter"),
   ('c', bins "chr ord"),
-  ('s', bins "show")
+  ('s', bins "show"),
+  ('ø', bins "empty")
   ]
 
 -- Compute builtins from space-delimited list
@@ -132,6 +135,7 @@ builtinsList = [
   ("fact",  forall "n" [num n] $ n ~> n),
 
   -- List and pair manipulation
+  ("empty", forall "x" [] $ lst x),
   ("pure",  forall "x" [] $ x ~> lst x),
   ("pair",  forall "xy" [] $ x ~> y ~> tup x y),
   ("swap",  forall "xy" [] $ tup x y ~> tup y x),
@@ -153,6 +157,7 @@ builtinsList = [
   ("takew", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("drop",  forall "x" [] $ int ~> lst x ~> lst x),
   ("dropw", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
+  ("span",  forall "xy" [con y] $ (x ~> y) ~> lst x ~> tup (lst x) (lst x)),
   ("rev",   forall "x" [] $ lst x ~> lst x),
   ("range", forall "mn" [num m,num n] $ m ~> lst n),
   ("nats",  forall "n" [num n] $ lst n),
