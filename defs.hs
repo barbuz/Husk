@@ -3,7 +3,7 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)
-import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop)
+import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex)
 
 class (Show a, Read a, Eq a, Ord a) => Concrete a where
   isTruthy :: a -> Bool
@@ -403,3 +403,19 @@ func_show = show
 
 func_empty :: [a]
 func_empty = []
+
+func_predN :: Number n => n -> n
+func_predN n = n-1
+
+func_succN :: Number n => n -> n
+func_succN n = n+1
+
+func_predC :: Char -> Char
+func_predC = pred
+
+func_succC :: Char -> Char
+func_succC = succ
+
+func_elem :: Concrete a => [a] -> a -> Integer
+func_elem xs x | Just i <- elemIndex x xs = fromIntegral i + 1
+               | otherwise                = 0

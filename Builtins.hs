@@ -70,8 +70,8 @@ commandsList = [
   ('↑', bins "take takew"),
   ('↓', bins "drop dropw"),
   ('↕', bins "span"),
-  ('←', bins "head fst"),
-  ('→', bins "last snd"),
+  ('←', bins "head fst predN predC"),
+  ('→', bins "last snd succN succC"),
   ('↔', bins "swap rev"),
   ('h', bins "init"),
   ('t', bins "tail"),
@@ -100,7 +100,8 @@ commandsList = [
   ('¡', bins "iter"),
   ('c', bins "chr ord"),
   ('s', bins "show"),
-  ('ø', bins "empty")
+  ('ø', bins "empty"),
+  ('€', bins "elem")
   ]
 
 -- Compute builtins from space-delimited list
@@ -133,6 +134,8 @@ builtinsList = [
   ("trianI",simply $ int ~> int),
   ("trianD",simply $ dbl ~> dbl),
   ("fact",  forall "n" [num n] $ n ~> n),
+  ("predN", forall "n" [num n] $ n ~> n),
+  ("succN", forall "n" [num n] $ n ~> n),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
@@ -165,6 +168,7 @@ builtinsList = [
   ("sum",   forall "n" [num n] $ lst n ~> n),
   ("prod",  forall "n" [num n] $ lst n ~> n),
   ("cartes",forall "x" [] $ lst (lst x) ~> lst (lst x)),
+  ("elem",  forall "x" [con x] $ lst x ~> x ~> int),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -221,5 +225,7 @@ builtinsList = [
   -- Chars and strings
   ("chr",   simply $ int ~> chr),
   ("ord",   simply $ chr ~> int),
+  ("predC", simply $ chr ~> chr),
+  ("succC", simply $ chr ~> chr),
   ("show",  forall "x" [con x] $ x ~> lst chr)
   ]
