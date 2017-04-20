@@ -2,7 +2,7 @@
 
 import Data.Function (fix)
 import System.Environment (getArgs)
-import Data.Char (ord)
+import Data.Char (ord,chr)
 import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop)
 
 class (Show a, Read a, Eq a, Ord a) => Concrete a where
@@ -385,3 +385,12 @@ func_iter = iterate
 
 func_rep :: a -> [a]
 func_rep = repeat
+
+func_ord :: Char -> Integer
+func_ord = fromIntegral.ord
+
+func_chr :: Integer -> Char
+func_chr = chr.fromInteger
+
+func_show :: Concrete a => a -> String
+func_show = show

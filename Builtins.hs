@@ -95,7 +95,9 @@ commandsList = [
   ('§', bins "fork fork2"),
   ('‡', bins "argdup"),
   ('∞', bins "rep"),
-  ('¡', bins "iter")
+  ('¡', bins "iter"),
+  ('c', bins "chr ord"),
+  ('s', bins "show")
   ]
 
 -- Compute builtins from space-delimited list
@@ -209,5 +211,10 @@ builtinsList = [
   ("or",    forall "x" [con x] $ x ~> x ~> x),
   ("or'",   forall "x" [con x, num n] $ x ~> x ~> n),
   ("and",   forall "x" [con x] $ x ~> x ~> x),
-  ("and'",  forall "x" [con x, num n] $ x ~> x ~> n)
+  ("and'",  forall "x" [con x, num n] $ x ~> x ~> n),
+  
+  -- Chars and strings
+  ("chr",   simply $ int ~> chr),
+  ("ord",   simply $ chr ~> int),
+  ("show",  forall "x" [con x] $ x ~> lst chr)
   ]
