@@ -94,7 +94,8 @@ commandsList = [
   ('Π', bins "prod fact cartes"),
   ('§', bins "fork fork2"),
   ('‡', bins "argdup"),
-  ('∞', bins "iter")
+  ('∞', bins "rep"),
+  ('¡', bins "iter")
   ]
 
 -- Compute builtins from space-delimited list
@@ -178,6 +179,7 @@ builtinsList = [
   ("listF", forall "xy" [] $ y ~> ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   ("listNF",forall "xy" [] $ ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   ("iter",  forall "x" [] $ (x ~> x) ~> x ~> lst x),
+  ("rep",   forall "x" [] $ x ~> lst x),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

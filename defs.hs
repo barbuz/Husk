@@ -382,3 +382,6 @@ func_argdup f x = f x x
 
 func_iter :: (a -> a) -> a -> [a]
 func_iter = iterate
+
+func_rep :: a -> [a]
+func_rep = repeat
