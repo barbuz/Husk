@@ -101,7 +101,8 @@ commandsList = [
   ('c', bins "chr ord"),
   ('s', bins "show"),
   ('ø', bins "empty"),
-  ('€', bins "elem")
+  ('€', bins "elem"),
+  ('·', bins "com com2 com3")
   ]
 
 -- Compute builtins from space-delimited list
