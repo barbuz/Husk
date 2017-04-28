@@ -1,9 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, FlexibleInstances, FlexibleContexts #-}
 
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)
 import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex)
+
+class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
+
+instance Vect a b a b where func_vec = id
+instance (Vect a b x y) => Vect a b [x] [y] where func_vec = map . func_vec
 
 class (Show a, Read a, Eq a, Ord a) => Concrete a where
   isTruthy :: a -> Bool

@@ -1,6 +1,8 @@
 
 -- Expressions and types
 
+{-# LANGUAGE DeriveFunctor #-}
+
 module Expr where
 
 import Data.List (intercalate)
@@ -16,7 +18,7 @@ data Exp lit = EVar ELabel
              | EOp (Exp lit) (Exp lit) (Exp lit)
              | EAbs ELabel (Exp lit)
              | ELet ELabel (Exp lit) (Exp lit)
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Functor)
 
 instance (Show lit) => Show (Exp lit) where
   show (EVar name) = name
@@ -59,39 +61,52 @@ data Conc = TInt
   deriving (Eq, Ord, Show)
 
 -- Type with typeclass constraints
-data CType = CType [(TClass, Type)] Type
+data CType = CType [TClass] Type
   deriving (Eq, Ord)
 
 instance Show CType where
   show (CType cons typ) = show cons ++ "=>" ++ show typ
 
 -- Possible typeclass constraints
-data TClass = Concrete
-            | Number
+data TClass = Concrete Type
+            | Number Type
+            | Vect Type Type Type Type
   deriving (Eq, Ord, Show)
 
 -- Check typeclass constraint, return list of "simpler" constraints that are equivalent to it
 -- Nothing ==> Constraint doesn't hold
 -- Just [] ==> Constraint holds (equivalent to no constraints)
 -- Just cs ==> Equivalent to all cs holding
-holds :: (TClass, Type) -> Maybe [(TClass, Type)]
-holds c@(Concrete, TVar _)    = Just [c]
-holds (Concrete, TConc _)     = Just []
-holds (Concrete, TList t)     = holds (Concrete, t)
-holds (Concrete, TPair t1 t2) = do
-  h1 <- holds (Concrete, t1)
-  h2 <- holds (Concrete, t2)
+holds :: TClass -> Maybe [TClass]
+holds c@(Concrete (TVar _))    = Just [c]
+holds (Concrete (TConc _))     = Just []
+holds (Concrete (TList t))     = holds (Concrete t)
+holds (Concrete (TPair t1 t2)) = do
+  h1 <- holds (Concrete t1)
+  h2 <- holds (Concrete t2)
   return $ h1 ++ h2
-holds (Concrete, TFun _ _)    = Nothing
-holds c@(Number, TVar _)      = Just [c]
-holds (Number, TConc TInt)    = Just []
-holds (Number, TConc TDouble) = Just []
-holds (Number, _)             = Nothing
+holds (Concrete (TFun _ _))    = Nothing
 
--- Default typeclass instances
-defInst :: TClass -> Type
-defInst Concrete = TConc TInt
-defInst Number   = TConc TInt
+holds c@(Number (TVar _))      = Just [c]
+holds (Number (TConc TInt))    = Just []
+holds (Number (TConc TDouble)) = Just []
+holds (Number _)               = Nothing
+
+holds (Vect (TList _) _ _ _)                  = Nothing
+holds (Vect t1 t2 s1 s2) | s1 == t1, s2 == t2 = Just []
+holds (Vect t1 t2 (TList s1) (TList s2))      = holds $ Vect t1 t2 s1 s2
+holds c@(Vect _ _ (TVar _) (TList _))         = Just [c]
+holds c@(Vect _ _ (TList _) (TVar _))         = Just [c]
+holds c@(Vect _ _ (TVar _) (TVar _))          = Just [c]
+holds (Vect _ _ _ _)                          = Nothing
+
+-- Default typeclass instances, given as unifiable pairs of types
+defInst :: TClass -> (Type, Type)
+defInst (Concrete t)       = (t, TConc TInt)
+defInst (Number t)         = (t, TConc TInt)
+defInst (Vect t1 t2 s1 s2) = go 0 s1
+  where go n (TList s) = go (n+1) s
+        go n s = (TPair s1 s2, TPair (iterate TList t1 !! n) (iterate TList t2 !! n))
 
 -- Type of expression with universally quantified variables
 data Scheme = Scheme [TLabel] CType
@@ -110,11 +125,16 @@ typeToHaskell (TList t) = "[" ++ typeToHaskell t ++ "]"
 typeToHaskell (TPair s t) = "(" ++ typeToHaskell s ++ "," ++ typeToHaskell t ++ ")"
 typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t ++ ")"
 
+-- Convert typeclass constraint to Haskell code
+consToHaskell :: TClass -> String
+consToHaskell (Concrete t)       = "Concrete " ++ typeToHaskell t
+consToHaskell (Number t)         = "Number " ++ typeToHaskell t
+consToHaskell (Vect t1 t2 s1 s2) = "Vect " ++ typeToHaskell t1 ++ " " ++ typeToHaskell t2  ++ " " ++ typeToHaskell s1  ++ " " ++ typeToHaskell s2
+
 -- Convert classed type to Haskell code
 cTypeToHaskell :: CType -> String
 cTypeToHaskell (CType [] typ) = typeToHaskell typ
-cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map showCons cons) ++ ") => " ++ typeToHaskell typ
-  where showCons (con, typ) = show con ++ " " ++ typeToHaskell typ
+cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map consToHaskell cons) ++ ") => " ++ typeToHaskell typ
 
 -- Convert expression to Haskell code
 expToHaskell :: Exp (Lit CType) -> String

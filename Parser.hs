@@ -95,7 +95,7 @@ number = do
   prefix <- many1 digit
   maybeSuffix <- optionMaybe $ char '.' >> many digit
   case maybeSuffix of
-    Nothing     -> return $ ELit [Lit "" prefix $ Scheme ["n"] $ CType [(Number, TVar "n")] $ TVar "n"]
+    Nothing     -> return $ ELit [Lit "" prefix $ Scheme ["n"] $ CType [Number $ TVar "n"] $ TVar "n"]
     Just []     -> return $ ELit [Lit "" (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
     Just suffix -> return $ ELit [Lit "" (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
  

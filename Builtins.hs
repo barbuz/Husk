@@ -20,13 +20,16 @@ lst = TList
 tup :: Type -> Type -> Type
 tup = TPair
 
-con :: Type -> (TClass, Type)
-con typ = (Concrete, typ)
+con :: Type -> TClass
+con = Concrete
 
-num :: Type -> (TClass, Type)
-num typ = (Number, typ)
+num :: Type -> TClass
+num = Number
 
-forall :: String -> [(TClass, Type)] -> Type -> Scheme
+vec :: Type -> Type -> Type -> Type -> TClass
+vec = Vect
+
+forall :: String -> [TClass] -> Type -> Scheme
 forall vars cons typ = Scheme (map pure vars) $ CType cons typ
 
 simply :: Type -> Scheme
@@ -102,7 +105,8 @@ commandsList = [
   ('s', bins "show"),
   ('ø', bins "empty"),
   ('€', bins "elem"),
-  ('·', bins "com com2 com3")
+  ('·', bins "com com2 com3"),
+  ('¨', bins "vec")
   ]
 
 -- Compute builtins from space-delimited list
@@ -192,6 +196,7 @@ builtinsList = [
   ("listNF",forall "xy" [] $ ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   ("iter",  forall "x" [] $ (x ~> x) ~> x ~> lst x),
   ("rep",   forall "x" [] $ x ~> lst x),
+  ("vec",   forall "xyuv" [vec x y u v] $ (x ~> y) ~> (u ~> v)),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
