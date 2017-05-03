@@ -106,7 +106,9 @@ commandsList = [
   ('ø', bins "empty"),
   ('€', bins "elem"),
   ('·', bins "com com2 com3"),
-  ('¨', bins "vec")
+  ('¨', bins "vec"),
+  ('o', bins "sort"),
+  ('ȯ', bins "sorton sortby")
   ]
 
 -- Compute builtins from space-delimited list
@@ -174,6 +176,9 @@ builtinsList = [
   ("prod",  forall "n" [num n] $ lst n ~> n),
   ("cartes",forall "x" [] $ lst (lst x) ~> lst (lst x)),
   ("elem",  forall "x" [con x] $ lst x ~> x ~> int),
+  ("sort",  forall "x" [con x] $ lst x ~> lst x),
+  ("sorton",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
+  ("sortby",forall "x" [] $ (x ~> x ~> int) ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

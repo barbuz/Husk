@@ -3,7 +3,7 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)
-import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex)
+import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex,sort,sortOn,sortBy)
 
 class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
 
@@ -424,3 +424,12 @@ func_succC = succ
 func_elem :: Concrete a => [a] -> a -> Integer
 func_elem xs x | Just i <- elemIndex x xs = fromIntegral i + 1
                | otherwise                = 0
+
+func_sort :: Concrete a => [a] -> [a]
+func_sort = sort
+
+func_sorton :: Concrete b => (a -> b) -> [a] -> [a]
+func_sorton = sortOn
+
+func_sortby :: (a -> a -> Integer) -> [a] -> [a]
+func_sortby f = sortBy $ \x y -> compare (f x y) 0
