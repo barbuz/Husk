@@ -282,6 +282,9 @@ func_index :: Integer -> [a] -> a
 func_index i
   | i>0       = flip genericIndex (i-1)
   | otherwise = flip genericIndex (-i-1).reverse
+  
+func_index2 :: [a] -> Integer -> a
+func_index2 = flip func_index
 
 func_rev :: [a] -> [a]
 func_rev = reverse
