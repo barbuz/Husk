@@ -109,9 +109,11 @@ commandsList = [
   ('·', bins "com com2 com3 com4"),
   ('¨', bins "vec"),
   ('o', bins "sort"),
-  ('ȯ', bins "sorton sortby"),
+  ('ö', bins "sorton sortby"),
   ('▲', bins "max maxl"),
-  ('▼', bins "min minl")
+  ('▼', bins "min minl"),
+  ('u', bins "nub"),
+  ('ü', bins "nubon nubby")
   ]
 
 -- Compute builtins from space-delimited list
@@ -187,6 +189,9 @@ builtinsList = [
   ("minl",  forall "x" [con x] $ lst x ~> x),
   ("diffl", forall "x" [con x] $ lst x ~> lst x ~> lst x),
   ("del",   forall "x" [con x] $ x ~> lst x ~> lst x),
+  ("nub",   forall "x" [con x] $ lst x ~> lst x),
+  ("nubon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
+  ("nubby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

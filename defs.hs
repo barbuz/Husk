@@ -3,7 +3,7 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)
-import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex,sort,sortOn,sortBy,delete)
+import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex,sort,sortOn,sortBy,delete,nub,nubBy)
 
 class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
 
@@ -464,3 +464,12 @@ func_diffl [] xs = xs
 func_diffl (y:ys) xs = func_diffl ys $ func_del y xs
 --second option: filter elements (disregards multiciplities)
 --func_diffl (y:ys) xs = func_diffl ys $ filter (/=y) xs
+
+func_nub :: Concrete a => [a] -> [a]
+func_nub = nub
+
+func_nubon :: Concrete b => (a -> b) -> [a] -> [a]
+func_nubon f = nubBy (\x y -> f x == f y)
+
+func_nubby :: Concrete b => (a -> a -> b) -> [a] -> [a]
+func_nubby f = nubBy (\x y -> isTruthy $ f x y)
