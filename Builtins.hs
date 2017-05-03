@@ -67,7 +67,7 @@ commandsList = [
   ('f', bins "filter select"),
   ('L', bins "len nlen"),
   ('#', bins "countf count"),
-  ('r', bins "range"),
+  ('R', bins "range"),
   ('N', bins "nats"),
   ('‼', bins "index"),
   ('↑', bins "take takew"),
@@ -103,6 +103,7 @@ commandsList = [
   ('¡', bins "iter"),
   ('c', bins "chr ord"),
   ('s', bins "show"),
+  ('r', bins "read"),
   ('ø', bins "empty"),
   ('€', bins "elem"),
   ('·', bins "com com2 com3"),
@@ -238,5 +239,6 @@ builtinsList = [
   ("ord",   simply $ chr ~> int),
   ("predC", simply $ chr ~> chr),
   ("succC", simply $ chr ~> chr),
-  ("show",  forall "x" [con x] $ x ~> lst chr)
+  ("show",  forall "x" [con x] $ x ~> lst chr),
+  ("read",  forall "x" [con x] $ lst chr ~> x)
   ]

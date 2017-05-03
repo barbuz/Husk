@@ -28,6 +28,9 @@ class (Show a, Read a, Eq a, Ord a) => Concrete a where
   
   func_and :: a -> a -> a
   func_and x y = if isTruthy x then y else x
+  
+  func_read :: [Char] -> a
+  func_read = read
 
 func_or' :: (Concrete a, Concrete b) => a -> b -> Integer
 func_or' x y = func_or (toTruthy x) (toTruthy y)
