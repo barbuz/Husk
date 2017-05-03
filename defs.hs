@@ -439,3 +439,15 @@ func_sorton = sortOn
 
 func_sortby :: (a -> a -> Integer) -> [a] -> [a]
 func_sortby f = sortBy $ \x y -> compare (f x y) 0
+
+func_max :: Concrete a => a -> a -> a
+func_max = max
+
+func_min :: Concrete a => a -> a -> a
+func_min = min
+
+func_maxl :: Concrete a => [a] -> a
+func_maxl = maximum
+
+func_minl :: Concrete a => [a] -> a
+func_minl = minimum

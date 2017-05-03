@@ -109,7 +109,9 @@ commandsList = [
   ('·', bins "com com2 com3 com4"),
   ('¨', bins "vec"),
   ('o', bins "sort"),
-  ('ȯ', bins "sorton sortby")
+  ('ȯ', bins "sorton sortby"),
+  ('▲', bins "max maxl"),
+  ('▼', bins "min minl")
   ]
 
 -- Compute builtins from space-delimited list
@@ -180,6 +182,8 @@ builtinsList = [
   ("sort",  forall "x" [con x] $ lst x ~> lst x),
   ("sorton",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("sortby",forall "x" [] $ (x ~> x ~> int) ~> lst x ~> lst x),
+  ("maxl",  forall "x" [con x] $ lst x ~> x),
+  ("minl",  forall "x" [con x] $ lst x ~> x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -234,6 +238,8 @@ builtinsList = [
   ("or'",   forall "x" [con x, num n] $ x ~> x ~> n),
   ("and",   forall "x" [con x] $ x ~> x ~> x),
   ("and'",  forall "x" [con x, num n] $ x ~> x ~> n),
+  ("max",   forall "x" [con x] $ x ~> x ~> x),
+  ("min",   forall "x" [con x] $ x ~> x ~> x),
   
   -- Chars and strings
   ("chr",   simply $ int ~> chr),
