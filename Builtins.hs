@@ -48,7 +48,7 @@ commands = map fst commandsList
 commandsList :: [(Char, Exp [Lit Scheme])]
 commandsList = [
   ('+', bins "add addDI addID cat"),
-  ('-', bins "sub subDI subID"),
+  ('-', bins "sub subDI subID diffl del"),
   ('*', bins "mul mulDI mulID"),
   ('/', bins "div"),
   ('÷', bins "idiv"),
@@ -185,6 +185,8 @@ builtinsList = [
   ("sortby",forall "x" [] $ (x ~> x ~> int) ~> lst x ~> lst x),
   ("maxl",  forall "x" [con x] $ lst x ~> x),
   ("minl",  forall "x" [con x] $ lst x ~> x),
+  ("diffl", forall "x" [con x] $ lst x ~> lst x ~> lst x),
+  ("del",   forall "x" [con x] $ x ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

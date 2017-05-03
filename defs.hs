@@ -3,7 +3,7 @@
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)
-import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex,sort,sortOn,sortBy)
+import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex,sort,sortOn,sortBy,delete)
 
 class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
 
@@ -454,3 +454,13 @@ func_maxl = maximum
 
 func_minl :: Concrete a => [a] -> a
 func_minl = minimum
+
+func_del :: Concrete a => a -> [a] -> [a]
+func_del = delete
+
+func_diffl :: Concrete a => [a] -> [a] -> [a]
+func_diffl [] xs = xs
+--first option: multiset difference
+func_diffl (y:ys) xs = func_diffl ys $ func_del y xs
+--second option: filter elements (disregards multiciplities)
+--func_diffl (y:ys) xs = func_diffl ys $ filter (/=y) xs
