@@ -81,7 +81,7 @@ expression :: Parser (Exp [Lit Scheme])
 expression = mkPrattParser opTable term
   where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
         opTable = [[InfixL $ optional (char ' ') >> return (EOp invisibleOp)]]
-        invisibleOp = bins "com3 com2 com app"
+        invisibleOp = bins "com4 com3 com2 com app"
 
 -- Parse a builtin
 builtin :: Parser (Exp [Lit Scheme])

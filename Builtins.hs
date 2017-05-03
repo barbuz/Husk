@@ -106,7 +106,7 @@ commandsList = [
   ('r', bins "read"),
   ('ø', bins "empty"),
   ('€', bins "elem"),
-  ('·', bins "com com2 com3"),
+  ('·', bins "com com2 com3 com4"),
   ('¨', bins "vec"),
   ('o', bins "sort"),
   ('ȯ', bins "sorton sortby")
@@ -210,6 +210,7 @@ builtinsList = [
   ("id",    forall "x" [] $ x ~> x),
   ("fix",   forall "x" [] $ (x ~> x) ~> x),
   ("flip",  forall "xyz" [] $ (x ~> y ~> z) ~> (y ~> x ~> z)),
+  ("com4",  forall "xyzuvw" [] $ (v ~> w) ~> (x ~> y ~> z ~> u ~> v) ~> (x ~> y ~> z ~> u ~> w)),
   ("com3",  forall "xyzuv" [] $ (u ~> v) ~> (x ~> y ~> z ~> u) ~> (x ~> y ~> z ~> v)),
   ("com2",  forall "xyzu" [] $ (z ~> u) ~> (x ~> y ~> z) ~> (x ~> y ~> u)),
   ("com",   forall "xyz" [] $ (y ~> z) ~> (x ~> y) ~> (x ~> z)),

@@ -132,6 +132,9 @@ func_com2 f g x = f . g x
 func_com3 :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
 func_com3 f g x y = f . g x y
 
+func_com4 :: (e -> f) -> (a -> b -> c -> d -> e) -> a -> b -> c -> d -> f
+func_com4 f g x y z = f . g x y z
+
 func_add :: Number n => n -> n -> n
 func_add = (+)
 
