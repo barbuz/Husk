@@ -79,7 +79,7 @@ lineExpr lineNum = do
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> lambda <|> lambdaArg <|> subscript
+  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> intseq <|> lambda <|> lambdaArg <|> subscript
         opTable = [[InfixL $ optional (char ' ') >> return (EOp invisibleOp)]]
         invisibleOp = bins "com4 com3 com2 com app"
 
@@ -126,6 +126,13 @@ str = do
     decode '¨' = '"'
     decode '¦' = '\\'
     decode  c  =  c
+
+-- Parse an integer sequence
+intseq :: Parser (Exp [Lit Scheme])
+intseq = do
+  iseqCommand <- char 'İ'
+  seqId <- anyChar
+  return $ EApp (bins "intseq") $ ELit [Lit "" (show seqId) $ Scheme [] $ CType [] $ TConc TChar]
 
 -- Parse a generalized lambda
 lambda :: Parser (Exp [Lit Scheme])

@@ -1,5 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, FlexibleInstances, FlexibleContexts #-}
 
+import IntSeq
+
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)

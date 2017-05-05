@@ -126,6 +126,8 @@ bins names = ELit $ map getBuiltin $ words names
 builtinsList :: [(String, Scheme)]
 builtinsList = [
 
+  ("intseq", simply $ chr ~> lst int),
+
   -- Arithmetic
   ("add",   forall "n" [num n] $ n ~> n ~> n),
   ("addID", simply $ int ~> dbl ~> dbl),
