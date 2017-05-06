@@ -58,6 +58,7 @@ instance Show Type where
 data Conc = TInt
           | TDouble
           | TChar
+          | TNil
   deriving (Eq, Ord, Show)
 
 -- Type with typeclass constraints
@@ -121,6 +122,7 @@ typeToHaskell (TVar name) = name
 typeToHaskell (TConc TInt) = "Integer"
 typeToHaskell (TConc TDouble) = "Double"
 typeToHaskell (TConc TChar) = "Char"
+typeToHaskell (TConc TNil) = "()"
 typeToHaskell (TList t) = "[" ++ typeToHaskell t ++ "]"
 typeToHaskell (TPair s t) = "(" ++ typeToHaskell s ++ "," ++ typeToHaskell t ++ ")"
 typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t ++ ")"

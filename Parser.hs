@@ -13,8 +13,7 @@ import Data.List (elemIndex)
 
 -- Parser state
 data PState = PState {varStack :: [ELabel],
-                      varSupply :: Int,
-                      lineNum :: Int}
+                      varSupply :: Int}
 
 -- Parser type
 type Parser = Parsec String PState
@@ -24,7 +23,7 @@ parseExpr :: String -> Either String (Exp [Lit Scheme])
 parseExpr str = case runParser multiline initState "" str of
   Left err -> Left $ show err
   Right val -> Right val
-  where initState = PState [] 0 1
+  where initState = PState [] 0
 
 -- Generate and push a new expression variable
 pushNewVar :: Parser ELabel
@@ -68,24 +67,21 @@ rParen = (char ')' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> look
 -- Parse a multiline expression; first line is "main line"
 multiline :: Parser (Exp [Lit Scheme])
 multiline = do
-  lines <- sepBy1 parseLine endOfLine
+  lines <- sepBy1 lineExpr endOfLine
   eof
-  let (_, folded) = foldr1 (\(num1, expr1) (num2, expr2) -> (num1, ELet ("sub" ++ show num2) expr2 expr1)) lines
-  return $ ELet "sub1" folded $ EVar "sub1"
-  where parseLine :: Parser (Int, Exp [Lit Scheme])
-        parseLine = do state <- getState
-                       putState state{lineNum = lineNum state + 1}
-                       lineExpr $ lineNum state
+  let paired = foldr (EOp $ bins "pair") nil lines
+  return $ ELet "mainFunc" paired $ EApp (bins "fst") $ EVar "mainFunc"
+  where nil = ELit [Lit "" "()" $ Scheme [] $ CType [] $ TConc TNil] -- Dummy value
 
 -- Parse a line of Husk code
-lineExpr :: Int -> Parser (Int, Exp [Lit Scheme])
-lineExpr lineNum = do
+lineExpr :: Parser (Exp [Lit Scheme])
+lineExpr = do
   state <- getState
   putState state{varStack = []}
   expr <- expression
   overflowVars <- reverse . varStack <$> getState
   let lambdified = foldr EAbs expr overflowVars
-  return $ trace' (show lineNum ++ " " ++ show lambdified) (lineNum, lambdified)
+  return $ trace' (show lambdified) lambdified
 
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
@@ -180,5 +176,7 @@ subscript :: Parser (Exp [Lit Scheme])
 subscript = do
   sub <- oneOf subs
   let Just ix = elemIndex sub subs
-  return $ EVar ("sub" ++ show (ix + 1))
-  where subs = "₁₂₃₄₅₆₇₈₉"
+  return $ left $ iterate right (EVar "mainFunc") !! ix
+  where subs  = "₁₂₃₄₅₆₇₈₉"
+        right = EApp (bins "snd")
+        left  = EApp (bins "fst")
