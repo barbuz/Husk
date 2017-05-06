@@ -1,6 +1,7 @@
 
 module Parser where
 
+import Debug
 import Expr
 import Builtins
 import PrattParser
@@ -32,23 +33,33 @@ pushNewVar = do
   let var = "x" ++ show (varSupply stat)
   putState stat{varStack = var : varStack stat,
                 varSupply = varSupply stat + 1}
-  return var
+  return $ trace' ("pushed " ++ var) var
+
+-- Generate and append a new expression variable
+appendNewVar :: Parser ELabel
+appendNewVar = do
+  stat <- getState
+  let var = "x" ++ show (varSupply stat)
+  putState stat{varStack = varStack stat ++ [var],
+                varSupply = varSupply stat + 1}
+  return $ trace' ("appended " ++ var) var
 
 -- Peek at a variable from the stack; extend stack if necessary
 peekVar :: Int -> Parser ELabel
 peekVar ix = do
-  len <- length . varStack <$> getState
+  stack <- varStack <$> getState
+  let len = length stack
   if ix >= len
     then do
-      vars <- forM [0..ix-len] $ const pushNewVar
-      return $ head vars
-    else (!! ix) . varStack <$> getState
+      vars <- forM [0..ix-len] $ const appendNewVar
+      return $ trace' ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (last vars)) $ last vars
+    else return $ trace' ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (stack !! ix)) $ stack !! ix
 
 -- Pop a variable off the stack
 popVar :: Parser ()
 popVar = do
   stat <- getState
-  putState stat{varStack = tail $ varStack stat}
+  putState stat{varStack = trace' ("popping from " ++ show (varStack stat)) tail $ varStack stat}
 
 -- Parse a right paren or be at end of line
 rParen :: Parser ()
@@ -74,7 +85,7 @@ lineExpr lineNum = do
   expr <- expression
   overflowVars <- reverse . varStack <$> getState
   let lambdified = foldr EAbs expr overflowVars
-  return (lineNum, lambdified)
+  return $ trace' (show lineNum ++ " " ++ show lambdified) (lineNum, lambdified)
 
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
