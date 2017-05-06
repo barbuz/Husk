@@ -5,7 +5,7 @@ import IntSeq
 import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)
-import Data.List (genericLength,genericIndex,findIndex,genericTake,genericDrop,elemIndex,sort,sortOn,sortBy,delete,nub,nubBy)
+import Data.List
 
 class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
 
@@ -487,3 +487,19 @@ func_lines = lines
 
 func_unlines :: [[Char]] -> [Char]
 func_unlines = unlines
+
+func_pfac :: Integer -> [Integer]
+func_pfac = factorize 2
+  where factorize _ 1 = [] 
+        factorize d n 
+            | d * d > n = [n]
+            | n `mod` d == 0 = d : factorize d (n `div` d)
+            | otherwise = factorize (d + 1) n
+
+func_subs :: Concrete a => a -> a -> [a] -> [a]
+func_subs x y = map (\z -> if z == x then y else z)
+
+func_subs2 :: Concrete a => [a] -> [a] -> [a] -> [a]
+func_subs2 _ _ [] = []
+func_subs2 x y s@(h:t) | Just s2 <- stripPrefix x s = y++func_subs2 x y s2
+                       | otherwise = h : func_subs2 x y t
