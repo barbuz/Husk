@@ -113,7 +113,8 @@ commandsList = [
   ('▲', bins "max maxl"),
   ('▼', bins "min minl"),
   ('u', bins "nub"),
-  ('ü', bins "nubon nubby")
+  ('ü', bins "nubon nubby"),
+  ('w', bins "words unwords")
   ]
 
 -- Compute builtins from space-delimited list
@@ -257,5 +258,7 @@ builtinsList = [
   ("predC", simply $ chr ~> chr),
   ("succC", simply $ chr ~> chr),
   ("show",  forall "x" [con x] $ x ~> lst chr),
-  ("read",  forall "x" [con x] $ lst chr ~> x)
+  ("read",  forall "x" [con x] $ lst chr ~> x),
+  ("words", simply $ lst chr ~> lst (lst chr)),
+  ("unwords", simply $ lst (lst chr) ~> lst chr)
   ]

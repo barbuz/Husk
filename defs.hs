@@ -475,3 +475,9 @@ func_nubon f = nubBy (\x y -> f x == f y)
 
 func_nubby :: Concrete b => (a -> a -> b) -> [a] -> [a]
 func_nubby f = nubBy (\x y -> isTruthy $ f x y)
+
+func_words :: [Char] -> [[Char]]
+func_words = words
+
+func_unwords :: [[Char]] -> [Char]
+func_unwords = unwords
