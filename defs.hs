@@ -481,3 +481,9 @@ func_words = words
 
 func_unwords :: [[Char]] -> [Char]
 func_unwords = unwords
+
+func_lines :: [Char] -> [[Char]]
+func_lines = lines
+
+func_unlines :: [[Char]] -> [Char]
+func_unlines = unlines
