@@ -115,7 +115,9 @@ commandsList = [
   ('u', bins "nub"),
   ('ü', bins "nubon nubby"),
   ('w', bins "words unwords"),
-  ('¶', bins "lines unlines")
+  ('¶', bins "lines unlines"),
+  ('p', bins "pfac"),
+  ('~', bins "subs subs2")
   ]
 
 -- Compute builtins from space-delimited list
@@ -152,6 +154,7 @@ builtinsList = [
   ("fact",  forall "n" [num n] $ n ~> n),
   ("predN", forall "n" [num n] $ n ~> n),
   ("succN", forall "n" [num n] $ n ~> n),
+  ("pfac",  simply $ int ~> lst int),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
@@ -196,6 +199,8 @@ builtinsList = [
   ("nub",   forall "x" [con x] $ lst x ~> lst x),
   ("nubon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("nubby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst x),
+  ("subs",  forall "x" [con x] $ x ~> x ~> lst x ~> lst x),
+  ("subs2",  forall "x" [con x] $ lst x ~> lst x ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
