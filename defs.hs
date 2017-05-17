@@ -12,7 +12,28 @@ class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
 instance Vect a b a b where func_vec = id
 instance (Vect a b x y) => Vect a b [x] [y] where func_vec = map . func_vec
 
-class (Show a, Read a, Eq a, Ord a) => Concrete a where
+class Show a => ToString a where
+  toString :: a -> String
+
+instance {-# OVERLAPPING #-} ToString [Char] where
+  toString = id
+
+instance ToString Integer where
+  toString = show
+
+instance ToString Double where
+  toString = show
+
+instance ToString Char where
+  toString = show
+
+instance ToString a => ToString [a] where
+  toString = show
+
+instance (ToString a,ToString b) => ToString (a,b) where
+  toString = show
+
+class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   isTruthy :: a -> Bool
   toTruthy :: a -> Integer
   func_lt :: a -> a -> Integer
@@ -503,3 +524,12 @@ func_subs2 :: Concrete a => [a] -> [a] -> [a] -> [a]
 func_subs2 _ _ [] = []
 func_subs2 x y s@(h:t) | Just s2 <- stripPrefix x s = y++func_subs2 x y s2
                        | otherwise = h : func_subs2 x y t
+
+func_group :: Concrete a => [a] -> [[a]]
+func_group = group
+
+func_groupOn :: Concrete b => (a -> b) -> [a] -> [[a]]
+func_groupOn f = groupBy (\x y -> f x == f y)
+
+func_groupBy :: Concrete b => (a -> a -> b) -> [a] -> [[a]]
+func_groupBy f = groupBy (\x y -> isTruthy $ f x y)

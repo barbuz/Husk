@@ -117,7 +117,9 @@ commandsList = [
   ('w', bins "words unwords"),
   ('¶', bins "lines unlines"),
   ('p', bins "pfac"),
-  ('~', bins "subs subs2")
+  ('~', bins "subs subs2"),
+  ('g', bins "group"),
+  ('ġ', bins "groupOn groupBy")
   ]
 
 -- Compute builtins from space-delimited list
@@ -200,7 +202,10 @@ builtinsList = [
   ("nubon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("nubby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst x),
   ("subs",  forall "x" [con x] $ x ~> x ~> lst x ~> lst x),
-  ("subs2",  forall "x" [con x] $ lst x ~> lst x ~> lst x ~> lst x),
+  ("subs2", forall "x" [con x] $ lst x ~> lst x ~> lst x ~> lst x),
+  ("group", forall "x" [con x] $ lst x ~> lst (lst x)),
+  ("groupOn",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
+  ("groupBy",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst y)), 
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

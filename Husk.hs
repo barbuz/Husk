@@ -47,7 +47,7 @@ produceFile defs typ@(CType _ t) expr =
   "main :: IO ()\n" ++
   "main = do{[" ++ intercalate "," argList ++ "] <- getArgs; " ++
   "let{res = func " ++ concatMap (\a -> "(read " ++ a ++ ")") argList ++ "}; " ++
-  "putStrLn (show res)}"
+  "putStrLn (toString res)}"
   where argList = ["arg" ++ show i | i <- [1..numArgs t]]
         numArgs (TFun _ t) = 1 + numArgs t
         numArgs _ = 0
