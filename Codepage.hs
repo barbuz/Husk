@@ -21,7 +21,7 @@ codepage = "¤½↕↑↓↔←→∟\n¦¡¿‼…‰†‡√≤≥±∂∫∞
 -- A short ASCII alias for each non-ASCII char in the code page
 aliases :: [(Char, String)]
 aliases = [('¤', "cur"), ('½', "hlf"), ('↕', "ud"),  ('↑', "up"),  ('↓', "dow"), ('↔', "lr"),  ('←', "lft"), ('→', "rgt"),
-           ('∟', "ang"), ('\n', "\n"), ('¦', "bar"), ('¡', "exc"), ('¿', "que"), ('‼', "dex"), ('…', "ell"), ('‰', "ppm"),
+           ('∟', "ang"), ('¦', "bar"), ('¡', "exc"), ('¿', "que"), ('‼', "dex"), ('…', "ell"), ('‰', "ppm"),
            ('†', "dag"), ('‡', "ddg"), ('√', "srd"), ('≤', "leq"), ('≥', "geq"), ('±', "pm"),  ('∂', "ptl"), ('∫', "int"),
            ('∞', "inf"), ('≈', "apx"), ('≠', "neq"), ('≡', "cng"), ('⌐', "gen"), ('¬', "neg"), ('÷', "div"), ('×', "eks"),
            ('·', "blt"),
