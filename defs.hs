@@ -12,25 +12,13 @@ class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
 instance Vect a b a b where func_vec = id
 instance (Vect a b x y) => Vect a b [x] [y] where func_vec = map . func_vec
 
-class Show a => ToString a where
+class ToString a where
   toString :: a -> String
 
 instance {-# OVERLAPPING #-} ToString [Char] where
   toString = id
 
-instance ToString Integer where
-  toString = show
-
-instance ToString Double where
-  toString = show
-
-instance ToString Char where
-  toString = show
-
-instance ToString a => ToString [a] where
-  toString = show
-
-instance (ToString a,ToString b) => ToString (a,b) where
+instance Concrete a => ToString a where
   toString = show
 
 class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
