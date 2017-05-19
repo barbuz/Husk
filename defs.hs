@@ -29,6 +29,9 @@ class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   func_le :: a -> a -> Integer
   func_ge :: a -> a -> Integer
   
+  func_heads :: a -> [a]
+  func_tails :: a -> [a]
+  
   func_eq :: a -> a -> Integer
   func_eq x y = boolToNum $ x == y
   
@@ -57,6 +60,8 @@ instance Concrete Integer where
   func_le y x = max 0 (y-x+1)
   func_ge y x = max 0 (x-y+1)
   func_neq y x = abs $ x-y
+  func_heads x = [1..x]
+  func_tails x = [x,x-1..1]
 
 instance Concrete Double where
   isTruthy = (/= 0)
@@ -66,6 +71,8 @@ instance Concrete Double where
   func_le y x = max 0 $ roundAway(y-x+1)
   func_ge y x = max 0 $ roundAway(x-y+1)
   func_neq y x = abs.roundAway $ x-y
+  func_heads x = [1..x]
+  func_tails x = [x,x-1..1]
 
 instance Concrete Char where
   isTruthy = (/= 0).ord
@@ -75,6 +82,8 @@ instance Concrete Char where
   func_le y x = fromIntegral $ max 0 (ord y - ord x + 1)
   func_ge y x = fromIntegral $ max 0 (ord x - ord y + 1)
   func_neq y x = abs.fromIntegral $ (ord x)-(ord y)
+  func_heads x = ['\0'..x]
+  func_tails x = [x, pred x..'\0']
 
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
@@ -98,6 +107,9 @@ instance Concrete a => Concrete [a] where
           go n (x:xs) (y:ys) | x /= y = n
                              | otherwise = go (n+1) xs ys
           go n _ _ = n
+  
+  func_heads=inits
+  func_tails=tails
 
 instance (Concrete a, Concrete b) => Concrete (a, b) where
   isTruthy (x, y) = isTruthy x && isTruthy y
@@ -107,6 +119,9 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   func_le (x, y) (x', y') = if x > x' then func_lt y y' else func_le x x'
   func_ge (x, y) (x', y') = if x < x' then func_gt y y' else func_ge x x'
   func_neq (x, y) (x', y') = if x == x' then func_neq y y' else func_neq x x'
+  
+  func_heads (a,b) = [(c,d)|c<-func_heads a,d<-func_heads b]
+  func_tails (a,b) = [(c,d)|c<-func_tails a,d<-func_tails b]
 
 class (Num n, Concrete n, Enum n, Real n) => Number n where
   valueOf :: n -> Either Integer Double
@@ -299,10 +314,6 @@ func_index2 = flip func_index
 
 func_rev :: [a] -> [a]
 func_rev = reverse
-
-func_range :: (Number n, Number m) => n -> [m]
-func_range x | Left n <- valueOf x  = [1, 2 .. fromInteger n]
-             | Right r <- valueOf x = [1, 2 .. fromInteger $ floor r]
 
 func_nats :: Number n => [n]
 func_nats = [1, 2 ..]
