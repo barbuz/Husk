@@ -51,9 +51,9 @@ character = do
 
 str :: InputParser
 str = do
-  char '"'
+  optionMaybe $ char '"'
   chars <- many $ noneOf "\\\"" <|> (fmap (\c -> if c == 'n' then '\n' else c) $ char '\\' >> oneOf "\\\"n")
-  char '"'
+  optionMaybe $ char '"'
   return $ Just (show chars, TList (TConc TChar))
 
 list :: InputParser
@@ -80,7 +80,7 @@ pair = do
     return ("(" ++ str1 ++ "," ++ str2 ++ ")", TPair typ1 typ2)
 
 inputVal :: InputParser
-inputVal = try double <|> try integer <|> try character <|> try str <|> try list <|> pair
+inputVal = try double <|> try integer <|> try character <|> try list <|> try pair <|> str
 
 input :: InputParser
 input = do
