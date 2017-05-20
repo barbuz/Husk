@@ -67,7 +67,6 @@ commandsList = [
   ('f', bins "filter select"),
   ('L', bins "len nlen"),
   ('#', bins "countf count"),
-  ('R', bins "range"),
   ('N', bins "nats"),
   ('‼', bins "index index2"),
   ('↑', bins "take takew"),
@@ -119,7 +118,9 @@ commandsList = [
   ('p', bins "pfac"),
   ('~', bins "subs subs2"),
   ('g', bins "group"),
-  ('ġ', bins "groupOn groupBy")
+  ('ġ', bins "groupOn groupBy"),
+  ('ḣ', bins "heads"),
+  ('ṫ', bins "tails")
   ]
 
 -- Compute builtins from space-delimited list
@@ -184,7 +185,8 @@ builtinsList = [
   ("dropw", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("span",  forall "xy" [con y] $ (x ~> y) ~> lst x ~> tup (lst x) (lst x)),
   ("rev",   forall "x" [] $ lst x ~> lst x),
-  ("range", forall "mn" [num m,num n] $ m ~> lst n),
+  ("heads", forall "x" [con x] $ x ~> lst x),
+  ("tails", forall "x" [con x] $ x ~> lst x),
   ("nats",  forall "n" [num n] $ lst n),
   ("concat",forall "x" [] $ lst (lst x) ~> lst x),
   ("sum",   forall "n" [num n] $ lst n ~> n),
