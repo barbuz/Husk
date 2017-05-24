@@ -144,11 +144,11 @@ intseq = do
 -- Parse a generalized lambda
 lambda :: Parser (Exp [Lit Scheme])
 lambda = do
-  lam <- oneOf "λμκφψχ"
+  lam <- oneOf "λμξφψχ"
   let numArgs = case lam of
         'λ' -> 1
         'μ' -> 2
-        'κ' -> 3
+        'ξ' -> 3
         'φ' -> 1
         'ψ' -> 2
         'χ' -> 3
