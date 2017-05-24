@@ -24,6 +24,7 @@ instance Concrete a => ToString a where
 class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   isTruthy :: a -> Bool
   toTruthy :: a -> Integer
+  func_false :: a
   func_lt :: a -> a -> Integer
   func_gt :: a -> a -> Integer
   func_le :: a -> a -> Integer
@@ -55,6 +56,7 @@ func_and' x y = func_and (toTruthy x) (toTruthy y)
 instance Concrete Integer where
   isTruthy = (/= 0)
   toTruthy = id
+  func_false = 0
   func_lt y x = max 0 (y-x)
   func_gt y x = max 0 (x-y)
   func_le y x = max 0 (y-x+1)
@@ -66,6 +68,7 @@ instance Concrete Integer where
 instance Concrete Double where
   isTruthy = (/= 0)
   toTruthy = roundAway
+  func_false = 0
   func_lt y x = max 0 $ roundAway(y-x)
   func_gt y x = max 0 $ roundAway(x-y)
   func_le y x = max 0 $ roundAway(y-x+1)
@@ -77,6 +80,7 @@ instance Concrete Double where
 instance Concrete Char where
   isTruthy = (/= 0).ord
   toTruthy = fromIntegral.ord
+  func_false = '\0'
   func_lt y x = fromIntegral $ max 0 (ord y - ord x)
   func_gt y x = fromIntegral $ max 0 (ord x - ord y)
   func_le y x = fromIntegral $ max 0 (ord y - ord x + 1)
@@ -88,6 +92,7 @@ instance Concrete Char where
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
   toTruthy = genericLength
+  func_false = []
   func_lt = go 1
     where go n [] (_:_) = n
           go n (y:ys) (x:xs) | x < y = n
@@ -114,6 +119,7 @@ instance Concrete a => Concrete [a] where
 instance (Concrete a, Concrete b) => Concrete (a, b) where
   isTruthy (x, y) = isTruthy x && isTruthy y
   toTruthy (x, y) = toTruthy x * toTruthy y
+  func_false = (func_false, func_false)
   func_lt (x, y) (x', y') = if x == x' then func_lt y y' else func_lt x x'
   func_gt (x, y) (x', y') = if x == x' then func_gt y y' else func_gt x x'
   func_le (x, y) (x', y') = if x > x' then func_lt y y' else func_le x x'
@@ -304,10 +310,17 @@ func_countf c = genericLength . filter (isTruthy . c)
 func_count :: Concrete a => a -> [a] -> Integer
 func_count x = genericLength . filter (== x)
 
+func_indexC :: Concrete a => Integer -> [a] -> a
+func_indexC 0 _ = func_false
+func_indexC n xs = func_index n xs
+
+func_indexC2 :: Concrete a => [a] -> Integer -> a
+func_indexC2 = flip func_indexC
+
 func_index :: Integer -> [a] -> a
 func_index i
-  | i>0       = flip genericIndex (i-1)
-  | otherwise = flip genericIndex (-i-1).reverse
+  | i>0       = flip genericIndex (i-1).cycle
+  | otherwise = flip genericIndex (-i-1).cycle.reverse
   
 func_index2 :: [a] -> Integer -> a
 func_index2 = flip func_index
