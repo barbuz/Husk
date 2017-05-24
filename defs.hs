@@ -310,17 +310,10 @@ func_countf c = genericLength . filter (isTruthy . c)
 func_count :: Concrete a => a -> [a] -> Integer
 func_count x = genericLength . filter (== x)
 
-func_indexC :: Concrete a => Integer -> [a] -> a
-func_indexC 0 _ = func_false
-func_indexC n xs = func_index n xs
-
-func_indexC2 :: Concrete a => [a] -> Integer -> a
-func_indexC2 = flip func_indexC
-
 func_index :: Integer -> [a] -> a
 func_index i
   | i>0       = flip genericIndex (i-1).cycle
-  | otherwise = flip genericIndex (-i-1).cycle.reverse
+  | otherwise = flip genericIndex (-i).cycle.reverse
   
 func_index2 :: [a] -> Integer -> a
 func_index2 = flip func_index

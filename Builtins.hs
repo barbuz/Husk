@@ -68,7 +68,7 @@ commandsList = [
   ('L', bins "len nlen"),
   ('#', bins "countf count"),
   ('N', bins "nats"),
-  ('!', bins "indexC indexC2 index index2"),
+  ('!', bins "index index2"),
   ('↑', bins "take takew"),
   ('↓', bins "drop dropw"),
   ('↕', bins "span"),
