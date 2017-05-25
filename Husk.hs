@@ -33,6 +33,7 @@ data Format = Bytes
 
 -- Command line option flags
 data Flag = InferType
+          | InferInputType
           | InFile
           | OutFile String
           | Format Format
@@ -57,6 +58,7 @@ consoleOpts = [Option ['b'] ["bytes"] (NoArg $ Format Bytes) "take input as byte
                Option ['u'] ["unicode"] (NoArg $ Format Unicode) "take input as Unicode characters",
                Option ['v'] ["verbose"] (NoArg $ Format Verbose) "take input as verbose ASCII",
                Option ['i'] ["infer"] (NoArg InferType) "only infer type(s) of given program",
+               Option ['I'] ["infer2"] (NoArg InferInputType) "infer type(s) of given program, taking input type(s) into account",
                Option ['f'] ["file"] (NoArg InFile) "read program from file",
                Option ['o'] ["out"] (ReqArg OutFile "FILE") "produce Haskell file of given name",
                Option ['t'] ["translate"] (ReqArg (Translate . parseFormat) "FORMAT") "translate source to specified format (b/u/v)"
@@ -103,37 +105,39 @@ main = do
                                    _ -> Left "Must supply input format"
       case errOrProg of
         Left err   -> putStrLn err
-        Right prog -> do
-          if InferType `elem` opts
-            then case parseProg False prog [] of
-                   Left err -> putStrLn err
-                   Right typings -> flip mapM_ typings $ \(typ, expr) ->
-                                                           putStrLn $ show expr ++ " :: " ++ show typ
-            else case find isTranslate opts of
-              Just (Translate Verbose) -> putStrLn $ toAliases prog
-              Just (Translate Unicode) -> putStrLn prog
-              Just (Translate Bytes)   ->
-                let bytes = B.pack $ getBytes prog
-                in case find isOutFile opts of
-                     Just (OutFile filename) -> B.writeFile filename bytes
-                     _ -> B.putStr bytes
-              _ -> do
-                let outfile = case (find isOutFile opts, InFile `elem` opts) of
-                                (Just (OutFile s), _) -> s
-                                (Nothing, True) -> progOrFile ++ ".hs"
-                                (Nothing, False) -> ".out.hs"
-                    progInputs :: Either String (Maybe [(String,Type)])
-                    progInputs = fmap sequence $ sequence $ zipWith parseInput [1..] progArgs
-                defs <- readFile "defs.hs"
-                case progInputs of
-                  Left err          -> putStrLn err
-                  Right Nothing     -> putStrLn "Could not infer valid type(s) for input(s)"
-                  Right (Just typedArgs) ->
-                    case parseProg True prog (map snd typedArgs) of
-                      Left err             -> putStrLn err
-                      Right []             -> putStrLn "Could not infer valid type for program"
-                      Right ((typ,expr):_) -> do writeFile outfile $ produceFile defs typ expr
-                                                 (_, Just hout, _, _) <- createProcess (proc "runhaskell" (outfile : map fst typedArgs)){ std_out = CreatePipe }
-                                                 result <- hGetContents hout
-                                                 putStr result
+        Right prog ->
+          let progInputs :: Either String (Maybe [(String,Type)])
+              progInputs = fmap sequence $ sequence $ zipWith parseInput [1..] progArgs
+          in case progInputs of
+               Left err          -> putStrLn err
+               Right Nothing     -> putStrLn "Could not infer valid type(s) for input(s)"
+               Right (Just typedArgs) ->
+                 if any (`elem` opts) [InferType, InferInputType]
+                 then let constrainType = InferInputType `elem` opts
+                          inputs = if InferInputType `elem` opts then map snd typedArgs else []
+                      in case parseProg constrainType prog inputs of
+                           Left err -> putStrLn err
+                           Right typings -> flip mapM_ typings $ \(typ, expr) ->
+                                                                   putStrLn $ show expr ++ " :: " ++ show typ
+                 else case find isTranslate opts of
+                        Just (Translate Verbose) -> putStrLn $ toAliases prog
+                        Just (Translate Unicode) -> putStrLn prog
+                        Just (Translate Bytes)   ->
+                          let bytes = B.pack $ getBytes prog
+                          in case find isOutFile opts of
+                               Just (OutFile filename) -> B.writeFile filename bytes
+                               _ -> B.putStr bytes
+                        _ -> do
+                          let outfile = case (find isOutFile opts, InFile `elem` opts) of
+                                          (Just (OutFile s), _) -> s
+                                          (Nothing, True) -> progOrFile ++ ".hs"
+                                          (Nothing, False) -> ".out.hs"
+                          defs <- readFile "defs.hs"
+                          case parseProg True prog (map snd typedArgs) of
+                            Left err             -> putStrLn err
+                            Right []             -> putStrLn "Could not infer valid type for program"
+                            Right ((typ,expr):_) -> do writeFile outfile $ produceFile defs typ expr
+                                                       (_, Just hout, _, _) <- createProcess (proc "runhaskell" (outfile : map fst typedArgs)){ std_out = CreatePipe }
+                                                       result <- hGetContents hout
+                                                       putStr result
     (_, _, errs) -> putStrLn $ concat errs ++ usageInfo "Usage: main [OPTION...] [FILE|EXPR] [INPUT...]" consoleOpts
