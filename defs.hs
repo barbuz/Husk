@@ -348,6 +348,9 @@ func_fif f g h x = if isTruthy (f x) then g x else h x
 func_not :: Concrete a => a -> Integer
 func_not a = if isTruthy a then 0 else 1
 
+func_fnot :: Concrete b => (a -> b) -> a -> Integer
+func_fnot f = func_not . f
+
 func_hook :: (a -> b -> c) -> (a -> b) -> a -> c
 func_hook x y z = x z (y z)
 
