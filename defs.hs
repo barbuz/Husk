@@ -218,6 +218,9 @@ func_modID b a = a - fromInteger (func_idiv b a * b)
 func_modDI :: Double -> Integer -> Double
 func_modDI b a = fromInteger a - fromInteger (func_idiv b a) * b
 
+func_divds :: Number n => n -> n -> Integer
+func_divds b a = func_not $ func_mod b a
+
 func_neg :: Number n => n -> n
 func_neg x = -x
 

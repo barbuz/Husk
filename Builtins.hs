@@ -120,7 +120,8 @@ commandsList = [
   ('g', bins "group"),
   ('ġ', bins "groupOn groupBy"),
   ('ḣ', bins "heads"),
-  ('ṫ', bins "tails")
+  ('ṫ', bins "tails"),
+  ('¦', bins "divds")
   ]
 
 -- Compute builtins from space-delimited list
@@ -158,6 +159,7 @@ builtinsList = [
   ("predN", forall "n" [num n] $ n ~> n),
   ("succN", forall "n" [num n] $ n ~> n),
   ("pfac",  simply $ int ~> lst int),
+  ("divds", forall "n" [num n] $ n ~> n ~> int),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
