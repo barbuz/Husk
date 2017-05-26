@@ -86,7 +86,7 @@ commandsList = [
   ('=', bins "eq"),
   ('≠', bins "neq"),
   ('?', bins "if if2 fif"),
-  ('¬', bins "not fnot"),
+  ('¬', bins "not"),
   ('|', bins "or or'"),
   ('&', bins "and and'"),
   ('S', bins "hook"),
@@ -105,10 +105,17 @@ commandsList = [
   ('r', bins "read"),
   ('ø', bins "empty"),
   ('€', bins "elem"),
-  ('·', bins "com com2 com3 com4"),
+  ('o', bins "com com2 com3 com4"),
+  ('ȯ', EAbs "x" $ EAbs "y" $ EAbs "z" $
+        EOp (bins "com com2 com3 com4") (EVar "x") $
+        EOp (bins "com com2 com3 com4") (EVar "y") (EVar "z")),
+  ('ö', EAbs "x" $ EAbs "y" $ EAbs "z" $ EAbs "u" $
+        EOp (bins "com com2 com3 com4") (EVar "x") $
+        EOp (bins "com com2 com3 com4") (EVar "y") $
+        EOp (bins "com com2 com3 com4") (EVar "z") (EVar "u")),
   ('¨', bins "vec"),
-  ('o', bins "sort"),
-  ('ö', bins "sorton sortby"),
+  ('O', bins "sort"),
+  ('Ö', bins "sorton sortby"),
   ('▲', bins "max maxl"),
   ('▼', bins "min minl"),
   ('u', bins "nub"),
