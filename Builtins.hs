@@ -128,7 +128,8 @@ commandsList = [
   ('ġ', bins "groupOn groupBy"),
   ('ḣ', bins "heads"),
   ('ṫ', bins "tails"),
-  ('¦', bins "divds")
+  ('¦', bins "divds"),
+  ('P', bins "perms")
   ]
 
 -- Compute builtins from space-delimited list
@@ -219,6 +220,7 @@ builtinsList = [
   ("group", forall "x" [con x] $ lst x ~> lst (lst x)),
   ("groupOn",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
   ("groupBy",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst y)), 
+  ("perms", forall "x" [] $ lst x ~> lst (lst x)),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

@@ -544,3 +544,6 @@ func_groupOn f = groupBy (\x y -> f x == f y)
 
 func_groupBy :: Concrete b => (a -> a -> b) -> [a] -> [[a]]
 func_groupBy f = groupBy (\x y -> isTruthy $ f x y)
+
+func_perms :: [a] -> [[a]]
+func_perms = permutations
