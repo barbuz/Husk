@@ -343,10 +343,10 @@ func_if :: Concrete a => b -> b -> a -> b
 func_if b c a = if isTruthy a then b else c
 
 func_if2 :: Concrete a => (a->b) -> b -> a -> b
-func_if2 f b a = if isTruthy a then f a else b
+func_if2 g c a = if isTruthy a then g a else c
 
-func_fif :: Concrete a => (x->a) -> (x->b) -> (x->b) -> x -> b
-func_fif f g h x = if isTruthy (f x) then g x else h x
+func_fif :: Concrete a => (x->b) -> (x->b) -> (x->a) -> x -> b
+func_fif g h f x = if isTruthy (f x) then g x else h x
 
 func_not :: Concrete a => a -> Integer
 func_not a = if isTruthy a then 0 else 1

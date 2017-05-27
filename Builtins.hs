@@ -267,7 +267,7 @@ builtinsList = [
   ("neq",   forall "x" [con x] $ x ~> x ~> int),
   ("if",    forall "xy" [con x] $ y ~> y ~> x ~> y),
   ("if2",   forall "xy" [con x] $ (x ~> y) ~> y ~> x ~> y),
-  ("fif",   forall "xyz" [con x] $ (z ~> x) ~> (z ~> y) ~> (z ~> y) ~> z ~> y),
+  ("fif",   forall "xyz" [con x] $ (z ~> y) ~> (z ~> y) ~> (z ~> x) ~> z ~> y),
   ("not",   forall "x" [con x] $ x ~> int),
   ("fnot",  forall "xy" [con y] $ (x ~> y) ~> (x ~> int)),
   ("or",    forall "x" [con x] $ x ~> x ~> x),
