@@ -93,7 +93,7 @@ commandsList = [
   ('K', bins "const"),
   ('I', bins "id"),
   ('`', bins "flip"),
-  ('Λ', bins "list listN listF listNF"),
+  ('Γ', bins "list listN listF listNF"),
   ('Σ', bins "sum trianI trianD concat"),
   ('Π', bins "prod fact cartes"),
   ('§', bins "fork fork2"),
@@ -104,7 +104,7 @@ commandsList = [
   ('s', bins "show"),
   ('r', bins "read"),
   ('ø', bins "empty"),
-  ('€', bins "elem"),
+  ('€', bins "elem subl"),
   ('o', bins "com com2 com3 com4"),
   ('ȯ', EAbs "x" $ EAbs "y" $ EAbs "z" $
         EOp (bins "com com2 com3 com4") (EVar "x") $
@@ -129,7 +129,9 @@ commandsList = [
   ('ḣ', bins "heads"),
   ('ṫ', bins "tails"),
   ('¦', bins "divds"),
-  ('P', bins "perms")
+  ('P', bins "perms"),
+  ('V', bins "any"),
+  ('Λ', bins "all")
   ]
 
 -- Compute builtins from space-delimited list
@@ -221,6 +223,8 @@ builtinsList = [
   ("groupOn",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
   ("groupBy",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst y)), 
   ("perms", forall "x" [] $ lst x ~> lst (lst x)),
+  ("subl",  forall "x" [con x] $ lst x ~> lst x ~> int),
+  ("superl",forall "x" [con x] $ lst x ~> lst x ~> int),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -278,6 +282,8 @@ builtinsList = [
   ("and'",  forall "x" [con x, num n] $ x ~> x ~> n),
   ("max",   forall "x" [con x] $ x ~> x ~> x),
   ("min",   forall "x" [con x] $ x ~> x ~> x),
+  ("any",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
+  ("all",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
   
   -- Chars and strings
   ("chr",   simply $ int ~> chr),

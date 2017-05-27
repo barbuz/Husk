@@ -25,6 +25,7 @@ class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   isTruthy :: a -> Bool
   toTruthy :: a -> Integer
   func_false :: a
+  func_true :: a
   func_lt :: a -> a -> Integer
   func_gt :: a -> a -> Integer
   func_le :: a -> a -> Integer
@@ -57,6 +58,7 @@ instance Concrete Integer where
   isTruthy = (/= 0)
   toTruthy = id
   func_false = 0
+  func_true = 1
   func_lt y x = max 0 (y-x)
   func_gt y x = max 0 (x-y)
   func_le y x = max 0 (y-x+1)
@@ -69,6 +71,7 @@ instance Concrete Double where
   isTruthy = (/= 0)
   toTruthy = roundAway
   func_false = 0
+  func_true = 1
   func_lt y x = max 0 $ roundAway(y-x)
   func_gt y x = max 0 $ roundAway(x-y)
   func_le y x = max 0 $ roundAway(y-x+1)
@@ -81,6 +84,7 @@ instance Concrete Char where
   isTruthy = (/= 0).ord
   toTruthy = fromIntegral.ord
   func_false = '\0'
+  func_true = '\n'
   func_lt y x = fromIntegral $ max 0 (ord y - ord x)
   func_gt y x = fromIntegral $ max 0 (ord x - ord y)
   func_le y x = fromIntegral $ max 0 (ord y - ord x + 1)
@@ -93,6 +97,7 @@ instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
   toTruthy = genericLength
   func_false = []
+  func_true = [func_true]
   func_lt = go 1
     where go n [] (_:_) = n
           go n (y:ys) (x:xs) | x < y = n
@@ -120,6 +125,7 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   isTruthy (x, y) = isTruthy x && isTruthy y
   toTruthy (x, y) = toTruthy x * toTruthy y
   func_false = (func_false, func_false)
+  func_true = (func_true, func_true)
   func_lt (x, y) (x', y') = if x == x' then func_lt y y' else func_lt x x'
   func_gt (x, y) (x', y') = if x == x' then func_gt y y' else func_gt x x'
   func_le (x, y) (x', y') = if x > x' then func_lt y y' else func_le x x'
@@ -547,3 +553,15 @@ func_groupBy f = groupBy (\x y -> isTruthy $ f x y)
 
 func_perms :: [a] -> [[a]]
 func_perms = permutations
+
+func_subl :: Concrete a => [a] -> [a] -> Integer
+func_subl super sub = subindex 1 super sub
+  where subindex i _ [] = i
+        subindex i super@(_:xs) sub = if sub`isPrefixOf`super then i else subindex (i+1) xs sub
+        subindex _ [] _  = 0
+        
+func_any :: Concrete b => (a->b) -> [a] -> b
+func_any f = foldl func_or func_false . map f
+
+func_all :: Concrete b => (a->b) -> [a] -> b
+func_all f = foldl func_and func_true . map f
