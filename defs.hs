@@ -565,3 +565,19 @@ func_any f = foldl func_or func_false . map f
 
 func_all :: Concrete b => (a->b) -> [a] -> b
 func_all f = foldl func_and func_true . map f
+
+func_trsp :: [[a]] -> [[a]]
+func_trsp = transpose
+
+--Transpose with -> turns into a square matrix before transposing, padding with the given element
+func_trspw :: a -> [[a]] -> [[a]]
+func_trspw padding rows | all null rows = []
+                        | otherwise     = map (headwith padding) rows : func_trspw padding (map (drop 1) rows)
+   where headwith _       (x:_) = x
+         headwith padding  _    = padding
+
+--Zip, but keep extra elements from the longer list unaltered
+func_zip' :: (a -> a -> a) -> [a] -> [a] -> [a]
+func_zip' _ [] ys = ys
+func_zip' _ xs [] = xs
+func_zip' f (x:xs) (y:ys) = f x y : func_zip' f xs ys

@@ -131,7 +131,9 @@ commandsList = [
   ('¦', bins "divds"),
   ('P', bins "perms"),
   ('V', bins "any"),
-  ('Λ', bins "all")
+  ('Λ', bins "all"),
+  ('T', bins "trsp trspw"),
+  ('ż', bins "zip'")
   ]
 
 -- Compute builtins from space-delimited list
@@ -223,8 +225,9 @@ builtinsList = [
   ("groupOn",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
   ("groupBy",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst y)), 
   ("perms", forall "x" [] $ lst x ~> lst (lst x)),
-  ("subl",  forall "x" [con x] $ lst x ~> lst x ~> int),
-  ("superl",forall "x" [con x] $ lst x ~> lst x ~> int),
+  ("trsp",  forall "x" [] $ lst (lst x) ~> lst (lst x)),
+  ("trspw", forall "x" [] $ x ~> lst (lst x) ~> lst (lst x)),
+  
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -248,6 +251,7 @@ builtinsList = [
   ("iter",  forall "x" [] $ (x ~> x) ~> x ~> lst x),
   ("rep",   forall "x" [] $ x ~> lst x),
   ("vec",   forall "xyuv" [vec x y u v] $ (x ~> y) ~> (u ~> v)),
+  ("zip'",  forall "x" [] $ (x ~> x ~> x) ~> lst x ~> lst x ~> lst x),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
@@ -284,6 +288,7 @@ builtinsList = [
   ("min",   forall "x" [con x] $ x ~> x ~> x),
   ("any",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
   ("all",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
+  ("subl",  forall "x" [con x] $ lst x ~> lst x ~> int),
   
   -- Chars and strings
   ("chr",   simply $ int ~> chr),
