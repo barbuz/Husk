@@ -30,14 +30,14 @@ class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   func_gt :: a -> a -> Integer
   func_le :: a -> a -> Integer
   func_ge :: a -> a -> Integer
+  func_neq :: a -> a -> Integer
+  func_congr :: a -> a -> Integer
   
   func_heads :: a -> [a]
   func_tails :: a -> [a]
   
   func_eq :: a -> a -> Integer
   func_eq x y = boolToNum $ x == y
-  
-  func_neq :: a -> a -> Integer
   
   func_or :: a -> a -> a
   func_or x y = if isTruthy x then x else y
@@ -64,6 +64,12 @@ instance Concrete Integer where
   func_le y x = max 0 (y-x+1)
   func_ge y x = max 0 (x-y+1)
   func_neq y x = abs $ x-y
+  
+  func_congr 0 0 = 1
+  func_congr 0 _ = 0
+  func_congr _ 0 = 0
+  func_congr _ _ = 1
+  
   func_heads x = [1..x]
   func_tails x = [x,x-1..1]
 
@@ -77,6 +83,12 @@ instance Concrete Double where
   func_le y x = max 0 $ roundAway(y-x+1)
   func_ge y x = max 0 $ roundAway(x-y+1)
   func_neq y x = abs.roundAway $ x-y
+    
+  func_congr 0 0 = 1
+  func_congr 0 _ = 0
+  func_congr _ 0 = 0
+  func_congr _ _ = 1
+  
   func_heads x = [1..x]
   func_tails x = [x,x-1..1]
 
@@ -90,6 +102,12 @@ instance Concrete Char where
   func_le y x = fromIntegral $ max 0 (ord y - ord x + 1)
   func_ge y x = fromIntegral $ max 0 (ord x - ord y + 1)
   func_neq y x = abs.fromIntegral $ (ord x)-(ord y)
+      
+  func_congr '\0' '\0' = 1
+  func_congr '\0' _    = 0
+  func_congr _    '\0' = 0
+  func_congr _    _    = 1
+  
   func_heads x = ['\0'..x]
   func_tails x = [x, pred x..'\0']
 
@@ -118,6 +136,11 @@ instance Concrete a => Concrete [a] where
                              | otherwise = go (n+1) xs ys
           go n _ _ = n
   
+  func_congr [] [] = 1
+  func_congr [] _  = 0
+  func_congr _  [] = 0
+  func_congr (x:xs) (y:ys) = if func_congr x y == 0 then 0 else func_congr xs ys
+  
   func_heads=inits
   func_tails=tails
 
@@ -131,6 +154,8 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   func_le (x, y) (x', y') = if x > x' then func_lt y y' else func_le x x'
   func_ge (x, y) (x', y') = if x < x' then func_gt y y' else func_ge x x'
   func_neq (x, y) (x', y') = if x == x' then func_neq y y' else func_neq x x'
+  
+  func_congr (a,b) (c,d) = if func_congr a c + func_congr b d == 2 then 1 else 0
   
   func_heads (a,b) = [(c,d)|c<-func_heads a,d<-func_heads b]
   func_tails (a,b) = [(c,d)|c<-func_tails a,d<-func_tails b]

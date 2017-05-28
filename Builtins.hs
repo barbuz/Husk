@@ -134,7 +134,8 @@ commandsList = [
   ('Λ', bins "all"),
   ('T', bins "trsp trspw"),
   ('ż', bins "zip'"),
-  ('ṁ', bins "cmap cmapr smap smapr")
+  ('ṁ', bins "cmap cmapr smap smapr"),
+  ('≡', bins "congr")
   ]
 
 -- Compute builtins from space-delimited list
@@ -294,6 +295,7 @@ builtinsList = [
   ("any",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
   ("all",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
   ("subl",  forall "x" [con x] $ lst x ~> lst x ~> int),
+  ("congr", forall "x" [con x] $ x ~> x ~> int),
   
   -- Chars and strings
   ("chr",   simply $ int ~> chr),
