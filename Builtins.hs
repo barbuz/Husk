@@ -133,7 +133,8 @@ commandsList = [
   ('V', bins "any"),
   ('Λ', bins "all"),
   ('T', bins "trsp trspw"),
-  ('ż', bins "zip'")
+  ('ż', bins "zip'"),
+  ('ṁ', bins "cmap cmapr smap smapr")
   ]
 
 -- Compute builtins from space-delimited list
@@ -252,6 +253,10 @@ builtinsList = [
   ("rep",   forall "x" [] $ x ~> lst x),
   ("vec",   forall "xyuv" [vec x y u v] $ (x ~> y) ~> (u ~> v)),
   ("zip'",  forall "x" [] $ (x ~> x ~> x) ~> lst x ~> lst x ~> lst x),
+  ("cmap",  forall "xy" [] $ (x ~> lst y) ~> lst x ~> lst y),
+  ("smap",  forall "xn" [num n] $ (x ~> n) ~> lst x ~> n),
+  ("cmapr", forall "xy" [] $ lst (x ~> lst y) ~> x ~> lst y),
+  ("smapr", forall "xn" [num n] $ lst (x ~> n) ~> x ~> n),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

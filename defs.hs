@@ -581,3 +581,15 @@ func_zip' :: (a -> a -> a) -> [a] -> [a] -> [a]
 func_zip' _ [] ys = ys
 func_zip' _ xs [] = xs
 func_zip' f (x:xs) (y:ys) = f x y : func_zip' f xs ys
+
+func_cmap :: (a -> [b]) -> [a] -> [b]
+func_cmap = concatMap
+
+func_smap :: Number n => (a -> n) -> [a] -> n
+func_smap f = sum . map f
+
+func_cmapr :: [(a -> [b])] -> a -> [b]
+func_cmapr fs = concat . func_mapr fs
+
+func_smapr :: Number n => [(a -> n)] -> a -> n
+func_smapr fs = sum . func_mapr fs
