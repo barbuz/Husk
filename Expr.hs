@@ -13,6 +13,7 @@ type ELabel = String
 
 -- Expression containing generalized literals
 data Exp lit = EVar ELabel
+             | ELine Int
              | ELit lit
              | EApp (Exp lit) (Exp lit)
              | EOp (Exp lit) (Exp lit) (Exp lit)
@@ -22,6 +23,7 @@ data Exp lit = EVar ELabel
 
 instance (Show lit) => Show (Exp lit) where
   show (EVar name) = name
+  show (ELine n) = "line" ++ show n
   show (ELit lit) = show lit
   show (EApp a b) = show a ++ "(" ++ show b ++ ")"
   show (EOp a b c) = show $ EApp (EApp a b) c
@@ -141,6 +143,7 @@ cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map consToHaskell cons
 -- Convert expression to Haskell code
 expToHaskell :: Exp (Lit CType) -> String
 expToHaskell (EVar name) = name
+expToHaskell (ELine n) = "line" ++ show n
 expToHaskell (ELit (Lit prefix name typ)) = "(" ++ prefix ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
 expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
 expToHaskell (EOp _ _ _) = error "expToHaskell not defined for EOp"

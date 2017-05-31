@@ -19,7 +19,7 @@ data PState = PState {varStack :: [ELabel],
 type Parser = Parsec String PState
 
 -- Unwrapped parser, giving strings for errors
-parseExpr :: String -> Either String (Exp [Lit Scheme])
+parseExpr :: String -> Either String [Exp [Lit Scheme]]
 parseExpr str = case runParser multiline initState "" str of
   Left err -> Left $ show err
   Right val -> Right val
@@ -65,13 +65,8 @@ rParen :: Parser ()
 rParen = (char ')' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
 
 -- Parse a multiline expression; first line is "main line"
-multiline :: Parser (Exp [Lit Scheme])
-multiline = do
-  lines <- sepBy1 lineExpr endOfLine
-  eof
-  let paired = foldr (EOp $ bins "pair") nil lines
-  return $ ELet "mainFunc" paired $ EApp (bins "fst") $ EVar "mainFunc"
-  where nil = ELit [Lit "" "()" $ Scheme [] $ CType [] $ TConc TNil] -- Dummy value
+multiline :: Parser [Exp [Lit Scheme]]
+multiline = sepBy1 lineExpr endOfLine
 
 -- Parse a line of Husk code
 lineExpr :: Parser (Exp [Lit Scheme])
@@ -176,7 +171,5 @@ subscript :: Parser (Exp [Lit Scheme])
 subscript = do
   sub <- oneOf subs
   let Just ix = elemIndex sub subs
-  return $ left $ iterate right (EVar "mainFunc") !! ix
+  return $ ELine ix
   where subs  = "₁₂₃₄₅₆₇₈₉"
-        right = EApp (bins "snd")
-        left  = EApp (bins "fst")

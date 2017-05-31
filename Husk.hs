@@ -16,7 +16,7 @@ import Data.List (find, intercalate, nub)
 import Data.Set (toAscList)
 
 -- Wrapper for expression parser
-parseProg :: Bool -> String -> [Type] -> Either String [(CType, Exp (Lit CType))]
+parseProg :: Bool -> String -> [Type] -> Either String [[(Int, CType, Exp (Lit CType))]]
 parseProg constrainRes prog types = inferType constrainRes (foldr typeConstr resType types) <$> parseExpr prog
   where typeConstr typ1 (Scheme vars (CType cons typ2)) =
           Scheme (nub $ vars ++ toAscList (freeVars typ1)) $
@@ -68,17 +68,22 @@ consoleOpts = [Option ['b'] ["bytes"] (NoArg $ Format Bytes) "take input as byte
         parseFormat "v" = Verbose
         parseFormat _ = error "Bad format specifier"
 
-produceFile :: String -> CType -> Exp (Lit CType) -> String
-produceFile defs typ@(CType _ t) expr =
+-- Produce Haskell file from definitions file and list of type-inferred lines
+produceFile :: String -> [(Int, CType, Exp (Lit CType))] -> String
+produceFile defs exprs =
   defs ++
-  "\n"++
-  "func :: " ++ cTypeToHaskell typ ++ "\n" ++
-  "func = " ++ expToHaskell expr ++ "\n" ++
+  "\n" ++
+  progLines ++
   "main :: IO ()\n" ++
   "main = do{[" ++ intercalate "," argList ++ "] <- getArgs; " ++
-  "let{res = func " ++ concatMap (\a -> "(read " ++ a ++ ")") argList ++ "}; " ++
+  "let{res = line0 " ++ concatMap (\a -> "(read " ++ a ++ ")") argList ++ "}; " ++
   "putStrLn (toString res)}"
-  where argList = ["arg" ++ show i | i <- [1..numArgs t]]
+  where progLines = concat [ label ++ " :: " ++ cTypeToHaskell typ ++ "\n" ++
+                             label ++ " = " ++ expToHaskell expr ++ "\n"
+                           | (i, typ, expr) <- exprs,
+                             let label = "line" ++ show i]
+        (_, CType _ mainTyp, _) = exprs !! 0
+        argList = ["arg" ++ show i | i <- [1..numArgs mainTyp]]
         numArgs (TFun _ t) = 1 + numArgs t
         numArgs _ = 0
 
@@ -117,8 +122,12 @@ main = do
                           inputs = if InferInputType `elem` opts then map snd typedArgs else []
                       in case parseProg constrainType prog inputs of
                            Left err -> putStrLn err
-                           Right typings -> flip mapM_ typings $ \(typ, expr) ->
-                                                                   putStrLn $ show expr ++ " :: " ++ show typ
+                           Right typings -> flip mapM_ typings $
+                                            \exprs -> do
+                                              putStrLn "%%%%"
+                                              flip mapM_ exprs $
+                                                \(i, typ, expr) -> do
+                                                  putStrLn $ "line" ++ show i ++ " = " ++ show expr ++ " :: " ++ show typ
                  else case find isTranslate opts of
                         Just (Translate Verbose) -> putStrLn $ toAliases prog
                         Just (Translate Unicode) -> putStrLn prog
@@ -136,8 +145,8 @@ main = do
                           case parseProg True prog (map snd typedArgs) of
                             Left err             -> putStrLn err
                             Right []             -> putStrLn "Could not infer valid type for program"
-                            Right ((typ,expr):_) -> do writeFile outfile $ produceFile defs typ expr
-                                                       (_, Just hout, _, _) <- createProcess (proc "runhaskell" (outfile : map fst typedArgs)){ std_out = CreatePipe }
-                                                       result <- hGetContents hout
-                                                       putStr result
+                            Right (lineExprs : _) -> do writeFile outfile $ produceFile defs lineExprs
+                                                        (_, Just hout, _, _) <- createProcess (proc "runhaskell" (outfile : map fst typedArgs)){ std_out = CreatePipe }
+                                                        result <- hGetContents hout
+                                                        putStr result
     (_, _, errs) -> putStrLn $ concat errs ++ usageInfo "Usage: main [OPTION...] [FILE|EXPR] [INPUT...]" consoleOpts
