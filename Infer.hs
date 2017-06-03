@@ -75,6 +75,7 @@ instance (Types a) => Types [a] where
 
 -- Type environment: types of expression variables
 newtype TypeEnv = TypeEnv (Map.Map ELabel Scheme)
+  deriving (Show)
 
 instance Types TypeEnv where
   freeVars (TypeEnv env) = freeVars $ Map.elems env
@@ -93,10 +94,12 @@ generalize env ct = Scheme vars ct
 data LineFunc = Unprocessed (Exp [Lit Scheme])
               | Processing Type
               | Processed (Exp (Lit CType)) CType
+              deriving (Show)
 
 -- State for generating unique type vars
 data InfState = InfState {varSupply :: Int,
-                          lineExprs :: [LineFunc]}
+                          currSubst :: Sub,
+                          lineExprs :: Map.Map Int LineFunc}
 
 -- Monad for performing backtracking type inference
 type Infer a = StateT InfState [] a
@@ -104,7 +107,8 @@ type Infer a = StateT InfState [] a
 runInfer :: [Exp [Lit Scheme]] -> Infer a -> [(a, InfState)]
 runInfer exps t = runStateT t initState
   where initState = InfState {varSupply = 0,
-                              lineExprs = map Unprocessed exps}
+                              currSubst = nullSub,
+                              lineExprs = Map.fromList [(i, Unprocessed e) | (i, e) <- zip [0..] exps]}
 
 -- Generate a new type variable
 newTVar :: String -> Infer Type
@@ -113,12 +117,23 @@ newTVar prefix = do
   put s{varSupply = varSupply s + 1}
   return $ TVar $ prefix ++ show (varSupply s)
 
--- Update a line function
-updateLine :: Int -> LineFunc -> Infer ()
-updateLine num f = do
+-- Update current substitution with new one
+updateSub :: Sub -> Infer ()
+updateSub sub = do
   s <- get
-  let exprs = lineExprs s
-  put s{lineExprs = take num exprs ++ [f] ++ drop (num+1) exprs}
+  put s{currSubst = currSubst s `composeSub` sub}
+
+-- Update line functions
+updateLines :: (Map.Map Int LineFunc -> Map.Map Int LineFunc) -> Infer ()
+updateLines f = do
+  s <- get
+  put s{lineExprs = f $ lineExprs s}
+
+-- Apply current substitution
+substitute :: (Show t, Types t) => t -> Infer t
+substitute t = do
+  sub <- gets currSubst
+  return $ trace' ("substituting " ++ show t ++ " with " ++ show (Map.toList sub)) $ applySub sub t
 
 -- Replace all bound variables with newly generated ones
 instantiate :: Scheme -> Infer CType
@@ -127,75 +142,86 @@ instantiate (Scheme vars ct) = do
   let s = Map.fromList $ zip vars newVars
   return $ applySub s ct
 
--- Bind a type variable to a type, return substitution
+-- Bind a type variable to a type, update current substitution
 -- Fails if var occurs in the type (infinite type)
-varBind :: TLabel -> Type -> Infer Sub
+varBind :: TLabel -> Type -> Infer ()
 varBind name typ
-  | TVar var <- typ, var == name   = return nullSub
+  | TVar var <- typ, var == name   = return ()
   | name `Set.member` freeVars typ = fail ""
-  | otherwise                      = return $ Map.singleton name typ
+  | otherwise                      = updateSub $ Map.singleton name typ
 
 -- Most general unifier of two types
--- Returns substitution that makes them equal
+-- Updates substitution in a way that makes them equal
 -- Fails if types can't be unified
-unify :: Type -> Type -> Infer Sub
-unify t1 t2 | traceShow' (t1, t2) False = undefined
-unify (TFun arg1 res1) (TFun arg2 res2) =
-  do argSub <- unify arg1 arg2
-     resSub <- unify (applySub argSub res1) (applySub argSub res2)
-     return $ argSub `composeSub` resSub
-unify (TPair l1 r1) (TPair l2 r2) =
-  do lSub <- unify l1 l2
-     rSub <- unify (applySub lSub r1) (applySub lSub r2)
-     return $ lSub `composeSub` rSub
-unify (TList t1) (TList t2)        = unify t1 t2
-unify (TVar name) typ              = varBind name typ
-unify typ (TVar name)              = varBind name typ
-unify (TConc a) (TConc b) | a == b = return nullSub
-unify _ _                          = fail ""
+unify :: Type -> Type -> Infer ()
+unify t1 t2 | trace' ("unifying " ++ show (t1, t2)) False = undefined
+unify t1 t2 = do
+  t1' <- substitute t1
+  t2' <- substitute t2
+  unify' t1' t2'
+  where
+    unify' (TFun arg1 res1) (TFun arg2 res2) =
+      do unify' arg1 arg2
+         unify res1 res2
+    unify' (TPair l1 r1) (TPair l2 r2) =
+      do unify' l1 l2
+         unify r1 r2
+    unify' (TList t1) (TList t2)        = unify' t1 t2
+    unify' (TVar name) typ              = varBind name typ
+    unify' typ (TVar name)              = varBind name typ
+    unify' (TConc a) (TConc b) | a == b = return ()
+    unify' _ _                          = fail ""
 
 -- Check typeclass constraints; remove those that hold, keep indeterminate ones, fail if any don't hold
 checkCons :: [TClass] -> Infer [TClass]
-checkCons x | traceShow' x False = undefined
+checkCons x | trace' ("checking " ++ show x) False = undefined
 checkCons [] = return []
-checkCons (c:cs) = case traceShow' (c, holds c) holds c of
+checkCons (c:cs) = case {-traceShow' (c, holds c)-} holds c of
   Just cs' -> (cs' ++) <$> checkCons cs
   Nothing  -> fail ""
 
 -- Infer type of literal
-inferLit :: Lit Scheme -> Infer (Sub, CType, Exp (Lit CType))
+inferLit :: Lit Scheme -> Infer (CType, Exp (Lit CType))
 inferLit lit@(Lit prefix name typ) =
   do newTyp <- instantiate typ
-     return (nullSub, newTyp, ELit $ Lit prefix name newTyp)
+     return (newTyp, ELit $ Lit prefix name newTyp)
 
 -- Infer type of []-overloaded expression
 -- All free expression variables must be bound in environment (otherwise it crashes)
--- Returns triple of:
--- types of expression variables, type of whole expression, non-overloaded expression
-infer :: TypeEnv -> Exp [Lit Scheme] -> Infer (Sub, CType, Exp (Lit CType))
-infer env exp | traceShow' exp False = undefined
+-- Returns tuple of:
+-- type of whole expression, non-overloaded expression
+infer :: TypeEnv -> Exp [Lit Scheme] -> Infer (CType, Exp (Lit CType))
+infer env exp | trace' ("inferring " ++ show exp) False = undefined
 
 -- Variable: find type in environment, combine constraints, return type
 infer (TypeEnv env) (EVar name) = 
   case Map.lookup name env of
     Nothing    -> error $ "unbound variable: " ++ name
     Just sigma -> do typ <- instantiate sigma
-                     return (nullSub, typ, EVar name)
+                     return (typ, EVar name)
 
 -- Line reference: pull type if already inferred, otherwise infer it
 infer env (ELine num) =
-  do lineExpr <- gets $ (!! num) . lineExprs
+  do lineExpr <- gets $ (Map.! num) . lineExprs
      case lineExpr of
        Unprocessed expr -> do
          newVar <- newTVar "l"
-         updateLine num $ Processing newVar
-         (sub, typ, newExpr) <- infer env expr
-         updateLine num $ Processed newExpr typ
-         return (sub, typ, ELine num)
+         updateLines $ Map.insert num $ Processing newVar
+         (typ@(CType _ t), infExpr) <- infer env expr
+         unify newVar t
+         newExpr <- substitute infExpr
+         newTyp <- substitute typ
+         updateLines $ Map.insert num $ Processed newExpr newTyp
+         return (newTyp, ELine num)
        Processing typ -> do
-         return (nullSub, CType [] $ typ, ELine num)
+         newTyp <- substitute typ
+         updateLines $ Map.insert num $ Processing newTyp
+         return (CType [] $ newTyp, ELine num)
        Processed exp typ -> do
-         return (nullSub, typ, ELine num)
+         newTyp <- substitute typ
+         newExp <- substitute exp
+         updateLines $ Map.insert num $ Processed newExp newTyp
+         return (newTyp, ELine num)
          
 
 -- Literal: apply helper function
@@ -208,72 +234,79 @@ infer env (EAbs name exp) =
   do newVar <- newTVar "b"
      let TypeEnv envMinusName = remove env name
          newEnv = TypeEnv $ Map.union envMinusName $ Map.singleton name $ Scheme [] $ CType [] newVar
-     (sub, CType cons typ, newExp) <- infer newEnv exp
-     return (sub, CType cons $ TFun (applySub sub newVar) typ, EAbs name (applySub sub newExp))
+     (CType cons typ, newExp) <- infer newEnv exp
+     varTyp <- substitute newVar
+     retExp <- substitute newExp
+     return (CType cons $ TFun varTyp typ, EAbs name retExp)
 
 -- Application: infer function type and argument type, unify with function, check and reduce constraints
-infer env exp@(EApp fun arg) = traceShow' (fun,arg) $
+infer env exp@(EApp fun arg) = --traceShow' (fun,arg) $
   do newVar <- newTVar "c"
-     (funSub, CType funCons funTyp, funExp) <- infer env fun
-     (argSub, CType argCons argTyp, argExp) <- infer (applySub funSub env) arg
-     uniSub <- unify (applySub argSub funTyp) (TFun argTyp newVar)
-     let resSub = uniSub `composeSub` argSub `composeSub` funSub
-     cons <- checkCons $ nub $ applySub resSub $ funCons ++ argCons
-     return (resSub, CType cons $ applySub resSub newVar, EApp (applySub resSub funExp) (applySub resSub argExp))
+     (CType funCons funTyp, funExp) <- infer env fun
+     newEnv <- substitute env
+     (CType argCons argTyp, argExp) <- infer newEnv arg
+     newFunTyp <- substitute funTyp
+     unify newFunTyp (TFun argTyp newVar)
+     cons <- checkCons . nub =<< substitute (funCons ++ argCons)
+     varTyp <- substitute newVar
+     newFunExp <- substitute funExp
+     newArgExp <- substitute argExp
+     return (CType cons varTyp, EApp newFunExp newArgExp)
 
 -- Infix operator: infer as binary function, but in order first arg -> second arg -> operator
 -- Replace with two function applications in result
-infer env exp@(EOp op argL argR) = traceShow' (op, argL, argR) $
+infer env exp@(EOp op argL argR) = --traceShow' (op, argL, argR) $
   do newVar <- newTVar "c"
-     (lSub, CType lCons lTyp, lExp) <- infer env argL
-     (rSub, CType rCons rTyp, rExp) <- infer (applySub lSub env) argR
-     let argSub = lSub `composeSub` rSub
-     (opSub, CType opCons opTyp, opExp) <- infer (applySub argSub env) op
-     uniSub <- unify (applySub argSub opTyp) (TFun lTyp $ TFun rTyp newVar)
-     let resSub = uniSub `composeSub` opSub `composeSub` argSub
-     cons <- checkCons $ nub $ applySub resSub $ opCons ++ rCons ++ lCons
-     return (resSub,
-             CType cons $ applySub resSub newVar,
-             EApp (EApp (applySub resSub opExp) (applySub resSub lExp)) (applySub resSub rExp))
+     (CType lCons lTyp, lExp) <- infer env argL
+     newEnv <- substitute env
+     (CType rCons rTyp, rExp) <- infer newEnv argR
+     newEnv2 <- substitute newEnv
+     (CType opCons opTyp, opExp) <- infer newEnv2 op
+     unify opTyp (TFun lTyp $ TFun rTyp newVar)
+     varTyp <- substitute newVar
+     cons <- checkCons . nub =<< substitute (opCons ++ rCons ++ lCons)
+     [newOpExp, newLExp, newRExp] <- mapM substitute [opExp, lExp, rExp]
+     return (CType cons varTyp, EApp (EApp newOpExp newLExp) newRExp)
 
 -- Let binding: infer type of var from fix-enhanced exp, generalize to polytype, infer body, check and reduce constraints
 infer env (ELet name exp body) =
     do let fixExp = EApp fixE $ EAbs name exp
-       (expSub, expTyp@(CType expCons _), EApp _ (EAbs _ expExp)) <- infer env fixExp
+       (expTyp@(CType expCons _), EApp _ (EAbs _ expExp)) <- infer env fixExp
+       subEnv <- substitute env
        let TypeEnv envMinusName = remove env name
-           expPoly = generalize (applySub expSub env) expTyp
-           newEnv = TypeEnv $ Map.insert name expPoly envMinusName
-       (bodySub, bodyTyp@(CType bodyCons _), bodyExp) <- infer (applySub expSub newEnv) body
-       let resSub = expSub `composeSub` bodySub
-       cons <- checkCons $ nub $ applySub resSub $ expCons ++ bodyCons
-       return (resSub, bodyTyp, ELet name (applySub resSub expExp) (applySub resSub bodyExp))
+           expPoly = generalize subEnv expTyp
+       newEnv <- substitute $ TypeEnv $ Map.insert name expPoly envMinusName
+       (bodyTyp@(CType bodyCons _), bodyExp) <- infer newEnv body
+       cons <- checkCons . nub <$> substitute (expCons ++ bodyCons)
+       newExpExp <- substitute expExp
+       newBodyExp <- substitute bodyExp
+       return (bodyTyp, ELet name newExpExp newBodyExp)
          where fixE = ELit [Lit "func_" "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
 
 -- Main type inference function
-typeInference :: Map.Map ELabel Scheme -> Exp [Lit Scheme] -> Infer (Sub, CType)
+typeInference :: Map.Map ELabel Scheme -> Exp [Lit Scheme] -> Infer CType
 typeInference env expr =
-  do (sub, typ, newExp) <- infer (TypeEnv env) expr
-     return (sub, applySub sub typ)
+  do (typ, newExp) <- infer (TypeEnv env) expr
+     newTyp <- substitute typ
+     return newTyp
 
 -- Infer types of lines under a constraint
 inferType :: Bool -> Scheme -> [Exp [Lit Scheme]] -> [[(Int, CType, Exp (Lit CType))]]
-inferType constrainRes typeConstr exprs = map fst $ runInfer exprs $ do
-  (infSub, CType infCons typ) <- typeInference Map.empty $ ELine 0
-  resSub <-
-    if constrainRes
-    then do
-      CType conCons genType <- instantiate typeConstr
-      constrSub <- (composeSub infSub) <$> unify genType typ
-      resCons <- checkCons $ nub $ applySub constrSub $ infCons ++ conCons
-      foldr defCons (return constrSub) resCons
-    else return infSub
-  gets $ unwrapLines resSub . lineExprs
-  where defCons con msub = do
-          sub <- msub
-          let (t1, t2) = defInst con
-          instSub <- unify t1 t2
-          return $ instSub `composeSub` sub
-        unwrapLines sub lns = [(i, applySub sub typ, applySub sub exp) | (i, Processed exp typ) <- zip [0..] lns]
+inferType constrainRes typeConstr exprs = trace' ("inferring program " ++ show exprs) $ map fst $ runInfer exprs $ do
+  CType infCons typ <- typeInference Map.empty $ ELine 0
+  when constrainRes $ do
+    CType conCons genType <- instantiate typeConstr
+    unify genType typ
+    resCons <- checkCons . nub =<< substitute (infCons ++ conCons)
+    flip mapM_ resCons $ \con -> do
+      let (t1, t2) = defInst con
+      unify t1 t2
+  lExprs <- Map.assocs <$> gets lineExprs
+  flip mapM [(i, exp, typ) | (i, Processed exp typ) <- lExprs] $
+    \(i, exp, typ) -> do
+      newExp <- substitute exp
+      newTyp <- substitute typ
+      return (i, newTyp, newExp)
 
 -- TESTS
 
