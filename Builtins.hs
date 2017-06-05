@@ -141,7 +141,8 @@ commandsList = [
 -- Compute builtins from space-delimited list
 bins :: String -> Exp [Lit Scheme]
 bins names = ELit $ map getBuiltin $ words names
-  where getBuiltin name | Just typ <- lookup name builtinsList = Lit "func_" name typ
+  where getBuiltin "vec" = Vec $ forall "xyuv" [vec x y u v] $ (x ~> y) ~> (u ~> v)
+        getBuiltin name | Just typ <- lookup name builtinsList = Builtin name typ
         getBuiltin name = error $ "No builtin named " ++ name
 
 -- Assoc list of builtins
@@ -252,7 +253,6 @@ builtinsList = [
   ("listNF",forall "xy" [] $ ((lst x ~> y) ~> (x ~> lst x ~> y)) ~> lst x ~> y),
   ("iter",  forall "x" [] $ (x ~> x) ~> x ~> lst x),
   ("rep",   forall "x" [] $ x ~> lst x),
-  ("vec",   forall "xyuv" [vec x y u v] $ (x ~> y) ~> (u ~> v)),
   ("zip'",  forall "x" [] $ (x ~> x ~> x) ~> lst x ~> lst x ~> lst x),
   ("cmap",  forall "xy" [] $ (x ~> lst y) ~> lst x ~> lst y),
   ("smap",  forall "xn" [num n] $ (x ~> n) ~> lst x ~> n),

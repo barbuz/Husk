@@ -30,12 +30,16 @@ instance (Show lit) => Show (Exp lit) where
   show (EAbs name exp) = "(\\" ++ name ++ "." ++ show exp ++ ")"
   show (ELet name exp body) = "let " ++ name ++ "=(" ++ show exp ++ ") in " ++ show body
 
--- Literal in expression
-data Lit a = Lit String String a
+-- Literal in expression; t is the type
+data Lit t = Value String t
+           | Builtin String t
+           | Vec t
   deriving (Eq, Ord)
 
 instance Show (Lit a) where
-  show (Lit _ n s) = n
+  show (Value name _) = name
+  show (Builtin name _) = name
+  show (Vec _) = "vec"
 
 -- Type of expression with unbound variables
 data Type = TVar TLabel
@@ -71,9 +75,9 @@ instance Show CType where
   show (CType cons typ) = show cons ++ "=>" ++ show typ
 
 -- Possible typeclass constraints
-data TClass = Concrete Type
+data TClass = Vect Type Type Type Type
+            | Concrete Type
             | Number Type
-            | Vect Type Type Type Type
   deriving (Eq, Ord, Show)
 
 -- Check typeclass constraint, return list of "simpler" constraints that are equivalent to it
@@ -95,7 +99,6 @@ holds (Number (TConc TInt))    = Just []
 holds (Number (TConc TDouble)) = Just []
 holds (Number _)               = Nothing
 
-holds (Vect (TList _) _ _ _)                  = Nothing
 holds (Vect t1 t2 s1 s2) | s1 == t1, s2 == t2 = Just []
 holds (Vect t1 t2 (TList s1) (TList s2))      = holds $ Vect t1 t2 s1 s2
 holds c@(Vect _ _ (TVar _) (TList _))         = Just [c]
@@ -103,13 +106,23 @@ holds c@(Vect _ _ (TList _) (TVar _))         = Just [c]
 holds c@(Vect _ _ (TVar _) (TVar _))          = Just [c]
 holds (Vect _ _ _ _)                          = Nothing
 
+-- Find a nesting depth at which list-nested t1 can be unified with t2
+-- Can assume one exists
+uniDepth :: Type -> Type -> Int
+uniDepth t1 t2 | t1 == t2 = 0
+uniDepth (TList t1) (TList t2) = uniDepth t1 t2
+uniDepth t1 (TList t2) = 1 + uniDepth t1 t2
+uniDepth _ _ = 0
+
 -- Default typeclass instances, given as unifiable pairs of types
 defInst :: TClass -> (Type, Type)
 defInst (Concrete t)       = (t, TConc TInt)
 defInst (Number t)         = (t, TConc TInt)
-defInst (Vect t1 t2 s1 s2) = go 0 s1
-  where go n (TList s) = go (n+1) s
-        go n s = (TPair s1 s2, TPair (iterate TList t1 !! n) (iterate TList t2 !! n))
+defInst (Vect t1 t2 s1 s2) = (TPair s1 s2,
+                               TPair
+                               (iterate TList t1 !! n)
+                               (iterate TList t2 !! n))
+  where n = max (uniDepth t1 s1) (uniDepth t2 s2)
 
 -- Type of expression with universally quantified variables
 data Scheme = Scheme [TLabel] CType
@@ -133,7 +146,7 @@ typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t +
 consToHaskell :: TClass -> String
 consToHaskell (Concrete t)       = "Concrete " ++ typeToHaskell t
 consToHaskell (Number t)         = "Number " ++ typeToHaskell t
-consToHaskell (Vect t1 t2 s1 s2) = "Vect " ++ typeToHaskell t1 ++ " " ++ typeToHaskell t2  ++ " " ++ typeToHaskell s1  ++ " " ++ typeToHaskell s2
+consToHaskell (Vect t1 t2 s1 s2) = "Number Integer" -- Dummy value
 
 -- Convert classed type to Haskell code
 cTypeToHaskell :: CType -> String
@@ -144,9 +157,17 @@ cTypeToHaskell (CType cons typ) = "(" ++ intercalate "," (map consToHaskell cons
 expToHaskell :: Exp (Lit CType) -> String
 expToHaskell (EVar name) = name
 expToHaskell (ELine n) = "line" ++ show n
-expToHaskell (ELit (Lit prefix name typ)) = "(" ++ prefix ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
+expToHaskell (ELit (Value name typ)) = "(" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
+expToHaskell (ELit (Builtin name typ)) = "(func_" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
+expToHaskell (ELit (Vec typ)) = vecToHaskell typ
 expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
 expToHaskell (EOp _ _ _) = error "expToHaskell not defined for EOp"
 expToHaskell (EAbs name exp) = "(\\ " ++ name ++ " -> " ++ expToHaskell exp ++ ")"
 expToHaskell (ELet name exp body) = "(let " ++ name ++ " = " ++ expToHaskell exp ++ " in " ++ expToHaskell body ++ ")"
 
+-- Convert type of Vec to Haskell expression (nested maps)
+-- Type will always be of the form (a -> b) -> (x -> y)
+vecToHaskell typ@(CType _ (TFun (TFun a b) (TFun x y))) = "(id" ++ concat (replicate (nesting x) ".fmap") ++ "::" ++ cTypeToHaskell typ ++ ")"
+  where nesting t | t == a = 0
+                  | TList t' <- t = 1 + nesting t'
+                  | otherwise = error "Illegal type for Vec"

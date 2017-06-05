@@ -62,8 +62,12 @@ instance Types Scheme where
   applySub s (Scheme vars t) = Scheme vars $ applySub (foldr Map.delete s vars) t
 
 instance (Types a) => Types (Lit a) where
-  freeVars (Lit _ _ typ) = freeVars typ
-  applySub s (Lit prefix name typ) = Lit prefix name $ applySub s typ
+  freeVars (Value _ typ) = freeVars typ
+  freeVars (Builtin _ typ) = freeVars typ
+  freeVars (Vec typ) = freeVars typ
+  applySub s (Value name typ) = Value name $ applySub s typ
+  applySub s (Builtin name typ) = Builtin name $ applySub s typ
+  applySub s (Vec typ) = Vec $ applySub s typ
 
 instance (Types a) => Types (Exp (Lit a)) where
   freeVars _ = error "freeVars not implemented for expressions"
@@ -147,7 +151,7 @@ instantiate (Scheme vars ct) = do
 varBind :: TLabel -> Type -> Infer ()
 varBind name typ
   | TVar var <- typ, var == name   = return ()
-  | name `Set.member` freeVars typ = fail ""
+  | name `Set.member` freeVars typ = trace' "infinite type" $ fail ""
   | otherwise                      = updateSub $ Map.singleton name typ
 
 -- Most general unifier of two types
@@ -170,7 +174,7 @@ unify t1 t2 = do
     unify' (TVar name) typ              = varBind name typ
     unify' typ (TVar name)              = varBind name typ
     unify' (TConc a) (TConc b) | a == b = return ()
-    unify' _ _                          = fail ""
+    unify' _ _                          = trace' "unification fail" $ fail ""
 
 -- Check typeclass constraints; remove those that hold, keep indeterminate ones, fail if any don't hold
 checkCons :: [TClass] -> Infer [TClass]
@@ -178,13 +182,19 @@ checkCons x | trace' ("checking " ++ show x) False = undefined
 checkCons [] = return []
 checkCons (c:cs) = case {-traceShow' (c, holds c)-} holds c of
   Just cs' -> (cs' ++) <$> checkCons cs
-  Nothing  -> fail ""
+  Nothing  -> trace' "constraint fail" $ fail ""
 
 -- Infer type of literal
 inferLit :: Lit Scheme -> Infer (CType, Exp (Lit CType))
-inferLit lit@(Lit prefix name typ) =
+inferLit lit@(Value name typ) =
   do newTyp <- instantiate typ
-     return (newTyp, ELit $ Lit prefix name newTyp)
+     return (newTyp, ELit $ Value name newTyp)
+inferLit lit@(Builtin name typ) =
+  do newTyp <- instantiate typ
+     return (newTyp, ELit $ Builtin name newTyp)
+inferLit lit@(Vec typ) =
+  do newTyp <- instantiate typ
+     return (newTyp, ELit $ Vec newTyp)
 
 -- Infer type of []-overloaded expression
 -- All free expression variables must be bound in environment (otherwise it crashes)
@@ -281,7 +291,7 @@ infer env (ELet name exp body) =
        newExpExp <- substitute expExp
        newBodyExp <- substitute bodyExp
        return (bodyTyp, ELet name newExpExp newBodyExp)
-         where fixE = ELit [Lit "func_" "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
+         where fixE = ELit [Builtin "fix" $ Scheme ["x"] $ CType [] $ TFun (TFun (TVar "x") (TVar "x")) (TVar "x")]
 
 -- Main type inference function
 typeInference :: Map.Map ELabel Scheme -> Exp [Lit Scheme] -> Infer CType
@@ -296,11 +306,13 @@ inferType constrainRes typeConstr exprs = trace' ("inferring program " ++ show e
   CType infCons typ <- typeInference Map.empty $ ELine 0
   when constrainRes $ do
     CType conCons genType <- instantiate typeConstr
-    unify genType typ
-    resCons <- checkCons . nub =<< substitute (infCons ++ conCons)
-    flip mapM_ resCons $ \con -> do
-      let (t1, t2) = defInst con
-      unify t1 t2
+    trace' "applying constraints" $ unify genType typ
+    trace' "defaulting instances" $ flip mapM_ (nub $ infCons ++ conCons) $ \con -> do
+      newCon <- checkCons =<< substitute [con]
+      case newCon of
+        []     -> return ()
+        [con'] -> let (t1, t2) = defInst con'
+                  in unify t1 t2
   lExprs <- Map.assocs <$> gets lineExprs
   flip mapM [(i, exp, typ) | (i, Processed exp typ) <- lExprs] $
     \(i, exp, typ) -> do
@@ -319,19 +331,19 @@ e1 = ELet "id"
      (EApp (EVar "id") (EVar "id"))
 
 e2 = EApp
-     (ELit [Lit "" "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "" "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
-     (ELit [Lit "" "2" $ Scheme [] $ CType [] $ TConc TInt])
+     (ELit [Builtin "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Builtin "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
+     (ELit [Value "2" $ Scheme [] $ CType [] $ TConc TInt])
 
 e3 = EApp
-     (ELit [Lit "" "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
-            Lit "" "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
-     (ELit [Lit "" "'a'" $ Scheme [] $ CType [] $ TConc TChar])
+     (ELit [Builtin "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+            Builtin "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
+     (ELit [Value "'a'" $ Scheme [] $ CType [] $ TConc TChar])
 
 e4 = EApp
-     (ELit [Lit "" "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TInt)) (TList (TConc TInt)),
-            Lit "" "not" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TFun (TVar "x") (TConc TInt)])
-     (ELit [Lit "" "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
+     (ELit [Builtin "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TInt)) (TList (TConc TInt)),
+            Builtin "not" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TFun (TVar "x") (TConc TInt)])
+     (ELit [Value "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
 
 e5 = EAbs "f" $
      ELet "x"
@@ -340,10 +352,10 @@ e5 = EAbs "f" $
 
 e6 = EApp
      (EApp
-      (ELit [Lit "" "com" $ Scheme ["a","b","c"] $ CType [] $ (TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> (TVar "a" ~> TVar "c")])
-      (ELit [Lit "" "consume" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TVar "x" ~> TConc TInt]))
-     (ELit [Lit "" "produce" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TConc TInt ~> TVar "x"])
+      (ELit [Builtin "com" $ Scheme ["a","b","c"] $ CType [] $ (TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> (TVar "a" ~> TVar "c")])
+      (ELit [Builtin "consume" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TVar "x" ~> TConc TInt]))
+     (ELit [Builtin "produce" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TConc TInt ~> TVar "x"])
 
 e7 = EApp
-     (ELit [Lit "" "vecneg" $ Scheme ["a","b"] $ CType [Vect (TConc TInt) (TConc TInt) (TVar "a") (TVar "b")] $ TVar "a" ~> TVar "b"])
-     (ELit [Lit "" "[[[1]]]" $ Scheme [] $ CType [] $ TList (TList (TList (TConc TInt)))])
+     (ELit [Builtin "vecneg" $ Scheme ["a","b"] $ CType [Vect (TConc TInt) (TConc TInt) (TVar "a") (TVar "b")] $ TVar "a" ~> TVar "b"])
+     (ELit [Value "[[[1]]]" $ Scheme [] $ CType [] $ TList (TList (TList (TConc TInt)))])

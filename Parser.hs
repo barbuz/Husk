@@ -97,16 +97,16 @@ number = do
   prefix <- many1 digit
   maybeSuffix <- optionMaybe $ char '.' >> many digit
   case maybeSuffix of
-    Nothing     -> return $ ELit [Lit "" prefix $ Scheme ["n"] $ CType [Number $ TVar "n"] $ TVar "n"]
-    Just []     -> return $ ELit [Lit "" (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
-    Just suffix -> return $ ELit [Lit "" (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
+    Nothing     -> return $ ELit [Value prefix $ Scheme ["n"] $ CType [Number $ TVar "n"] $ TVar "n"]
+    Just []     -> return $ ELit [Value (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
+    Just suffix -> return $ ELit [Value (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
  
 -- Parse a character
 character :: Parser (Exp [Lit Scheme])
 character = do
   quote <- char '\''
   c <- anyChar
-  return $ ELit [Lit "" (show c) $ Scheme [] $ CType [] $ TConc TChar]
+  return $ ELit [Value (show c) $ Scheme [] $ CType [] $ TConc TChar]
 
 -- Parse a string
 str :: Parser (Exp [Lit Scheme])
@@ -114,7 +114,7 @@ str = do
   quote <- char '"'
   s <- content
   quote2 <- (char '"' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
-  return $ ELit [Lit "" (show s) $ Scheme [] $ CType [] $ TList (TConc TChar)]
+  return $ ELit [Value (show s) $ Scheme [] $ CType [] $ TList (TConc TChar)]
   where
     content = do
       codedText <- many $ noneOf "\"\n\\"
@@ -134,7 +134,7 @@ intseq :: Parser (Exp [Lit Scheme])
 intseq = do
   iseqCommand <- char 'İ'
   seqId <- anyChar
-  return $ EApp (bins "intseq") $ ELit [Lit "" (show seqId) $ Scheme [] $ CType [] $ TConc TChar]
+  return $ EApp (bins "intseq") $ ELit [Value (show seqId) $ Scheme [] $ CType [] $ TConc TChar]
 
 -- Parse a generalized lambda
 lambda :: Parser (Exp [Lit Scheme])

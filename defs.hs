@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances, FlexibleInstances, FlexibleContexts #-}
 
 import IntSeq
 
@@ -6,11 +6,6 @@ import Data.Function (fix)
 import System.Environment (getArgs)
 import Data.Char (ord,chr)
 import Data.List
-
-class Vect a b x y | a b x -> y where func_vec :: (a -> b) -> (x -> y)
-
-instance Vect a b a b where func_vec = id
-instance (Vect a b x y) => Vect a b [x] [y] where func_vec = map . func_vec
 
 class ToString a where
   toString :: a -> String
