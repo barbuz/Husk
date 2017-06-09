@@ -49,12 +49,17 @@ character = do
   char '\''
   return $ Just (show c, TConc TChar)
 
+plainStr :: InputParser
+plainStr = do
+  chars <- many $ noneOf "\\\"" <|> (fmap (\c -> if c == 'n' then '\n' else c) $ char '\\' >> oneOf "\\\"n")
+  return $ Just (show chars, TList (TConc TChar))
+
 str :: InputParser
 str = do
-  optionMaybe $ char '"'
-  chars <- many $ noneOf "\\\"" <|> (fmap (\c -> if c == 'n' then '\n' else c) $ char '\\' >> oneOf "\\\"n")
-  optionMaybe $ char '"'
-  return $ Just (show chars, TList (TConc TChar))
+  char '"'
+  contents <- plainStr
+  char '"'
+  return contents
 
 list :: InputParser
 list = do
@@ -109,6 +114,6 @@ inputType = integerT <|> doubleT <|> charT <|> varT <|> listT <|> pairT
 
 parseInput :: Int -> String -> Either String (Maybe (String, Type))
 parseInput inputIndex str =
-  case parse input ("input" ++ show inputIndex) str of
+  case parse (try input <|> plainStr) ("input" ++ show inputIndex) str of
     Left err -> Left $ show err
     Right val -> Right val
