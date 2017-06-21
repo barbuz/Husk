@@ -1,15 +1,13 @@
 # Husk
 
 Husk is a functional [golfing language](en.wikipedia.org/wiki/Code_golf), inspired by (and implemented in) [Haskell](www.haskell.org).
-Documentation con be found on the [Wiki](https://github.com/barbuz/Husk/wiki).
+Documentation can be found on the [Wiki](https://github.com/barbuz/Husk/wiki).
 
 This language is still in an early development phase, so anything may be subject to modification without prior notice.
 
 ## Language concepts
 
 Many of the fundaments of this language are derived from Haskell, so if you are familiar with Haskell it will be easier for you to learn Husk. The main difference is given by a type inferencing step done at compilation time which can guess the desired function among different functions with the same name, basing on how their types unify with the types of other functions and the input. In practice, this means that most functions in Husk are overloaded to do different things based on the type of their arguments.
-
----
 
 ## Running Husk
 
