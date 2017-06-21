@@ -10,10 +10,13 @@ import Text.Parsec.Char
 import Control.Monad (forM)
 import qualified Data.Map as Map
 import Data.List (elemIndex)
+import Data.Maybe (catMaybes)
 
 -- Parser state
 data PState = PState {varStack :: [ELabel],
-                      varSupply :: Int}
+                      varSupply :: Int,
+                      numLines :: Int,
+                      unmarked :: [Int]}
 
 -- Parser type
 type Parser = Parsec String PState
@@ -23,7 +26,7 @@ parseExpr :: String -> Either String [Exp [Lit Scheme]]
 parseExpr str = case runParser multiline initState "" str of
   Left err -> Left $ show err
   Right val -> Right val
-  where initState = PState [] 0
+  where initState = PState [] 0 0 []
 
 -- Generate and push a new expression variable
 pushNewVar :: Parser ELabel
@@ -64,9 +67,51 @@ popVar = do
 rParen :: Parser ()
 rParen = (char ')' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
 
--- Parse a multiline expression; first line is "main line"
+-- Eat a lone space character (not followed by sub- or superscipt)
+soleSpace :: Parser ()
+soleSpace = try $ char ' ' >> notFollowedBy (oneOf "⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉")
+
+-- List of builtins applied to overflowing line numbers
+lineFuncs :: [Exp [Lit Scheme]]
+lineFuncs = [bins "argdup",
+             bins "flip",
+             bins "map",
+             bins "zip",
+             bins "hook"]
+
+-- Parse a multiline expression, where some lines are marked with a leading space
 multiline :: Parser [Exp [Lit Scheme]]
-multiline = sepBy1 lineExpr endOfLine
+multiline = do
+  lineExprs <- sepBy1 (try markedLine <|> unmarkedLine) endOfLine
+  numLn <- numLines <$> getState
+  unmarkeds <- unmarked <$> getState
+  return $ map (updateLineNums numLn unmarkeds) lineExprs
+  where markedLine = do
+          soleSpace
+          expr <- lineExpr
+          stat <- getState
+          putState stat{numLines = numLines stat + 1}
+          return (True, expr)
+        unmarkedLine = do
+          expr <- lineExpr
+          stat <- getState
+          putState stat{unmarked = unmarked stat ++ [numLines stat],
+                        numLines = numLines stat + 1}
+          return (False, expr)
+        updateLineNums numLn unmark (marked, expr) = go expr
+          where numUnmark = length unmark
+                go (ELine n)
+                  | marked, lNum <- mod n numLn, rounds <- div n numLn =
+                      case rounds of 0 -> ELine lNum
+                                     k -> EApp (lineFuncs !! (k-1)) $ ELine lNum
+                  | lNum <- mod n numUnmark, rounds <- div n numUnmark =
+                      case rounds of 0 -> ELine (unmark !! lNum)
+                                     k -> EApp (lineFuncs !! (k-1)) $ ELine (unmark !! lNum)
+                go (EApp e1 e2) = EApp (go e1) (go e2)
+                go (EOp e1 e2 e3) = EOp (go e1) (go e2) (go e3)
+                go (EAbs name exp) = EAbs name (go exp)
+                go (ELet name exp body) = ELet name (go exp) (go body)
+                go e = e
 
 -- Parse a line of Husk code
 lineExpr :: Parser (Exp [Lit Scheme])
@@ -81,8 +126,8 @@ lineExpr = do
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> intseq <|> lambda <|> lambdaArg <|> subscript
-        opTable = [[InfixL $ optional (char ' ') >> return (EOp invisibleOp)]]
+  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> intseq <|> lambda <|> try lambdaArg <|> subscript
+        opTable = [[InfixL $ optional soleSpace >> return (EOp invisibleOp)]]
         invisibleOp = bins "com4 com3 com2 com app"
 
 -- Parse a builtin
@@ -123,7 +168,6 @@ str = do
       case maybeEscape of
         Nothing -> return plainText
         Just c -> do plainText2 <- content; return $ plainText++c:plainText2
-    
     decode '¶' = '\n'
     decode '¨' = '"'
     decode '¦' = '\\'
@@ -160,16 +204,18 @@ lambda = do
 -- Parse a lambda argument
 lambdaArg :: Parser (Exp [Lit Scheme])
 lambdaArg = do
-  sup <- oneOf sups
-  let Just ix = elemIndex sup sups
-  var <- peekVar ix
+  supStr <- try (pure <$> oneOf sups) <|> (char ' ' >> many1 (oneOf sups))
+  let digits = catMaybes $ (`elemIndex` sups) <$> supStr
+      supNum = foldl1 (\n d -> 10*n + d) digits
+  var <- peekVar supNum
   return $ EVar var
-  where sups = "¹²³⁴⁵⁶⁷⁸⁹"
+  where sups = "⁰¹²³⁴⁵⁶⁷⁸⁹"
 
--- Parse a subscript; used as line numbers and built-in constants
+-- Parse a subscript; used as line numbers
 subscript :: Parser (Exp [Lit Scheme])
 subscript = do
-  sub <- oneOf subs
-  let Just ix = elemIndex sub subs
-  return $ ELine ix
-  where subs  = "₁₂₃₄₅₆₇₈₉"
+  subStr <- try (pure <$> oneOf subs) <|> (char ' ' >> many1 (oneOf subs))
+  let digits = catMaybes $ (`elemIndex` subs) <$> subStr
+      subNum = foldl1 (\n d -> 10*n + d) digits
+  return $ ELine subNum
+  where subs  = "₀₁₂₃₄₅₆₇₈₉"
