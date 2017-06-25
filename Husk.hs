@@ -77,7 +77,7 @@ produceFile defs exprs =
   "main :: IO ()\n" ++
   "main = do{[" ++ intercalate "," argList ++ "] <- getArgs; " ++
   "let{res = line0 " ++ concatMap (\a -> "(read " ++ a ++ ")") argList ++ "}; " ++
-  "putStrLn (toString res)}"
+  "putStr (toString res)}"
   where progLines = concat [ label ++ " :: " ++ cTypeToHaskell typ ++ "\n" ++
                              label ++ " = " ++ expToHaskell expr ++ "\n"
                            | (i, typ, expr) <- exprs,

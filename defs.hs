@@ -289,10 +289,12 @@ func_last :: [a] -> a
 func_last = last
 
 func_tail :: [a] -> [a]
-func_tail = tail
+func_tail [] = []
+func_tail (_:xs) = xs
 
 func_init :: [a] -> [a]
-func_init = init
+func_init [] = []
+func_init xs = init xs
 
 func_pair :: a -> b -> (a, b)
 func_pair = (,)
@@ -388,6 +390,9 @@ func_fnot f = func_not . f
 
 func_hook :: (a -> b -> c) -> (a -> b) -> a -> c
 func_hook x y z = x z (y z)
+
+func_hookf :: (a -> b -> c) -> (b -> a) -> b -> c
+func_hookf x y z = x (y z) z
 
 func_const :: a -> b -> a
 func_const x _ = x
@@ -619,3 +624,6 @@ func_cmapr fs = concat . func_mapr fs
 
 func_smapr :: Number n => [(a -> n)] -> a -> n
 func_smapr fs = sum . func_mapr fs
+
+func_combin :: (b -> b -> c) -> (a -> b) -> a -> a -> c
+func_combin f g x y = f (g x) (g y)
