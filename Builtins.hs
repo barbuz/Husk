@@ -90,6 +90,7 @@ commandsList = [
   ('|', bins "or or'"),
   ('&', bins "and and'"),
   ('S', bins "hook"),
+  ('Ṡ', bins "hookf"),
   ('K', bins "const"),
   ('I', bins "id"),
   ('`', bins "flip"),
@@ -135,7 +136,8 @@ commandsList = [
   ('T', bins "trsp trspw"),
   ('ż', bins "zip'"),
   ('ṁ', bins "cmap cmapr smap smapr"),
-  ('≡', bins "congr")
+  ('≡', bins "congr"),
+  ('¤', bins "combin")
   ]
 
 -- Compute builtins from space-delimited list
@@ -261,6 +263,7 @@ builtinsList = [
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
+  ("hookf", forall "xyz" [] $ (x ~> y ~> z) ~> (y ~> x) ~> y ~> z),
   ("const", forall "xy" [] $ x ~> y ~> x),
   ("id",    forall "x" [] $ x ~> x),
   ("fix",   forall "x" [] $ (x ~> x) ~> x),
@@ -273,6 +276,7 @@ builtinsList = [
   ("fork",  forall "xyzu" [] $ (x ~> y ~> z) ~> (u ~> x) ~> (u ~> y) ~> u ~> z),
   ("fork2", forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> v ~> x) ~> (u ~> v ~> y) ~> u ~> v ~> z),
   ("argdup",forall "xy" [] $ (x ~> x ~> y) ~> x ~> y),
+  ("combin",forall "xyz" [] $ (y ~> y ~> z) ~> (x ~> y) ~> (x ~> x ~> z)),
 
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> int),

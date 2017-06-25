@@ -385,6 +385,9 @@ func_fnot f = func_not . f
 func_hook :: (a -> b -> c) -> (a -> b) -> a -> c
 func_hook x y z = x z (y z)
 
+func_hookf :: (a -> b -> c) -> (b -> a) -> b -> c
+func_hookf x y z = x (y z) z
+
 func_const :: a -> b -> a
 func_const x _ = x
 
@@ -615,3 +618,6 @@ func_cmapr fs = concat . func_mapr fs
 
 func_smapr :: Number n => [(a -> n)] -> a -> n
 func_smapr fs = sum . func_mapr fs
+
+func_combin :: (b -> b -> c) -> (a -> b) -> a -> a -> c
+func_combin f g x y = f (g x) (g y)
