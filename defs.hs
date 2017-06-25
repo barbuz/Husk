@@ -283,10 +283,12 @@ func_last :: [a] -> a
 func_last = last
 
 func_tail :: [a] -> [a]
-func_tail = tail
+func_tail [] = []
+func_tail (_:xs) = xs
 
 func_init :: [a] -> [a]
-func_init = init
+func_init [] = []
+func_init xs = init xs
 
 func_pair :: a -> b -> (a, b)
 func_pair = (,)
