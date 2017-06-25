@@ -8,7 +8,7 @@ import Data.List
 
 -- The Husk code page: 256 characters, each representing one byte
 codepage :: String
-codepage = "¤½↕↑↓↔←→∟\n¦¡¿‼…‰†‡√≤≥±∂∫∞≈≠≡⌐¬÷×" ++
+codepage = "¤½↕↑↓↔←→∟¦\n¡¿‼…‰†‡√≤≥±∂∫∞≈≠≡⌐¬÷×" ++
            " !\"#$%&'()*+,-./0123456789:;<=>?" ++
            "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_" ++
            "`abcdefghijklmnopqrstuvwxyz{|}~·" ++
