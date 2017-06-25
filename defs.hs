@@ -10,8 +10,14 @@ import Data.List
 class ToString a where
   toString :: a -> String
 
-instance {-# OVERLAPPING #-} ToString [Char] where
+instance {-# OVERLAPPING #-} ToString String where
   toString = id
+
+instance {-# OVERLAPPING #-} ToString [String] where
+  toString = unlines
+
+instance {-# OVERLAPPING #-} ToString [[String]] where
+  toString = unlines.map unwords
 
 instance Concrete a => ToString a where
   toString = show
