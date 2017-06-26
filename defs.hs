@@ -42,10 +42,10 @@ class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   func_eq x y = boolToNum $ x == y
   
   func_or :: a -> a -> a
-  func_or x y = if isTruthy x then x else y
+  func_or y x = if isTruthy x then x else y
   
   func_and :: a -> a -> a
-  func_and x y = if isTruthy x then y else x
+  func_and y x = if isTruthy x then y else x
   
   func_read :: [Char] -> a
   func_read = read
