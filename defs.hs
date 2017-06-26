@@ -636,7 +636,7 @@ func_combin :: (b -> b -> c) -> (a -> b) -> a -> a -> c
 func_combin f g x y = f (g x) (g y)
 
 func_d2i :: Double -> Integer
-func_d2i = round
+func_d2i d = floor $ d+0.5 --round halves towards positive infinity
 
 func_c2i :: Char -> Integer
 func_c2i c | Just i <- elemIndex c "0123456789" = fromIntegral i
