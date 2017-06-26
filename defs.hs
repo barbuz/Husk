@@ -4,7 +4,8 @@ import IntSeq
 
 import Data.Function (fix)
 import System.Environment (getArgs)
-import Data.Char (ord,chr)
+import qualified Data.Char as C
+import           Data.Char (chr,ord)
 import Data.List
 
 class ToString a where
@@ -627,3 +628,14 @@ func_smapr fs = sum . func_mapr fs
 
 func_combin :: (b -> b -> c) -> (a -> b) -> a -> a -> c
 func_combin f g x y = f (g x) (g y)
+
+func_d2i :: Double -> Integer
+func_d2i = round
+
+func_c2i :: Char -> Integer
+func_c2i c | Just i <- elemIndex c "0123456789" = fromIntegral i
+           | otherwise                          = 0
+
+-- Read the first number found in the string
+func_s2i :: String -> Integer
+func_s2i = read . takeWhile C.isDigit . dropWhile (not . C.isDigit)

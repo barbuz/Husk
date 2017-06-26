@@ -54,7 +54,7 @@ commandsList = [
   ('÷', bins "idiv"),
   ('%', bins "mod modDI modID"),
   ('_', bins "neg"),
-  ('i', bins "inv"),
+  ('\\', bins "inv"),
   (';', bins "pure"),
   (',', bins "pair"),
   (':', bins "cons snoc"),
@@ -137,7 +137,8 @@ commandsList = [
   ('ż', bins "zip'"),
   ('ṁ', bins "cmap cmapr smap smapr"),
   ('≡', bins "congr"),
-  ('¤', bins "combin")
+  ('¤', bins "combin"),
+  ('i', bins "d2i c2i s2i")
   ]
 
 -- Compute builtins from space-delimited list
@@ -311,5 +312,10 @@ builtinsList = [
   ("words", simply $ lst chr ~> lst (lst chr)),
   ("unwords", simply $ lst (lst chr) ~> lst chr),
   ("lines", simply $ lst chr ~> lst (lst chr)),
-  ("unlines", simply $ lst (lst chr) ~> lst chr)
+  ("unlines", simply $ lst (lst chr) ~> lst chr),
+  
+  -- Type conversions
+  ("d2i",   simply $ dbl ~> int),
+  ("c2i",   simply $ chr ~> int),
+  ("s2i",   simply $ lst chr ~> int)
   ]
