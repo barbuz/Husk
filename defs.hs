@@ -645,3 +645,12 @@ func_c2i c | Just i <- elemIndex c "0123456789" = fromIntegral i
 -- Read the first number found in the string
 func_s2i :: String -> Integer
 func_s2i = read . takeWhile C.isDigit . dropWhile (not . C.isDigit)
+
+func_list2 :: a -> a -> [a]
+func_list2 x y = [x,y]
+
+func_list3 :: a -> a -> a -> [a]
+func_list3 x y z = [x,y,z]
+
+func_list4 :: a -> a -> a -> a -> [a]
+func_list4 x y z t = [x,y,z,t]

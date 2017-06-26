@@ -138,7 +138,10 @@ commandsList = [
   ('ṁ', bins "cmap cmapr smap smapr"),
   ('≡', bins "congr"),
   ('¤', bins "combin"),
-  ('i', bins "d2i c2i s2i")
+  ('i', bins "d2i c2i s2i"),
+  ('e', bins "list2"),
+  ('ė', bins "list3"),
+  ('ë', bins "list4")
   ]
 
 -- Compute builtins from space-delimited list
@@ -235,6 +238,9 @@ builtinsList = [
   ("perms", forall "x" [] $ lst x ~> lst (lst x)),
   ("trsp",  forall "x" [] $ lst (lst x) ~> lst (lst x)),
   ("trspw", forall "x" [] $ x ~> lst (lst x) ~> lst (lst x)),
+  ("list2", forall "x" [] $ x ~> x ~> lst x),
+  ("list3", forall "x" [] $ x ~> x ~> x ~> lst x),
+  ("list4", forall "x" [] $ x ~> x ~> x ~> x ~> lst x),
   
 
   -- Higher order functions
