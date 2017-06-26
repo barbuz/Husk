@@ -422,6 +422,9 @@ func_take n
   | n >= 0    = genericTake n
   | otherwise = reverse . genericTake (-n) . reverse
 
+func_take2 :: [a] -> Integer -> [a]
+func_take2 = flip func_take
+
 func_takew :: Concrete b => (a -> b) -> [a] -> [a]
 func_takew _ [] = []
 func_takew f (x:xs)
@@ -432,6 +435,9 @@ func_drop :: Integer -> [a] -> [a]
 func_drop n
   | n >= 0    = genericDrop n
   | otherwise = reverse . genericDrop (-n) . reverse
+
+func_drop2 :: [a] -> Integer -> [a]
+func_drop2 = flip func_drop
 
 func_dropw :: Concrete b => (a -> b) -> [a] -> [a]
 func_dropw _ [] = []
