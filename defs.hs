@@ -654,3 +654,9 @@ func_list3 x y z = [x,y,z]
 
 func_list4 :: a -> a -> a -> a -> [a]
 func_list4 x y z t = [x,y,z,t]
+
+func_nubw :: Concrete a => [a] -> [a]
+func_nubw xs = go [] xs
+  where go ys (x:xs) | elem x ys = []
+                     | otherwise = x:go (x:ys) xs
+        go _ []                  = []
