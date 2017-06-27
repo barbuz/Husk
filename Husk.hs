@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 
 -- Main program
 
@@ -7,6 +8,7 @@ import Infer
 import Parser
 import InputParser
 import Codepage
+import FileQuoter
 import System.Environment (getArgs)
 import System.Console.GetOpt
 import System.Process
@@ -68,11 +70,14 @@ consoleOpts = [Option ['b'] ["bytes"] (NoArg $ Format Bytes) "take input as byte
         parseFormat "v" = Verbose
         parseFormat _ = error "Bad format specifier"
 
--- Produce Haskell file from definitions file and list of type-inferred lines
-produceFile :: String -> [(Int, CType, Exp (Lit CType))] -> String
-produceFile defs exprs =
-  defs ++
-  "\n" ++
+-- Template files as String constants
+templateFile :: String
+templateFile = [litFile|header.hs|] ++ "\n" ++ [litFile|defs.hs|] ++ "\n" ++ [litFile|intSeq.hs|] ++ "\n"
+
+-- Produce Haskell file from list of type-inferred lines
+produceFile :: [(Int, CType, Exp (Lit CType))] -> String
+produceFile exprs =
+  templateFile ++
   progLines ++
   "main :: IO ()\n" ++
   "main = do{[" ++ intercalate "," argList ++ "] <- getArgs; " ++
@@ -141,11 +146,10 @@ main = do
                                           (Just (OutFile s), _) -> s
                                           (Nothing, True) -> progOrFile ++ ".hs"
                                           (Nothing, False) -> ".out.hs"
-                          defs <- readFile "defs.hs"
                           case parseProg True prog (map snd typedArgs) of
                             Left err             -> putStrLn err
                             Right []             -> putStrLn "Could not infer valid type for program"
-                            Right (lineExprs : _) -> do writeFile outfile $ produceFile defs lineExprs
+                            Right (lineExprs : _) -> do writeFile outfile $ produceFile lineExprs
                                                         (_, Just hout, _, _) <- createProcess (proc "runhaskell" (outfile : map fst typedArgs)){ std_out = CreatePipe }
                                                         result <- hGetContents hout
                                                         putStr result

@@ -1,12 +1,4 @@
-{-# LANGUAGE UndecidableInstances, FlexibleInstances, FlexibleContexts #-}
-
-import IntSeq
-
-import Data.Function (fix)
-import System.Environment (getArgs)
-import qualified Data.Char as C
-import           Data.Char (chr,ord)
-import Data.List
+-- Built-in functions
 
 class ToString a where
   toString :: a -> String

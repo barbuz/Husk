@@ -1,4 +1,5 @@
-module IntSeq where
+
+-- Built-in integer sequences
 
 func_intseq :: Char -> [Integer]
 --Even
