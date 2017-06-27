@@ -652,3 +652,12 @@ func_nubw xs = go [] xs
   where go ys (x:xs) | elem x ys = []
                      | otherwise = x:go (x:ys) xs
         go _ []                  = []
+
+func_table :: (a -> b -> c) -> [a] -> [b] -> [[c]]
+func_table f as bs = [[f a b | b <- bs] | a <- as]
+
+func_lmap :: (a -> b -> c) -> [a] -> b -> [c]
+func_lmap f as b = map (flip f b) as
+
+func_rmap :: (a -> b -> c) -> a -> [b] -> [c]
+func_rmap f a = map (f a)

@@ -60,10 +60,10 @@ commandsList = [
   (':', bins "cons snoc"),
   ('m', bins "map mapr"),
   ('z', bins "zip"),
-  ('«', bins "foldl foldl1"),
-  ('»', bins "foldr foldr1"),
-  ('◄', bins "scanl scanl1"),
-  ('►', bins "scanr scanr1"),
+  ('F', bins "foldr foldr1"),
+  ('Ḟ', bins "foldl foldl1"),
+  ('G', bins "scanr scanr1"),
+  ('Ġ', bins "scanl scanl1"),
   ('f', bins "filter select"),
   ('L', bins "len nlen"),
   ('#', bins "countf count"),
@@ -78,7 +78,7 @@ commandsList = [
   ('h', bins "init"),
   ('t', bins "tail"),
   ('ƒ', bins "fix"),
-  ('F', bins "fixp"),
+  ('ω', bins "fixp"),
   ('<', bins "lt"),
   ('>', bins "gt"),
   ('≤', bins "le"),
@@ -142,7 +142,10 @@ commandsList = [
   ('i', bins "d2i c2i s2i"),
   ('e', bins "list2"),
   ('ė', bins "list3"),
-  ('ë', bins "list4")
+  ('ë', bins "list4"),
+  ('Ṫ', bins "table"),
+  ('»', bins "rmap"),
+  ('«', bins "lmap")
   ]
 
 -- Compute builtins from space-delimited list
@@ -271,6 +274,9 @@ builtinsList = [
   ("smap",  forall "xn" [num n] $ (x ~> n) ~> lst x ~> n),
   ("cmapr", forall "xy" [] $ lst (x ~> lst y) ~> x ~> lst y),
   ("smapr", forall "xn" [num n] $ lst (x ~> n) ~> x ~> n),
+  ("table", forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> lst y ~> lst (lst z)),
+  ("rmap",  forall "xyz" [] $ (x ~> y ~> z) ~> x ~> lst y ~> lst z),
+  ("lmap",  forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> y ~> lst z),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
