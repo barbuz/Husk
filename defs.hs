@@ -669,3 +669,6 @@ func_mapacL f g x (y:ys) = g x y : func_mapacL f g (f x y) ys
 func_mapacR :: (b -> a -> a) -> (b -> a -> c) -> a -> [b] -> [c]
 func_mapacR _ _ _ []     = []
 func_mapacR f g x (y:ys) = g y (foldr f x ys) : func_mapacR f g x ys
+
+func_replic :: Integer -> a -> [a]
+func_replic n = replicate $ fromInteger n

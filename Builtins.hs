@@ -147,7 +147,8 @@ commandsList = [
   ('Ṁ', bins "rmap"),
   ('M', bins "lmap"),
   ('«', bins "mapacL"),
-  ('»', bins "mapacR")
+  ('»', bins "mapacR"),
+  ('R', bins "replic")
   ]
 
 -- Compute builtins from space-delimited list
@@ -248,6 +249,7 @@ builtinsList = [
   ("list2", forall "x" [] $ x ~> x ~> lst x),
   ("list3", forall "x" [] $ x ~> x ~> x ~> lst x),
   ("list4", forall "x" [] $ x ~> x ~> x ~> x ~> lst x),
+  ("replic",forall "x" [] $ int ~> x ~> lst x),
   
 
   -- Higher order functions
