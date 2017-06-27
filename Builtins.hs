@@ -144,8 +144,10 @@ commandsList = [
   ('ė', bins "list3"),
   ('ë', bins "list4"),
   ('Ṫ', bins "table"),
-  ('»', bins "rmap"),
-  ('«', bins "lmap")
+  ('Ṁ', bins "rmap"),
+  ('M', bins "lmap"),
+  ('«', bins "mapacL"),
+  ('»', bins "mapacR")
   ]
 
 -- Compute builtins from space-delimited list
@@ -277,6 +279,8 @@ builtinsList = [
   ("table", forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> lst y ~> lst (lst z)),
   ("rmap",  forall "xyz" [] $ (x ~> y ~> z) ~> x ~> lst y ~> lst z),
   ("lmap",  forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> y ~> lst z),
+  ("mapacL",forall "xyz" [] $ (x ~> y ~> x) ~> (x ~> y ~> z) ~> x ~> lst y ~> lst z),
+  ("mapacR",forall "xyz" [] $ (y ~> x ~> x) ~> (y ~> x ~> z) ~> x ~> lst y ~> lst z),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

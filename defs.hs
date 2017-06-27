@@ -661,3 +661,11 @@ func_lmap f as b = map (flip f b) as
 
 func_rmap :: (a -> b -> c) -> a -> [b] -> [c]
 func_rmap f a = map (f a)
+
+func_mapacL :: (a -> b -> a) -> (a -> b -> c) -> a -> [b] -> [c]
+func_mapacL _ _ _ []     = []
+func_mapacL f g x (y:ys) = g x y : func_mapacL f g (f x y) ys
+
+func_mapacR :: (b -> a -> a) -> (b -> a -> c) -> a -> [b] -> [c]
+func_mapacR _ _ _ []     = []
+func_mapacR f g x (y:ys) = g y (foldr f x ys) : func_mapacR f g x ys
