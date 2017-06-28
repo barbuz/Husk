@@ -5,6 +5,7 @@ import Debug
 import Expr
 import Builtins
 import PrattParser
+import DecompressString
 import Text.Parsec
 import Text.Parsec.Char
 import Control.Monad (forM)
@@ -126,7 +127,7 @@ lineExpr = do
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> intseq <|> lambda <|> try lambdaArg <|> subscript
+  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> comprstr <|> intseq <|> lambda <|> try lambdaArg <|> subscript
         opTable = [[InfixL $ optional soleSpace >> return (EOp invisibleOp)]]
         invisibleOp = bins "com4 com3 com2 com app"
 
@@ -171,6 +172,21 @@ str = do
     decode '¶' = '\n'
     decode '¨' = '"'
     decode '¦' = '\\'
+    decode  c  =  c
+
+-- Parse a compressed string
+comprstr :: Parser (Exp [Lit Scheme])
+comprstr = do
+  quote <- char '¨'
+  s <- content
+  quote2 <- (char '¨' >> return ()) <|> (lookAhead endOfLine >> return ()) <|> lookAhead eof
+  return $ ELit [Value (show $ s) $ Scheme [] $CType [] $ TList (TConc TChar)]
+  where
+    content = do
+      comprText <- many $ noneOf "¨\n"
+      decomprText <- return $ decompressString comprText
+      return $ map decode decomprText
+    decode '¶' = '\n'
     decode  c  =  c
 
 -- Parse an integer sequence

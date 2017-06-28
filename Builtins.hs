@@ -114,7 +114,7 @@ commandsList = [
         EOp (bins "com com2 com3 com4") (EVar "x") $
         EOp (bins "com com2 com3 com4") (EVar "y") $
         EOp (bins "com com2 com3 com4") (EVar "z") (EVar "u")),
-  ('¨', bins "vec"),
+  ('´', bins "vec"),
   ('O', bins "sort"),
   ('Ö', bins "sorton sortby"),
   ('▲', bins "max maxl"),
