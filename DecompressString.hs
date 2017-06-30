@@ -1,9 +1,9 @@
-{-# LANGUAGE QuasiQuotes #-}
-
 module DecompressString where
 
 import qualified Data.Map.Lazy as Map
-import FileQuoter
+import System.IO.Unsafe (unsafePerformIO)
+import System.Environment (getExecutablePath)
+import System.FilePath (replaceFileName)
 
 decompressString :: String -> String
 decompressString s = go "" s where
@@ -13,4 +13,9 @@ decompressString s = go "" s where
   
   
 dictionary :: Map.Map String String
-dictionary = Map.fromDistinctAscList $ read [litFile|dict.hs|] --This allows a quicker compilation than directly having the dictionary in this file
+--We need to read it at runtime, otherwise compilation is too slow and memory-hungry
+dictionary = Map.fromDistinctAscList $ read listdict where
+  listdict = unsafePerformIO $ getDict
+  getDict = do
+              path <- getExecutablePath
+              readFile $ replaceFileName path "dict.hs"
