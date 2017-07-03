@@ -7,15 +7,17 @@ import System.FilePath (replaceFileName)
 
 decompressString :: String -> String
 decompressString s = go "" s where
-  go prev (x:xs) | Just word <- Map.lookup (prev++[x]) dictionary = word ++ go "" xs
+  go prev (x:xs) | Just word <- lookup (prev++[x]) dictionary = word ++ go "" xs
                  | otherwise                                      = go (prev++[x]) xs
   go _ [] = []
   
   
-dictionary :: Map.Map String String
+--dictionary :: Map.Map String String
 --We need to read it at runtime, otherwise compilation is too slow and memory-hungry
-dictionary = Map.fromDistinctAscList $ read listdict where
-  listdict = unsafePerformIO $ getDict
-  getDict = do
+--dictionary = Map.fromDistinctAscList $ map read $ lines listdict where
+dictionary :: [(String,String)]
+dictionary = map read $lines listdict where
+    listdict = unsafePerformIO $ getDict
+    getDict = do
               path <- getExecutablePath
               readFile $ replaceFileName path "dict.hs"
