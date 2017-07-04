@@ -22,25 +22,17 @@ unifyInputs (TVar _) t = Just t
 unifyInputs t (TVar _) = Just t
 unifyInputs _ _ = Nothing
 
-integer :: InputParser
-integer = do
-  minus <- optionMaybe $ char '-'
-  digits <- many1 digit
-  let number = case minus of
-        Just _  -> '-' : digits
-        Nothing -> digits
-  return $ Just (number, TConc TInt)
-
-double :: InputParser
-double = do
+number :: InputParser
+number = do
   minus <- optionMaybe $ char '-'
   prefix <- many1 digit
-  char '.'
-  suffix <- many1 digit
-  let number = case minus of
-        Just _  -> '-' : prefix ++ "." ++ suffix
-        Nothing -> prefix ++ "." ++ suffix
-  return $ Just (number, TConc TDouble)
+  suffix <- optionMaybe $ char '.' >> many1 digit
+  let number = case (minus, suffix) of
+        (Just _, Just suffix)  -> '-' : prefix ++ "." ++ suffix
+        (Just _, Nothing)      -> '-' : prefix
+        (Nothing, Just suffix) -> prefix ++ "." ++ suffix
+        (Nothing, Nothing)     -> prefix
+  return $ Just (number, TConc TNum)
 
 character :: InputParser
 character = do
@@ -85,7 +77,7 @@ pair = do
     return ("(" ++ str1 ++ "," ++ str2 ++ ")", TPair typ1 typ2)
 
 inputVal :: InputParser
-inputVal = try double <|> try integer <|> try character <|> try list <|> try pair <|> str
+inputVal = try number <|> try character <|> try list <|> try pair <|> str
 
 input :: InputParser
 input = do
@@ -101,13 +93,12 @@ input = do
                return $ (str, newTyp)
 
 inputType :: Parsec String () Type
-inputType = integerT <|> doubleT <|> charT <|> varT <|> listT <|> pairT
-  where integerT = char 'I' >> return (TConc TInt)
-        doubleT  = char 'D' >> return (TConc TDouble)
-        charT    = char 'C' >> return (TConc TChar)
-        varT     = lower >>= \c-> return (TVar [c])
-        listT    = char 'L' >> fmap TList inputType
-        pairT    = char 'P' >> do
+inputType = numT <|> charT <|> varT <|> listT <|> pairT
+  where numT  = char 'N' >> return (TConc TNum)
+        charT = char 'C' >> return (TConc TChar)
+        varT  = lower >>= \c-> return (TVar [c])
+        listT = char 'L' >> fmap TList inputType
+        pairT = char 'P' >> do
           first <- inputType
           second <- inputType
           return $ TPair first second

@@ -143,9 +143,10 @@ number = do
   prefix <- many1 digit
   maybeSuffix <- optionMaybe $ char '.' >> many digit
   case maybeSuffix of
-    Nothing     -> return $ ELit [Value prefix $ Scheme ["n"] $ CType [Number $ TVar "n"] $ TVar "n"]
-    Just []     -> return $ ELit [Value (prefix ++ ".0") $ Scheme [] $ CType [] $ TConc TDouble]
-    Just suffix -> return $ ELit [Value (prefix ++ "." ++ suffix) $ Scheme [] $ CType [] $ TConc TDouble]
+    Nothing     -> return $ ELit [Value prefix numType]
+    Just []     -> return $ ELit [Value (prefix ++ ".0") numType]
+    Just suffix -> return $ ELit [Value (prefix ++ "." ++ suffix) numType]
+  where numType = Scheme [] $ CType [] $ TConc TNum
  
 -- Parse a character
 character :: Parser (Exp [Lit Scheme])
