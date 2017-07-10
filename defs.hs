@@ -1,5 +1,144 @@
 -- Built-in functions
 
+-- Type of numeric values
+data TNum = TInt Integer
+          | TDbl Double
+
+instance Eq TNum where
+  TInt a == TInt b = a == b
+  TInt a == TDbl b = fromInteger a == b
+  TDbl a == TInt b = a == fromInteger b
+  TDbl a == TDbl b = a == b
+
+instance Ord TNum where
+  compare (TInt a) (TInt b) = compare a b
+  compare (TInt a) (TDbl b) = compare (fromInteger a) b
+  compare (TDbl a) (TInt b) = compare a (fromInteger b)
+  compare (TDbl a) (TDbl b) = compare a b
+
+doublify :: TNum -> TNum
+doublify (TInt n) = TDbl $ fromInteger n
+doublify d = d
+
+boolToNum :: Bool -> TNum
+boolToNum True = 1
+boolToNum False = 0
+
+-- Instances for TNum
+instance Show TNum where
+  show (TInt n) = show n
+  show (TDbl d) = show d
+
+instance Read TNum where
+  readsPrec n str = case readsPrec n str :: [(Integer, String)] of
+    [] -> [(TDbl d, rest) | (d, rest) <- readsPrec n str :: [(Double, String)]]
+    p  -> [(TInt k, rest) | (k, rest) <- p]
+
+instance Num TNum where
+  TInt a + TInt b = TInt $ a + b
+  TInt a + TDbl b = TDbl $ fromInteger a + b
+  TDbl a + TInt b = TDbl $ a + fromInteger b
+  TDbl a + TDbl b = TDbl $ a + b
+
+  TInt a - TInt b = TInt $ a - b
+  TInt a - TDbl b = TDbl $ fromInteger a - b
+  TDbl a - TInt b = TDbl $ a - fromInteger b
+  TDbl a - TDbl b = TDbl $ a - b
+  
+  TInt a * TInt b = TInt $ a * b
+  TInt a * TDbl b = TDbl $ fromInteger a * b
+  TDbl a * TInt b = TDbl $ a * fromInteger b
+  TDbl a * TDbl b = TDbl $ a * b
+
+  abs (TInt a) = TInt $ abs a
+  abs (TDbl a) = TDbl $ abs a
+
+  signum (TInt a) = TInt $ signum a
+  signum (TDbl a) = TDbl $ signum a
+
+  negate (TInt a) = TInt $ negate a
+  negate (TDbl a) = TDbl $ negate a
+
+  fromInteger = TInt
+
+instance Real TNum where
+  toRational (TInt a) = toRational a
+  toRational (TDbl a) = toRational a
+
+instance Enum TNum where
+  toEnum n = TInt $ toEnum n
+  
+  fromEnum (TInt n) = fromEnum n
+  fromEnum (TDbl n) = fromEnum n
+
+instance Integral TNum where
+  toInteger (TInt n) = n
+  toInteger (TDbl d) = truncate d
+  
+  quotRem (TInt a) (TInt b) | (x, y) <- quotRem a b = (TInt x, TInt y)
+  quotRem (TInt a) b        = quotRem (TDbl $ fromInteger a) b
+  quotRem a        (TInt b) = quotRem a (TDbl $ fromInteger b)
+  quotRem (TDbl a) (TDbl b) = (TInt $ truncate $ a / b, TDbl $ a - b * fromInteger (truncate $ a / b))
+
+instance Fractional TNum where
+  fromRational r = TDbl $ fromRational r
+
+  TInt a / TInt b = TDbl $ fromInteger a / fromInteger b
+  TInt a / TDbl b = TDbl $ fromInteger a / b
+  TDbl a / TInt b = TDbl $ a / fromInteger b
+  TDbl a / TDbl b = TDbl $ a / b
+
+instance Floating TNum where
+  pi = TDbl pi
+
+  exp (TDbl a) = TDbl $ exp a
+  exp (TInt a) = TDbl $ exp $ fromInteger a
+
+  log (TDbl a) = TDbl $ log a
+  log (TInt a) = TDbl $ log $ fromInteger a
+
+  sqrt (TDbl a) = TDbl $ sqrt a
+  sqrt (TInt a) = TDbl $ sqrt $ fromInteger a
+
+  sin (TDbl a) = TDbl $ sin a
+  sin (TInt a) = TDbl $ sin $ fromInteger a
+
+  cos (TDbl a) = TDbl $ cos a
+  cos (TInt a) = TDbl $ cos $ fromInteger a
+
+  tan (TDbl a) = TDbl $ tan a
+  tan (TInt a) = TDbl $ tan $ fromInteger a
+
+  asin (TDbl a) = TDbl $ asin a
+  asin (TInt a) = TDbl $ asin $ fromInteger a
+
+  acos (TDbl a) = TDbl $ acos a
+  acos (TInt a) = TDbl $ acos $ fromInteger a
+
+  atan (TDbl a) = TDbl $ atan a
+  atan (TInt a) = TDbl $ atan $ fromInteger a
+
+  sinh (TDbl a) = TDbl $ sinh a
+  sinh (TInt a) = TDbl $ sinh $ fromInteger a
+
+  cosh (TDbl a) = TDbl $ cosh a
+  cosh (TInt a) = TDbl $ cosh $ fromInteger a
+
+  asinh (TDbl a) = TDbl $ asinh a
+  asinh (TInt a) = TDbl $ asinh $ fromInteger a
+
+  acosh (TDbl a) = TDbl $ acosh a
+  acosh (TInt a) = TDbl $ acosh $ fromInteger a
+
+  atanh (TDbl a) = TDbl $ atanh a
+  atanh (TInt a) = TDbl $ atanh $ fromInteger a
+
+instance RealFrac TNum where
+  properFraction (TInt a) = (fromInteger a, TInt 0)
+  properFraction (TDbl a) | (n, r) <- properFraction a = (n, TDbl r)
+  
+
+-- String conversion
 class ToString a where
   toString :: a -> String
 
@@ -15,22 +154,24 @@ instance {-# OVERLAPPING #-} ToString [[String]] where
 instance Concrete a => ToString a where
   toString = show
 
+
+-- Class of concrete values
 class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   isTruthy :: a -> Bool
-  toTruthy :: a -> Integer
+  toTruthy :: a -> TNum
   func_false :: a
   func_true :: a
-  func_lt :: a -> a -> Integer
-  func_gt :: a -> a -> Integer
-  func_le :: a -> a -> Integer
-  func_ge :: a -> a -> Integer
-  func_neq :: a -> a -> Integer
-  func_congr :: a -> a -> Integer
+  func_lt :: a -> a -> TNum
+  func_gt :: a -> a -> TNum
+  func_le :: a -> a -> TNum
+  func_ge :: a -> a -> TNum
+  func_neq :: a -> a -> TNum
+  func_congr :: a -> a -> TNum
   
   func_heads :: a -> [a]
   func_tails :: a -> [a]
   
-  func_eq :: a -> a -> Integer
+  func_eq :: a -> a -> TNum
   func_eq x y = boolToNum $ x == y
   
   func_or :: a -> a -> a
@@ -42,42 +183,24 @@ class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   func_read :: [Char] -> a
   func_read = read
 
-func_or' :: (Concrete a, Concrete b) => a -> b -> Integer
+func_or' :: (Concrete a, Concrete b) => a -> b -> TNum
 func_or' x y = func_or (toTruthy x) (toTruthy y)
 
-func_and' :: (Concrete a, Concrete b) => a -> b -> Integer
+func_and' :: (Concrete a, Concrete b) => a -> b -> TNum
 func_and' x y = func_and (toTruthy x) (toTruthy y)
 
-instance Concrete Integer where
+instance Concrete TNum where
   isTruthy = (/= 0)
-  toTruthy = id
+  toTruthy (TDbl d) = TInt $ roundAway d
+  toTruthy n = n
   func_false = 0
   func_true = 1
-  func_lt y x = max 0 (y-x)
-  func_gt y x = max 0 (x-y)
-  func_le y x = max 0 (y-x+1)
-  func_ge y x = max 0 (x-y+1)
-  func_neq y x = abs $ x-y
+  func_lt y x = max 0 $ toTruthy (y-x)
+  func_gt y x = max 0 $ toTruthy (x-y)
+  func_le y x = max 0 $ toTruthy (y-x+1)
+  func_ge y x = max 0 $ toTruthy (x-y+1)
+  func_neq y x = abs $ toTruthy (x-y)
   
-  func_congr 0 0 = 1
-  func_congr 0 _ = 0
-  func_congr _ 0 = 0
-  func_congr _ _ = 1
-  
-  func_heads x = [1..x]
-  func_tails x = [x,x-1..1]
-
-instance Concrete Double where
-  isTruthy = (/= 0)
-  toTruthy = roundAway
-  func_false = 0
-  func_true = 1
-  func_lt y x = max 0 $ roundAway(y-x)
-  func_gt y x = max 0 $ roundAway(x-y)
-  func_le y x = max 0 $ roundAway(y-x+1)
-  func_ge y x = max 0 $ roundAway(x-y+1)
-  func_neq y x = abs.roundAway $ x-y
-    
   func_congr 0 0 = 1
   func_congr 0 _ = 0
   func_congr _ 0 = 0
@@ -154,20 +277,11 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   func_heads (a,b) = [(c,d)|c<-func_heads a,d<-func_heads b]
   func_tails (a,b) = [(c,d)|c<-func_tails a,d<-func_tails b]
 
-class (Num n, Concrete n, Enum n, Real n) => Number n where
-  valueOf :: n -> Either Integer Double
-
-instance Number Integer where
-  valueOf = Left
-
-instance Number Double where
-  valueOf = Right
-
-boolToNum :: (Num a) => Bool -> a
-boolToNum = fromInteger . toInteger . fromEnum
-
 roundAway :: Double -> Integer
 roundAway d = if d<0 then floor d else ceiling d
+
+
+-- Built-in functions
 
 func_fix :: (a -> a) -> a
 func_fix = fix
@@ -192,75 +306,39 @@ func_com3 f g x y = f . g x y
 func_com4 :: (e -> f) -> (a -> b -> c -> d -> e) -> a -> b -> c -> d -> f
 func_com4 f g x y z = f . g x y z
 
-func_add :: Number n => n -> n -> n
+func_add :: TNum -> TNum -> TNum
 func_add = (+)
 
-func_addID :: Integer -> Double -> Double
-func_addID a b = fromInteger a + b
-
-func_addDI :: Double -> Integer -> Double
-func_addDI a b = a + fromInteger b
-
-func_sub :: Number n => n -> n -> n
+func_sub :: TNum -> TNum -> TNum
 func_sub b a = a - b
 
-func_subID :: Integer -> Double -> Double
-func_subID b a = a - fromInteger b
-
-func_subDI :: Double -> Integer -> Double
-func_subDI b a = fromInteger a - b
-
-func_mul :: Number n => n -> n -> n
+func_mul :: TNum -> TNum -> TNum
 func_mul = (*)
 
-func_mulID :: Integer -> Double -> Double
-func_mulID a b = fromInteger a * b
+func_div :: TNum -> TNum -> TNum
+func_div b a = a / b
 
-func_mulDI :: Double -> Integer -> Double
-func_mulDI a b = a * fromInteger b
+func_idiv :: TNum -> TNum -> TNum
+func_idiv b a = a `div` b
 
-func_div :: (Number m, Number n) => m -> n -> Double
-func_div b a = x / y
-  where x | Left n  <- valueOf a = fromInteger n
-          | Right r <- valueOf a = r
-        y | Left n  <- valueOf b = fromInteger n
-          | Right r <- valueOf b = r
+func_mod :: TNum -> TNum -> TNum
+func_mod b a = a `mod` b
 
-func_idiv :: (Number m, Number n) => m -> n -> Integer
-func_idiv b a | Left m <- valueOf a,
-                Left n <- valueOf b  = m `div` n
-              | Left m <- valueOf a  = func_idiv b (fromInteger m :: Double)
-              | Left n <- valueOf b  = func_idiv (fromInteger n :: Double) a
-              | Right r <- valueOf a,
-                Right s <- valueOf b = floor $ r / s
-
-func_mod :: Number n => n -> n -> n
-func_mod b a = a - fromInteger (func_idiv b a) * b
-
-func_modID :: Integer -> Double -> Double
-func_modID b a = a - fromInteger (func_idiv b a * b)
-
-func_modDI :: Double -> Integer -> Double
-func_modDI b a = fromInteger a - fromInteger (func_idiv b a) * b
-
-func_divds :: Number n => n -> n -> Integer
+func_divds :: TNum -> TNum -> TNum
 func_divds b a = func_not $ func_mod b a
 
-func_neg :: Number n => n -> n
+func_neg :: TNum -> TNum
 func_neg x = -x
 
-func_inv :: Number n => n -> Double
-func_inv x | Left n  <- valueOf x = recip $ fromInteger n
-           | Right r <- valueOf x = recip r
+func_inv :: TNum -> TNum
+func_inv = recip
 
 -- Triangular numbers: sum of all numbers in [1..n]
-func_trianI :: Integer -> Integer
-func_trianI n =  div (n*(n+1)) 2
+func_trian :: TNum -> TNum
+func_trian (TInt n) = TInt $ div (n*(n+1)) 2
+func_trian (TDbl r) = TDbl $ r*(r+1)/2
 
-func_trianD :: Double -> Double
-func_trianD r = r*(r+1)/2
-
-func_fact :: Number n => n -> n
+func_fact :: TNum -> TNum
 func_fact n = product [1..n]
 
 func_pure :: a -> [a]
@@ -328,36 +406,36 @@ func_scanr = scanr
 func_scanr1 :: (a -> a -> a) -> [a] -> [a]
 func_scanr1 = scanr1
 
-func_len :: [a] -> Integer
+func_len :: [a] -> TNum
 func_len = genericLength
 
-func_nlen :: Number a => a -> Integer
+func_nlen :: TNum -> TNum
 func_nlen = genericLength.show
 
-func_countf :: Concrete b => (a -> b) -> [a] -> Integer
+func_countf :: Concrete b => (a -> b) -> [a] -> TNum
 func_countf c = genericLength . filter (isTruthy . c)
 
-func_count :: Concrete a => a -> [a] -> Integer
+func_count :: Concrete a => a -> [a] -> TNum
 func_count x = genericLength . filter (== x)
 
-func_index :: Integer -> [a] -> a
+func_index :: TNum -> [a] -> a
 func_index i
   | i>0       = flip genericIndex (i-1).cycle
   | otherwise = flip genericIndex (-i).cycle.reverse
   
-func_index2 :: [a] -> Integer -> a
+func_index2 :: [a] -> TNum -> a
 func_index2 = flip func_index
 
 func_rev :: [a] -> [a]
 func_rev = reverse
 
-func_nats :: Number n => [n]
+func_nats :: [TNum]
 func_nats = [1, 2 ..]
 
-func_sum :: Number n => [n] -> n
+func_sum :: [TNum] -> TNum
 func_sum = sum
 
-func_prod :: Number n => [n] -> n
+func_prod :: [TNum] -> TNum
 func_prod = product
 
 func_concat :: [[a]] -> [a]
@@ -375,10 +453,10 @@ func_if2 g c a = if isTruthy a then g a else c
 func_fif :: Concrete a => (x->b) -> (x->b) -> (x->a) -> x -> b
 func_fif g h f x = if isTruthy (f x) then g x else h x
 
-func_not :: Concrete a => a -> Integer
+func_not :: Concrete a => a -> TNum
 func_not a = if isTruthy a then 0 else 1
 
-func_fnot :: Concrete b => (a -> b) -> a -> Integer
+func_fnot :: Concrete b => (a -> b) -> a -> TNum
 func_fnot f = func_not . f
 
 func_hook :: (a -> b -> c) -> (a -> b) -> a -> c
@@ -409,12 +487,12 @@ func_foldr1 :: (a -> a -> a) -> [a] -> a
 func_foldr1 = foldr1
 
 
-func_take :: Integer -> [a] -> [a]
+func_take :: TNum -> [a] -> [a]
 func_take n
   | n >= 0    = genericTake n
   | otherwise = reverse . genericTake (-n) . reverse
 
-func_take2 :: [a] -> Integer -> [a]
+func_take2 :: [a] -> TNum -> [a]
 func_take2 = flip func_take
 
 func_takew :: Concrete b => (a -> b) -> [a] -> [a]
@@ -423,12 +501,12 @@ func_takew f (x:xs)
   | isTruthy(f x) = x : func_takew f xs
   | otherwise     = []
 
-func_drop :: Integer -> [a] -> [a]
+func_drop :: TNum -> [a] -> [a]
 func_drop n
   | n >= 0    = genericDrop n
   | otherwise = reverse . genericDrop (-n) . reverse
 
-func_drop2 :: [a] -> Integer -> [a]
+func_drop2 :: [a] -> TNum -> [a]
 func_drop2 = flip func_drop
 
 func_dropw :: Concrete b => (a -> b) -> [a] -> [a]
@@ -476,11 +554,11 @@ func_iter = iterate
 func_rep :: a -> [a]
 func_rep = repeat
 
-func_ord :: Char -> Integer
+func_ord :: Char -> TNum
 func_ord = fromIntegral.ord
 
-func_chr :: Integer -> Char
-func_chr = chr.fromInteger
+func_chr :: TNum -> Char
+func_chr = chr.fromInteger.toInteger
 
 func_show :: Concrete a => a -> String
 func_show = show
@@ -488,10 +566,10 @@ func_show = show
 func_empty :: [a]
 func_empty = []
 
-func_predN :: Number n => n -> n
+func_predN :: TNum -> TNum
 func_predN n = n-1
 
-func_succN :: Number n => n -> n
+func_succN :: TNum -> TNum
 func_succN n = n+1
 
 func_predC :: Char -> Char
@@ -510,7 +588,7 @@ func_sort = sort
 func_sorton :: Concrete b => (a -> b) -> [a] -> [a]
 func_sorton = sortOn
 
-func_sortby :: (a -> a -> Integer) -> [a] -> [a]
+func_sortby :: (a -> a -> TNum) -> [a] -> [a]
 func_sortby f = sortBy $ \x y -> compare (f x y) 0
 
 func_max :: Concrete a => a -> a -> a
@@ -556,7 +634,7 @@ func_lines = lines
 func_unlines :: [[Char]] -> [Char]
 func_unlines = unlines
 
-func_pfac :: Integer -> [Integer]
+func_pfac :: TNum -> [TNum]
 func_pfac = factorize 2
   where factorize _ 1 = [] 
         factorize d n 
@@ -584,7 +662,7 @@ func_groupBy f = groupBy (\x y -> isTruthy $ f x y)
 func_perms :: [a] -> [[a]]
 func_perms = permutations
 
-func_subl :: Concrete a => [a] -> [a] -> Integer
+func_subl :: Concrete a => [a] -> [a] -> TNum
 func_subl super sub = subindex 1 super sub
   where subindex i _ [] = i
         subindex i super@(_:xs) sub = if sub`isPrefixOf`super then i else subindex (i+1) xs sub
@@ -615,27 +693,28 @@ func_zip' f (x:xs) (y:ys) = f x y : func_zip' f xs ys
 func_cmap :: (a -> [b]) -> [a] -> [b]
 func_cmap = concatMap
 
-func_smap :: Number n => (a -> n) -> [a] -> n
+func_smap :: (a -> TNum) -> [a] -> TNum
 func_smap f = sum . map f
 
 func_cmapr :: [(a -> [b])] -> a -> [b]
 func_cmapr fs = concat . func_mapr fs
 
-func_smapr :: Number n => [(a -> n)] -> a -> n
+func_smapr :: [(a -> TNum)] -> a -> TNum
 func_smapr fs = sum . func_mapr fs
 
 func_combin :: (b -> b -> c) -> (a -> b) -> a -> a -> c
 func_combin f g x y = f (g x) (g y)
 
-func_d2i :: Double -> Integer
-func_d2i d = floor $ d+0.5 --round halves towards positive infinity
+func_n2i :: TNum -> TNum
+func_n2i n@(TInt _) = n
+func_n2i (TDbl d) = TInt $ floor $ d+0.5 --round halves towards positive infinity
 
-func_c2i :: Char -> Integer
+func_c2i :: Char -> TNum
 func_c2i c | Just i <- elemIndex c "0123456789" = fromIntegral i
            | otherwise                          = 0
 
 -- Read the first number found in the string
-func_s2i :: String -> Integer
+func_s2i :: String -> TNum
 func_s2i = read . takeWhile C.isDigit . dropWhile (not . C.isDigit)
 
 func_list2 :: a -> a -> [a]
@@ -670,5 +749,5 @@ func_mapacR :: (b -> a -> a) -> (b -> a -> c) -> a -> [b] -> [c]
 func_mapacR _ _ _ []     = []
 func_mapacR f g x (y:ys) = g y (foldr f x ys) : func_mapacR f g x ys
 
-func_replic :: Integer -> a -> [a]
-func_replic n = replicate $ fromInteger n
+func_replic :: TNum -> a -> [a]
+func_replic n = replicate $ fromInteger $ toInteger n

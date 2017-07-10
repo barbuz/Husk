@@ -61,8 +61,7 @@ instance Show Type where
   show (TFun a b) = "(" ++ show a ++ "->" ++ show b ++ ")"
 
 -- Concrete type
-data Conc = TInt
-          | TDouble
+data Conc = TNum
           | TChar
           | TNil
   deriving (Eq, Ord, Show)
@@ -95,8 +94,7 @@ holds (Concrete (TPair t1 t2)) = do
 holds (Concrete (TFun _ _))    = Nothing
 
 holds c@(Number (TVar _))      = Just [c]
-holds (Number (TConc TInt))    = Just []
-holds (Number (TConc TDouble)) = Just []
+holds (Number (TConc TNum))    = Just []
 holds (Number _)               = Nothing
 
 holds (Vect t1 t2 s1 s2) | s1 == t1, s2 == t2 = Just []
@@ -116,8 +114,8 @@ uniDepth _ _ = 0
 
 -- Default typeclass instances, given as unifiable pairs of types
 defInst :: TClass -> (Type, Type)
-defInst (Concrete t)       = (t, TConc TInt)
-defInst (Number t)         = (t, TConc TInt)
+defInst (Concrete t)       = (t, TConc TNum)
+defInst (Number t)         = (t, TConc TNum)
 defInst (Vect t1 t2 s1 s2) = (TPair s1 s2,
                                TPair
                                (iterate TList t1 !! n)
@@ -134,8 +132,7 @@ instance Show Scheme where
 -- Convert type to Haskell code
 typeToHaskell :: Type -> String
 typeToHaskell (TVar name) = name
-typeToHaskell (TConc TInt) = "Integer"
-typeToHaskell (TConc TDouble) = "Double"
+typeToHaskell (TConc TNum) = "TNum"
 typeToHaskell (TConc TChar) = "Char"
 typeToHaskell (TConc TNil) = "()"
 typeToHaskell (TList t) = "[" ++ typeToHaskell t ++ "]"

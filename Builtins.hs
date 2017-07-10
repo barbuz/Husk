@@ -5,11 +5,8 @@ import Expr
 -- Utilities for writing types
 [x,y,z,u,v,w,n,m] = map (TVar . pure) "xyzuvwnm"
 
-int :: Type
-int = TConc TInt
-
-dbl :: Type
-dbl = TConc TDouble
+num :: Type
+num = TConc TNum
 
 chr :: Type
 chr = TConc TChar
@@ -22,9 +19,6 @@ tup = TPair
 
 con :: Type -> TClass
 con = Concrete
-
-num :: Type -> TClass
-num = Number
 
 vec :: Type -> Type -> Type -> Type -> TClass
 vec = Vect
@@ -47,12 +41,12 @@ commands = map fst commandsList
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
 commandsList = [
-  ('+', bins "add addDI addID cat"),
-  ('-', bins "sub subDI subID diffl del"),
-  ('*', bins "mul mulDI mulID"),
+  ('+', bins "add cat"),
+  ('-', bins "sub diffl del"),
+  ('*', bins "mul"),
   ('/', bins "div"),
   ('÷', bins "idiv"),
-  ('%', bins "mod modDI modID"),
+  ('%', bins "mod"),
   ('_', bins "neg"),
   ('\\', bins "inv"),
   (';', bins "pure"),
@@ -95,7 +89,7 @@ commandsList = [
   ('I', bins "id"),
   ('`', bins "flip"),
   ('Γ', bins "list listN listF listNF"),
-  ('Σ', bins "sum trianI trianD concat"),
+  ('Σ', bins "sum trian concat"),
   ('Π', bins "prod fact cartes"),
   ('§', bins "fork fork2"),
   ('‡', bins "argdup"),
@@ -139,7 +133,7 @@ commandsList = [
   ('ṁ', bins "cmap cmapr smap smapr"),
   ('≡', bins "congr"),
   ('¤', bins "combin"),
-  ('i', bins "d2i c2i s2i"),
+  ('i', bins "n2i c2i s2i"),
   ('e', bins "list2"),
   ('ė', bins "list3"),
   ('ë', bins "list4"),
@@ -162,32 +156,23 @@ bins names = ELit $ map getBuiltin $ words names
 builtinsList :: [(String, Scheme)]
 builtinsList = [
 
-  ("intseq", simply $ chr ~> lst int),
+  ("intseq", simply $ chr ~> lst num),
 
   -- Arithmetic
-  ("add",   forall "n" [num n] $ n ~> n ~> n),
-  ("addID", simply $ int ~> dbl ~> dbl),
-  ("addDI", simply $ dbl ~> int ~> dbl),
-  ("sub",   forall "n" [num n] $ n ~> n ~> n),
-  ("subID", simply $ int ~> dbl ~> dbl),
-  ("subDI", simply $ dbl ~> int ~> dbl),
-  ("mul",   forall "n" [num n] $ n ~> n ~> n),
-  ("mulID", simply $ int ~> dbl ~> dbl),
-  ("mulDI", simply $ dbl ~> int ~> dbl),
-  ("div",   forall "mn" [num m,num n] $ m ~> n ~> dbl),
-  ("idiv",  forall "mn" [num m,num n] $ m ~> n ~> int),
-  ("mod",   forall "n" [num n] $ n ~> n ~> n),
-  ("modID", simply $ int ~> dbl ~> dbl),
-  ("modDI", simply $ dbl ~> int ~> dbl),
-  ("neg",   forall "n" [num n] $ n ~> n),
-  ("inv",   forall "n" [num n] $ n ~> dbl),
-  ("trianI",simply $ int ~> int),
-  ("trianD",simply $ dbl ~> dbl),
-  ("fact",  forall "n" [num n] $ n ~> n),
-  ("predN", forall "n" [num n] $ n ~> n),
-  ("succN", forall "n" [num n] $ n ~> n),
-  ("pfac",  simply $ int ~> lst int),
-  ("divds", forall "n" [num n] $ n ~> n ~> int),
+  ("add",   simply $ num ~> num ~> num),
+  ("sub",   simply $ num ~> num ~> num),
+  ("mul",   simply $ num ~> num ~> num),
+  ("div",   simply $ num ~> num ~> num),
+  ("idiv",  simply $ num ~> num ~> num),
+  ("mod",   simply $ num ~> num ~> num),
+  ("neg",   simply $ num ~> num),
+  ("inv",   simply $ num ~> num),
+  ("trian", simply $ num ~> num),
+  ("fact",  simply $ num ~> num),
+  ("predN", simply $ num ~> num),
+  ("succN", simply $ num ~> num),
+  ("pfac",  simply $ num ~> lst num),
+  ("divds", simply $ num ~> num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
@@ -197,39 +182,39 @@ builtinsList = [
   ("cons",  forall "x" [] $ x ~> lst x ~> lst x),
   ("cat",   forall "x" [] $ lst x ~> lst x ~> lst x),
   ("snoc",  forall "x" [] $ lst x ~> x ~> lst x),
-  ("len",   forall "x" [] $ lst x ~> int),
-  ("nlen",  forall "n" [num n] $ n ~> int),
-  ("countf",forall "xy" [con y] $ (x ~> y) ~> lst x ~> int),
-  ("count", forall "x" [con x] $ x ~> lst x ~> int),
+  ("len",   forall "x" [] $ lst x ~> num),
+  ("nlen",  simply $ num ~> num),
+  ("countf",forall "xy" [con y] $ (x ~> y) ~> lst x ~> num),
+  ("count", forall "x" [con x] $ x ~> lst x ~> num),
   ("head",  forall "x" [] $ lst x ~> x),
   ("last",  forall "x" [] $ lst x ~> x),
   ("init",  forall "x" [] $ lst x ~> lst x),
   ("tail",  forall "x" [] $ lst x ~> lst x),
   ("fst",   forall "xy" [] $ tup x y ~> x),
   ("snd",   forall "xy" [] $ tup x y ~> y),
-  ("indexC",forall "x" [con x] $ int ~> lst x ~> x),
-  ("indexC2",forall "x" [con x] $ lst x ~> int ~> x),
-  ("index", forall "x" [] $ int ~> lst x ~> x),
-  ("index2",forall "x" [] $ lst x ~> int ~> x),
-  ("take",  forall "x" [] $ int ~> lst x ~> lst x),
-  ("take2",  forall "x" [] $ lst x ~> int ~> lst x),
+  ("indexC",forall "x" [con x] $ num ~> lst x ~> x),
+  ("indexC2",forall "x" [con x] $ lst x ~> num ~> x),
+  ("index", forall "x" [] $ num ~> lst x ~> x),
+  ("index2",forall "x" [] $ lst x ~> num ~> x),
+  ("take",  forall "x" [] $ num ~> lst x ~> lst x),
+  ("take2",  forall "x" [] $ lst x ~> num ~> lst x),
   ("takew", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
-  ("drop",  forall "x" [] $ int ~> lst x ~> lst x),
-  ("drop2",  forall "x" [] $ lst x ~> int ~> lst x),
+  ("drop",  forall "x" [] $ num ~> lst x ~> lst x),
+  ("drop2",  forall "x" [] $ lst x ~> num ~> lst x),
   ("dropw", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("span",  forall "xy" [con y] $ (x ~> y) ~> lst x ~> tup (lst x) (lst x)),
   ("rev",   forall "x" [] $ lst x ~> lst x),
   ("heads", forall "x" [con x] $ x ~> lst x),
   ("tails", forall "x" [con x] $ x ~> lst x),
-  ("nats",  forall "n" [num n] $ lst n),
+  ("nats",  simply $ lst num),
   ("concat",forall "x" [] $ lst (lst x) ~> lst x),
-  ("sum",   forall "n" [num n] $ lst n ~> n),
-  ("prod",  forall "n" [num n] $ lst n ~> n),
+  ("sum",   simply $ lst num ~> num),
+  ("prod",  simply $ lst num ~> num),
   ("cartes",forall "x" [] $ lst (lst x) ~> lst (lst x)),
-  ("elem",  forall "x" [con x] $ lst x ~> x ~> int),
+  ("elem",  forall "x" [con x] $ lst x ~> x ~> num),
   ("sort",  forall "x" [con x] $ lst x ~> lst x),
   ("sorton",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
-  ("sortby",forall "x" [] $ (x ~> x ~> int) ~> lst x ~> lst x),
+  ("sortby",forall "x" [] $ (x ~> x ~> num) ~> lst x ~> lst x),
   ("maxl",  forall "x" [con x] $ lst x ~> x),
   ("minl",  forall "x" [con x] $ lst x ~> x),
   ("diffl", forall "x" [con x] $ lst x ~> lst x ~> lst x),
@@ -249,7 +234,7 @@ builtinsList = [
   ("list2", forall "x" [] $ x ~> x ~> lst x),
   ("list3", forall "x" [] $ x ~> x ~> x ~> lst x),
   ("list4", forall "x" [] $ x ~> x ~> x ~> x ~> lst x),
-  ("replic",forall "x" [] $ int ~> x ~> lst x),
+  ("replic",forall "x" [] $ num ~> x ~> lst x),
   
 
   -- Higher order functions
@@ -275,9 +260,9 @@ builtinsList = [
   ("rep",   forall "x" [] $ x ~> lst x),
   ("zip'",  forall "x" [] $ (x ~> x ~> x) ~> lst x ~> lst x ~> lst x),
   ("cmap",  forall "xy" [] $ (x ~> lst y) ~> lst x ~> lst y),
-  ("smap",  forall "xn" [num n] $ (x ~> n) ~> lst x ~> n),
+  ("smap",  forall "x" [] $ (x ~> num) ~> lst x ~> num),
   ("cmapr", forall "xy" [] $ lst (x ~> lst y) ~> x ~> lst y),
-  ("smapr", forall "xn" [num n] $ lst (x ~> n) ~> x ~> n),
+  ("smapr", forall "x" [] $ lst (x ~> num) ~> x ~> num),
   ("table", forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> lst y ~> lst (lst z)),
   ("rmap",  forall "xyz" [] $ (x ~> y ~> z) ~> x ~> lst y ~> lst z),
   ("lmap",  forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> y ~> lst z),
@@ -302,31 +287,31 @@ builtinsList = [
   ("combin",forall "xyz" [] $ (y ~> y ~> z) ~> (x ~> y) ~> (x ~> x ~> z)),
 
   -- Boolean functions and comparisons
-  ("lt",    forall "x" [con x] $ x ~> x ~> int),
-  ("gt",    forall "x" [con x] $ x ~> x ~> int),
-  ("le",    forall "x" [con x] $ x ~> x ~> int),
-  ("ge",    forall "x" [con x] $ x ~> x ~> int),
-  ("eq",    forall "x" [con x] $ x ~> x ~> int),
-  ("neq",   forall "x" [con x] $ x ~> x ~> int),
+  ("lt",    forall "x" [con x] $ x ~> x ~> num),
+  ("gt",    forall "x" [con x] $ x ~> x ~> num),
+  ("le",    forall "x" [con x] $ x ~> x ~> num),
+  ("ge",    forall "x" [con x] $ x ~> x ~> num),
+  ("eq",    forall "x" [con x] $ x ~> x ~> num),
+  ("neq",   forall "x" [con x] $ x ~> x ~> num),
   ("if",    forall "xy" [con x] $ y ~> y ~> x ~> y),
   ("if2",   forall "xy" [con x] $ (x ~> y) ~> y ~> x ~> y),
   ("fif",   forall "xyz" [con x] $ (z ~> y) ~> (z ~> y) ~> (z ~> x) ~> z ~> y),
-  ("not",   forall "x" [con x] $ x ~> int),
-  ("fnot",  forall "xy" [con y] $ (x ~> y) ~> (x ~> int)),
+  ("not",   forall "x" [con x] $ x ~> num),
+  ("fnot",  forall "xy" [con y] $ (x ~> y) ~> (x ~> num)),
   ("or",    forall "x" [con x] $ x ~> x ~> x),
-  ("or'",   forall "x" [con x, con y, num n] $ x ~> y ~> n),
+  ("or'",   forall "x" [con x, con y] $ x ~> y ~> num),
   ("and",   forall "x" [con x] $ x ~> x ~> x),
-  ("and'",  forall "x" [con x, con y, num n] $ x ~> y ~> n),
+  ("and'",  forall "x" [con x, con y] $ x ~> y ~> num),
   ("max",   forall "x" [con x] $ x ~> x ~> x),
   ("min",   forall "x" [con x] $ x ~> x ~> x),
   ("any",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
   ("all",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
-  ("subl",  forall "x" [con x] $ lst x ~> lst x ~> int),
-  ("congr", forall "x" [con x] $ x ~> x ~> int),
+  ("subl",  forall "x" [con x] $ lst x ~> lst x ~> num),
+  ("congr", forall "x" [con x] $ x ~> x ~> num),
   
   -- Chars and strings
-  ("chr",   simply $ int ~> chr),
-  ("ord",   simply $ chr ~> int),
+  ("chr",   simply $ num ~> chr),
+  ("ord",   simply $ chr ~> num),
   ("predC", simply $ chr ~> chr),
   ("succC", simply $ chr ~> chr),
   ("show",  forall "x" [con x] $ x ~> lst chr),
@@ -337,7 +322,7 @@ builtinsList = [
   ("unlines", simply $ lst (lst chr) ~> lst chr),
   
   -- Type conversions
-  ("d2i",   simply $ dbl ~> int),
-  ("c2i",   simply $ chr ~> int),
-  ("s2i",   simply $ lst chr ~> int)
+  ("n2i",   simply $ num ~> num),
+  ("c2i",   simply $ chr ~> num),
+  ("s2i",   simply $ lst chr ~> num)
   ]

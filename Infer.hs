@@ -331,19 +331,19 @@ e1 = ELet "id"
      (EApp (EVar "id") (EVar "id"))
 
 e2 = EApp
-     (ELit [Builtin "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+     (ELit [Builtin "inc" $ Scheme [] $ CType [] $ TFun (TConc TNum) (TConc TNum),
             Builtin "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
-     (ELit [Value "2" $ Scheme [] $ CType [] $ TConc TInt])
+     (ELit [Value "2" $ Scheme [] $ CType [] $ TConc TNum])
 
 e3 = EApp
-     (ELit [Builtin "inc" $ Scheme [] $ CType [] $ TFun (TConc TInt) (TConc TInt),
+     (ELit [Builtin "inc" $ Scheme [] $ CType [] $ TFun (TConc TNum) (TConc TNum),
             Builtin "upper" $ Scheme [] $ CType [] $ TFun (TConc TChar) (TConc TChar)])
      (ELit [Value "'a'" $ Scheme [] $ CType [] $ TConc TChar])
 
 e4 = EApp
-     (ELit [Builtin "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TInt)) (TList (TConc TInt)),
-            Builtin "not" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TFun (TVar "x") (TConc TInt)])
-     (ELit [Value "[1]" $ Scheme [] $ CType [] $ TList (TConc TInt)])
+     (ELit [Builtin "mapinc" $ Scheme [] $ CType [] $ TFun (TList (TConc TNum)) (TList (TConc TNum)),
+            Builtin "not" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TFun (TVar "x") (TConc TNum)])
+     (ELit [Value "[1]" $ Scheme [] $ CType [] $ TList (TConc TNum)])
 
 e5 = EAbs "f" $
      ELet "x"
@@ -353,9 +353,9 @@ e5 = EAbs "f" $
 e6 = EApp
      (EApp
       (ELit [Builtin "com" $ Scheme ["a","b","c"] $ CType [] $ (TVar "b" ~> TVar "c") ~> (TVar "a" ~> TVar "b") ~> (TVar "a" ~> TVar "c")])
-      (ELit [Builtin "consume" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TVar "x" ~> TConc TInt]))
-     (ELit [Builtin "produce" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TConc TInt ~> TVar "x"])
+      (ELit [Builtin "consume" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TVar "x" ~> TConc TNum]))
+     (ELit [Builtin "produce" $ Scheme ["x"] $ CType [Concrete (TVar "x")] $ TConc TNum ~> TVar "x"])
 
 e7 = EApp
-     (ELit [Builtin "vecneg" $ Scheme ["a","b"] $ CType [Vect (TConc TInt) (TConc TInt) (TVar "a") (TVar "b")] $ TVar "a" ~> TVar "b"])
-     (ELit [Value "[[[1]]]" $ Scheme [] $ CType [] $ TList (TList (TList (TConc TInt)))])
+     (ELit [Builtin "vecneg" $ Scheme ["a","b"] $ CType [Vect (TConc TNum) (TConc TNum) (TVar "a") (TVar "b")] $ TVar "a" ~> TVar "b"])
+     (ELit [Value "[[[1]]]" $ Scheme [] $ CType [] $ TList (TList (TList (TConc TNum)))])
