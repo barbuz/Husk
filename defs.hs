@@ -578,9 +578,12 @@ func_predC = pred
 func_succC :: Char -> Char
 func_succC = succ
 
-func_elem :: Concrete a => [a] -> a -> Integer
+func_elem :: Concrete a => [a] -> a -> TNum
 func_elem xs x | Just i <- elemIndex x xs = fromIntegral i + 1
                | otherwise                = 0
+
+func_elem' :: Concrete a => a -> [a] -> TNum
+func_elem' = flip func_elem
 
 func_sort :: Concrete a => [a] -> [a]
 func_sort = sort
@@ -751,3 +754,12 @@ func_mapacR f g x (y:ys) = g y (foldr f x ys) : func_mapacR f g x ys
 
 func_replic :: TNum -> a -> [a]
 func_replic n = replicate $ fromInteger $ toInteger n
+
+func_replif :: a -> TNum -> [a]
+func_replif = flip func_replic
+
+func_abs :: TNum -> TNum
+func_abs = abs
+
+func_sign :: TNum -> TNum
+func_sign = signum

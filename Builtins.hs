@@ -99,7 +99,7 @@ commandsList = [
   ('s', bins "show"),
   ('r', bins "read"),
   ('ø', bins "empty"),
-  ('€', bins "elem subl"),
+  ('€', bins "elem elem' subl"),
   ('o', bins "com com2 com3 com4"),
   ('ȯ', EAbs "x" $ EAbs "y" $ EAbs "z" $
         EOp (bins "com com2 com3 com4") (EVar "x") $
@@ -142,7 +142,9 @@ commandsList = [
   ('M', bins "lmap"),
   ('«', bins "mapacL"),
   ('»', bins "mapacR"),
-  ('R', bins "replic")
+  ('R', bins "replic replif"),
+  ('a', bins "abs"),
+  ('±', bins "sign")
   ]
 
 -- Compute builtins from space-delimited list
@@ -173,6 +175,8 @@ builtinsList = [
   ("succN", simply $ num ~> num),
   ("pfac",  simply $ num ~> lst num),
   ("divds", simply $ num ~> num ~> num),
+  ("sign",  simply $ num ~> num),
+  ("abs",   simply $ num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
@@ -212,6 +216,7 @@ builtinsList = [
   ("prod",  simply $ lst num ~> num),
   ("cartes",forall "x" [] $ lst (lst x) ~> lst (lst x)),
   ("elem",  forall "x" [con x] $ lst x ~> x ~> num),
+  ("elem'",  forall "x" [con x] $ x ~> lst x ~> num),
   ("sort",  forall "x" [con x] $ lst x ~> lst x),
   ("sorton",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
   ("sortby",forall "x" [] $ (x ~> x ~> num) ~> lst x ~> lst x),
@@ -235,6 +240,7 @@ builtinsList = [
   ("list3", forall "x" [] $ x ~> x ~> x ~> lst x),
   ("list4", forall "x" [] $ x ~> x ~> x ~> x ~> lst x),
   ("replic",forall "x" [] $ num ~> x ~> lst x),
+  ("replif",forall "x" [] $ x ~> num ~> lst x),
   
 
   -- Higher order functions
