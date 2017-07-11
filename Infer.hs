@@ -47,10 +47,8 @@ instance Types Type where
 
 instance Types TClass where
   freeVars (Concrete t)       = freeVars t
-  freeVars (Number t)         = freeVars t
   freeVars (Vect t1 t2 s1 s2) = freeVars [t1,t2,s1,s2]
   applySub s (Concrete t)       = Concrete $ applySub s t
-  applySub s (Number t)         = Number $ applySub s t
   applySub s (Vect t1 t2 s1 s2) = Vect (applySub s t1) (applySub s t2) (applySub s s1) (applySub s s2)
 
 instance Types CType where
@@ -176,16 +174,19 @@ unify t1 t2 = do
     unify' (TConc a) (TConc b) | a == b = return ()
     unify' _ _                          = trace' "unification fail" $ fail ""
 
--- Check typeclass constraints; remove those that hold, keep indeterminate ones, fail if any don't hold
+-- Check typeclass constraints; remove those that hold, keep indeterminate ones, perform unifications, fail if any don't hold
 checkCons :: [TClass] -> Infer [TClass]
-checkCons x | trace' ("checking " ++ show x) False = undefined
+checkCons (x:_) | trace' ("checking " ++ show x) False = undefined
 checkCons [] = return []
 checkCons (c:cs) = case {-traceShow' (c, holds c)-} holds c of
-  Just cs' -> (cs' ++) <$> checkCons cs
+  Just (Enforce newCs unis) -> do
+    mapM (uncurry unify) unis
+    (newCs ++) <$> checkCons cs
   Nothing  -> trace' "constraint fail" $ fail ""
 
 -- Infer type of literal
 inferLit :: Lit Scheme -> Infer (CType, Exp (Lit CType))
+inferLit x | trace' ("chose " ++ show x) False = undefined
 inferLit lit@(Value name typ) =
   do newTyp <- instantiate typ
      return (newTyp, ELit $ Value name newTyp)

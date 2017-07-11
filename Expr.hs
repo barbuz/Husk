@@ -5,6 +5,7 @@
 
 module Expr where
 
+import Debug
 import Data.List (intercalate)
 
 -- Labels for type and expression variables
@@ -76,51 +77,62 @@ instance Show CType where
 -- Possible typeclass constraints
 data TClass = Vect Type Type Type Type
             | Concrete Type
-            | Number Type
   deriving (Eq, Ord, Show)
 
--- Check typeclass constraint, return list of "simpler" constraints that are equivalent to it
--- Nothing ==> Constraint doesn't hold
--- Just [] ==> Constraint holds (equivalent to no constraints)
--- Just cs ==> Equivalent to all cs holding
-holds :: TClass -> Maybe [TClass]
-holds c@(Concrete (TVar _))    = Just [c]
-holds (Concrete (TConc _))     = Just []
+-- Possible results for enforcing a typeclass
+data Enforce = Enforce {otherCons :: [TClass],       -- "simpler" typeclass constraints
+                        otherUnis :: [(Type, Type)]} -- types to be unified
+
+-- Find a nesting depth at which list-nested t1 equals t2
+eqDepth :: Type -> Type -> Maybe Int
+eqDepth t1 t2 | t1 == t2 = Just 0
+eqDepth (TList t1) (TList t2) = eqDepth t1 t2
+eqDepth t1 (TList t2) = succ <$> eqDepth t1 t2
+eqDepth _ _ = Nothing
+
+-- Find a nesting depth at which list-nested t1 could possibly be unified with t2
+uniDepth :: Type -> Type -> Maybe Int
+uniDepth t1 t2 | unifiable t1 t2 = Just 0
+  where unifiable (TVar _) _ = True
+        unifiable _ (TVar _) = True
+        unifiable t1@(TConc _) t2@(TConc _) = t1 == t2
+        unifiable (TPair l1 r1) (TPair l2 r2) = unifiable l1 l2 && unifiable r1 r2
+        unifiable (TList t1) (TList t2) = unifiable t1 t2
+        unifiable (TFun a1 r1) (TFun a2 r2) = unifiable a1 a2 && unifiable r1 r2
+        unifiable _ _ = False
+uniDepth (TList t1) (TList t2) = uniDepth t1 t2
+uniDepth t1 (TList t2) = succ <$> uniDepth t1 t2
+uniDepth _ _ = Nothing
+
+-- Check typeclass constraint, return constraints and unifications to be enforced
+-- "Nothing" means the constraint failed
+holds :: TClass -> Maybe Enforce
+holds c@(Concrete (TVar _))    = Just $ Enforce [c] []
+holds (Concrete (TConc _))     = Just $ Enforce [] []
 holds (Concrete (TList t))     = holds (Concrete t)
 holds (Concrete (TPair t1 t2)) = do
-  h1 <- holds (Concrete t1)
-  h2 <- holds (Concrete t2)
-  return $ h1 ++ h2
+  Enforce h1 _ <- holds (Concrete t1)
+  Enforce h2 _ <- holds (Concrete t2)
+  return $ Enforce (h1 ++ h2) []
 holds (Concrete (TFun _ _))    = Nothing
 
-holds c@(Number (TVar _))      = Just [c]
-holds (Number (TConc TNum))    = Just []
-holds (Number _)               = Nothing
-
-holds (Vect t1 t2 s1 s2) | s1 == t1, s2 == t2 = Just []
-holds (Vect t1 t2 (TList s1) (TList s2))      = holds $ Vect t1 t2 s1 s2
-holds c@(Vect _ _ (TVar _) (TList _))         = Just [c]
-holds c@(Vect _ _ (TList _) (TVar _))         = Just [c]
-holds c@(Vect _ _ (TVar _) (TVar _))          = Just [c]
-holds (Vect _ _ _ _)                          = Nothing
-
--- Find a nesting depth at which list-nested t1 can be unified with t2
--- Can assume one exists
-uniDepth :: Type -> Type -> Int
-uniDepth t1 t2 | t1 == t2 = 0
-uniDepth (TList t1) (TList t2) = uniDepth t1 t2
-uniDepth t1 (TList t2) = 1 + uniDepth t1 t2
-uniDepth _ _ = 0
+holds (Vect t1 t2 s1 s2) | s1 == t1, s2 == t2 = Just $ Enforce [] []
+holds c@(Vect t1 t2 s1 s2)
+  | Nothing <- uniDepth t1 s1 = Nothing
+  | Nothing <- uniDepth t2 s2 = Nothing
+  | Just n <- eqDepth t1 s1 = Just $ Enforce [] [(iterate TList t2 !! n, s2)]
+  | Just n <- eqDepth t2 s2 = Just $ Enforce [] [(iterate TList t1 !! n, s1)]
+  | otherwise = Just $ Enforce [c] []
 
 -- Default typeclass instances, given as unifiable pairs of types
 defInst :: TClass -> (Type, Type)
 defInst (Concrete t)       = (t, TConc TNum)
-defInst (Number t)         = (t, TConc TNum)
 defInst (Vect t1 t2 s1 s2) = (TPair s1 s2,
                                TPair
-                               (iterate TList t1 !! n)
-                               (iterate TList t2 !! n))
-  where n = max (uniDepth t1 s1) (uniDepth t2 s2)
+                               (iterate TList t1 !! max 0 (n2 - n1))
+                               (iterate TList t2 !! max 0 (n1 - n2)))
+  where Just n1 = uniDepth t1 s1
+        Just n2 = uniDepth t2 s2
 
 -- Type of expression with universally quantified variables
 data Scheme = Scheme [TLabel] CType
@@ -142,8 +154,7 @@ typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t +
 -- Convert typeclass constraint to Haskell code
 consToHaskell :: TClass -> String
 consToHaskell (Concrete t)       = "Concrete " ++ typeToHaskell t
-consToHaskell (Number t)         = "Number " ++ typeToHaskell t
-consToHaskell (Vect t1 t2 s1 s2) = "Number Integer" -- Dummy value
+consToHaskell (Vect t1 t2 s1 s2) = "Num Int" -- Dummy value
 
 -- Convert classed type to Haskell code
 cTypeToHaskell :: CType -> String
