@@ -420,9 +420,9 @@ func_count x = genericLength . filter (== x)
 
 func_index :: TNum -> [a] -> a
 func_index i
-  | i>0       = flip genericIndex (i-1).cycle
-  | otherwise = flip genericIndex (-i).cycle.reverse
-  
+  | toInteger i>0 = flip genericIndex (toInteger i-1).cycle
+  | otherwise     = flip genericIndex (-toInteger i).cycle.reverse
+
 func_index2 :: [a] -> TNum -> a
 func_index2 = flip func_index
 
