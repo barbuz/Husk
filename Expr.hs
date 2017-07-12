@@ -35,12 +35,15 @@ instance (Show lit) => Show (Exp lit) where
 data Lit t = Value String t
            | Builtin String t
            | Vec t
+           | Vec2 Bool t -- True means zip', False means zip
   deriving (Eq, Ord)
 
 instance Show (Lit a) where
   show (Value name _) = name
   show (Builtin name _) = name
   show (Vec _) = "vec"
+  show (Vec2 False _) = "vec2"
+  show (Vec2 True _) = "vec2'"
 
 -- Type of expression with unbound variables
 data Type = TVar TLabel
@@ -76,6 +79,7 @@ instance Show CType where
 
 -- Possible typeclass constraints
 data TClass = Vect Type Type Type Type
+            | Vect2 Type Type Type Type Type Type
             | Concrete Type
   deriving (Eq, Ord, Show)
 
@@ -116,23 +120,46 @@ holds (Concrete (TPair t1 t2)) = do
   return $ Enforce (h1 ++ h2) []
 holds (Concrete (TFun _ _))    = Nothing
 
-holds (Vect t1 t2 s1 s2) | s1 == t1, s2 == t2 = Just $ Enforce [] []
 holds c@(Vect t1 t2 s1 s2)
+  | s1 == t1, s2 == t2 = Just $ Enforce [] []
   | Nothing <- uniDepth t1 s1 = Nothing
   | Nothing <- uniDepth t2 s2 = Nothing
   | Just n <- eqDepth t1 s1 = Just $ Enforce [] [(iterate TList t2 !! n, s2)]
   | Just n <- eqDepth t2 s2 = Just $ Enforce [] [(iterate TList t1 !! n, s1)]
   | otherwise = Just $ Enforce [c] []
 
+holds c@(Vect2 t1 t2 t3 s1 s2 s3)
+  | TList _ <- t1 = Nothing
+  | TList _ <- t2 = Nothing -- List functions are not bi-vectorizable for now
+  | s1 == t1, s2 == t2, s3 == t3 = Just $ Enforce [] []
+  | Nothing <- uniDepth t1 s1 = Nothing
+  | Nothing <- uniDepth t2 s2 = Nothing
+  | Nothing <- uniDepth t3 s3 = Nothing
+  | Just n1 <- eqDepth t1 s1,
+    Just n2 <- eqDepth t2 s2  = Just $ Enforce [] [(iterate TList t3 !! max n1 n2, s3)]
+  | Just n1 <- eqDepth t1 s1,
+    Just n3 <- eqDepth t3 s3,
+    n1 < n3                   = Just $ Enforce [] [(iterate TList t2 !! n3, s2)]
+  | Just n2 <- eqDepth t2 s2,
+    Just n3 <- eqDepth t3 s3,
+    n2 < n3                   = Just $ Enforce [] [(iterate TList t1 !! n3, s1)]
+  | otherwise = Just $ Enforce [c] []
+
 -- Default typeclass instances, given as unifiable pairs of types
-defInst :: TClass -> (Type, Type)
-defInst (Concrete t)       = (t, TConc TNum)
-defInst (Vect t1 t2 s1 s2) = (TPair s1 s2,
-                               TPair
-                               (iterate TList t1 !! max 0 (n2 - n1))
-                               (iterate TList t2 !! max 0 (n1 - n2)))
+defInst :: TClass -> [(Type, Type)]
+defInst (Concrete t)       = [(t, TConc TNum)]
+defInst (Vect t1 t2 s1 s2) = [(s1, iterate TList t1 !! max 0 (n2 - n1)),
+                              (s2, iterate TList t2 !! max 0 (n1 - n2))]
   where Just n1 = uniDepth t1 s1
         Just n2 = uniDepth t2 s2
+defInst (Vect2 t1 t2 t3 s1 s2 s3)
+  | n1 >= n2  = [(s1, iterate TList t1 !! max 0 (n3 - n1)),
+                 (s3, iterate TList t3 !! max 0 (n1 - n3))]
+  | otherwise = [(s2, iterate TList t2 !! max 0 (n3 - n2)),
+                 (s3, iterate TList t3 !! max 0 (n2 - n3))]
+  where Just n1 = uniDepth t1 s1
+        Just n2 = uniDepth t2 s2
+        Just n3 = uniDepth t3 s3
 
 -- Type of expression with universally quantified variables
 data Scheme = Scheme [TLabel] CType
@@ -155,6 +182,7 @@ typeToHaskell (TFun s t) = "(" ++ typeToHaskell s ++ " -> " ++ typeToHaskell t +
 consToHaskell :: TClass -> String
 consToHaskell (Concrete t)       = "Concrete " ++ typeToHaskell t
 consToHaskell (Vect t1 t2 s1 s2) = "Num Int" -- Dummy value
+consToHaskell (Vect2 t1 t2 t3 s1 s2 s3) = "Num Int" -- Dummy value
 
 -- Convert classed type to Haskell code
 cTypeToHaskell :: CType -> String
@@ -168,6 +196,7 @@ expToHaskell (ELine n) = "line" ++ show n
 expToHaskell (ELit (Value name typ)) = "(" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
 expToHaskell (ELit (Builtin name typ)) = "(func_" ++ name ++ "::" ++ cTypeToHaskell typ ++ ")"
 expToHaskell (ELit (Vec typ)) = vecToHaskell typ
+expToHaskell (ELit (Vec2 kind typ)) = vec2ToHaskell kind typ
 expToHaskell (EApp a b) = "(" ++ expToHaskell a ++ ")(" ++ expToHaskell b ++ ")"
 expToHaskell (EOp _ _ _) = error "expToHaskell not defined for EOp"
 expToHaskell (EAbs name exp) = "(\\ " ++ name ++ " -> " ++ expToHaskell exp ++ ")"
@@ -179,3 +208,13 @@ vecToHaskell typ@(CType _ (TFun (TFun a b) (TFun x y))) = "(id" ++ concat (repli
   where nesting t | t == a = 0
                   | TList t' <- t = 1 + nesting t'
                   | otherwise = error "Illegal type for Vec"
+
+-- Convert type of Vec2 to Haskell expression (nested zips)
+-- Type will always be of the form (a -> b -> c) -> (x -> y -> z)
+vec2ToHaskell kind typ@(CType _ (TFun (TFun a (TFun b c)) (TFun x (TFun y z)))) =
+  "(" ++ nesting x y ++ "::" ++ cTypeToHaskell typ ++ ")"
+  where nesting t1 t2 | t1 == a, t2 == b = "id"
+                      | TList t1' <- t1, t2 == b = nesting t1' t2 ++ ".func_lmap"
+                      | t1 == a, TList t2' <- t2 = nesting t1 t2' ++ ".func_rmap"
+                      | TList t1' <- t1, TList t2' <- t2 = nesting t1' t2' ++ (if kind then ".func_zip'" else ".func_zip")
+                      | otherwise = error $ "Illegal type for Vec2: " ++ show typ

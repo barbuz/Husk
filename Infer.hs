@@ -48,8 +48,11 @@ instance Types Type where
 instance Types TClass where
   freeVars (Concrete t)       = freeVars t
   freeVars (Vect t1 t2 s1 s2) = freeVars [t1,t2,s1,s2]
+  freeVars (Vect2 t1 t2 t3 s1 s2 s3) = freeVars [t1,t2,t3,s1,s2,s3]
   applySub s (Concrete t)       = Concrete $ applySub s t
   applySub s (Vect t1 t2 s1 s2) = Vect (applySub s t1) (applySub s t2) (applySub s s1) (applySub s s2)
+  applySub s (Vect2 t1 t2 t3 s1 s2 s3) =
+    Vect2 (applySub s t1) (applySub s t2) (applySub s t3) (applySub s s1) (applySub s s2) (applySub s s3)
 
 instance Types CType where
   freeVars (CType _ typ) = freeVars typ -- TODO: is this correct?
@@ -63,9 +66,11 @@ instance (Types a) => Types (Lit a) where
   freeVars (Value _ typ) = freeVars typ
   freeVars (Builtin _ typ) = freeVars typ
   freeVars (Vec typ) = freeVars typ
+  freeVars (Vec2 _ typ) = freeVars typ
   applySub s (Value name typ) = Value name $ applySub s typ
   applySub s (Builtin name typ) = Builtin name $ applySub s typ
   applySub s (Vec typ) = Vec $ applySub s typ
+  applySub s (Vec2 kind typ) = Vec2 kind $ applySub s typ
 
 instance (Types a) => Types (Exp (Lit a)) where
   freeVars _ = error "freeVars not implemented for expressions"
@@ -149,14 +154,14 @@ instantiate (Scheme vars ct) = do
 varBind :: TLabel -> Type -> Infer ()
 varBind name typ
   | TVar var <- typ, var == name   = return ()
-  | name `Set.member` freeVars typ = trace' "infinite type" $ fail ""
+  | name `Set.member` freeVars typ = trace' "occurs check fail" $ fail ""
   | otherwise                      = updateSub $ Map.singleton name typ
 
 -- Most general unifier of two types
 -- Updates substitution in a way that makes them equal
 -- Fails if types can't be unified
 unify :: Type -> Type -> Infer ()
-unify t1 t2 | trace' ("unifying " ++ show (t1, t2)) False = undefined
+unify t1 t2 | trace' ("unifying " ++ show t1 ++ " and " ++ show t2) False = undefined
 unify t1 t2 = do
   t1' <- substitute t1
   t2' <- substitute t2
@@ -196,6 +201,9 @@ inferLit lit@(Builtin name typ) =
 inferLit lit@(Vec typ) =
   do newTyp <- instantiate typ
      return (newTyp, ELit $ Vec newTyp)
+inferLit lit@(Vec2 kind typ) =
+  do newTyp <- instantiate typ
+     return (newTyp, ELit $ Vec2 kind newTyp)
 
 -- Infer type of []-overloaded expression
 -- All free expression variables must be bound in environment (otherwise it crashes)
@@ -312,8 +320,7 @@ inferType constrainRes typeConstr exprs = trace' ("inferring program " ++ show e
       newCon <- checkCons =<< substitute [con]
       case newCon of
         []     -> return ()
-        [con'] -> let (t1, t2) = defInst con'
-                  in unify t1 t2
+        [con'] -> mapM_ (uncurry unify) $ defInst con'
   lExprs <- Map.assocs <$> gets lineExprs
   flip mapM [(i, exp, typ) | (i, Processed exp typ) <- lExprs] $
     \(i, exp, typ) -> do

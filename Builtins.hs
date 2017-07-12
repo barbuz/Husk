@@ -23,6 +23,9 @@ con = Concrete
 vec :: Type -> Type -> Type -> Type -> TClass
 vec = Vect
 
+vec2 :: Type -> Type -> Type -> Type -> Type -> Type -> TClass
+vec2 = Vect2
+
 forall :: String -> [TClass] -> Type -> Scheme
 forall vars cons typ = Scheme (map pure vars) $ CType cons typ
 
@@ -92,7 +95,7 @@ commandsList = [
   ('Σ', bins "sum trian concat"),
   ('Π', bins "prod fact cartes"),
   ('§', bins "fork fork2"),
-  ('‡', bins "argdup"),
+  ('´', bins "argdup"),
   ('∞', bins "rep"),
   ('¡', bins "iter"),
   ('c', bins "chr ord"),
@@ -108,7 +111,8 @@ commandsList = [
         EOp (bins "com com2 com3 com4") (EVar "x") $
         EOp (bins "com com2 com3 com4") (EVar "y") $
         EOp (bins "com com2 com3 com4") (EVar "z") (EVar "u")),
-  ('´', bins "vec"),
+  ('†', bins "vec"),
+  ('‡', bins "vec2"),
   ('O', bins "sort"),
   ('Ö', bins "sorton sortby"),
   ('▲', bins "max maxl"),
@@ -151,6 +155,8 @@ commandsList = [
 bins :: String -> Exp [Lit Scheme]
 bins names = ELit $ map getBuiltin $ words names
   where getBuiltin "vec" = Vec $ forall "xyuv" [vec x y u v] $ (x ~> y) ~> (u ~> v)
+        getBuiltin "vec2" = Vec2 False $ forall "xyzuvw" [vec2 x y z u v w] $ (x ~> y ~> z) ~> (u ~> v ~> w)
+        getBuiltin "vec2'" = Vec2 True $ forall "xuvw" [vec2 x x x u v w] $ (x ~> x ~> x) ~> (u ~> v ~> w)
         getBuiltin name | Just typ <- lookup name builtinsList = Builtin name typ
         getBuiltin name = error $ "No builtin named " ++ name
 
