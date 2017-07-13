@@ -766,6 +766,7 @@ func_sign = signum
 
 -- x y -> base-x digits of y
 func_base :: TNum -> TNum -> [TNum]
+func_base 0 n = [n]
 func_base 1 n
   | (d, m) <- divMod n 1, m /= 0 = func_base 1 d ++ [m]
   | otherwise                    = replicate (fromInteger $ toInteger $ abs n) $ signum n
