@@ -779,8 +779,11 @@ func_base (-1) n
         go [k] m    = [k,0,m]
         go (k:ks) m = k : go ks m
 func_base b n = reverse $ go n
-  where go m | abs m < abs b = [m]
-             | otherwise     = mod m b : go (div m b)
+  where go m | m >= 0 || b > 0, abs m < abs b = [m]
+             | (d, r) <- divMod m b =
+                 if r >= 0 || b > 0
+                 then r : go d
+                 else r-b : go (d+1)
 
 func_base2 :: TNum -> [TNum]
 func_base2 = func_base 2
