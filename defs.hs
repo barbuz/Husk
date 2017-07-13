@@ -763,3 +763,36 @@ func_abs = abs
 
 func_sign :: TNum -> TNum
 func_sign = signum
+
+-- x y -> base-x digits of y
+func_base :: TNum -> TNum -> [TNum]
+func_base 1 n
+  | (d, m) <- divMod n 1, m /= 0 = func_base 1 d ++ [m]
+  | otherwise                    = replicate (fromInteger $ toInteger $ abs n) $ signum n
+func_base (-1) n
+  | (d, m) <- divMod n 1, m /= 0 = go (func_base (-1) d) m
+  | n > 0     = func_take (2*abs n - 1) $ cycle [1, 0]
+  | otherwise = func_take (2*abs n) $ cycle [1, 0]
+  where go [] m     = [m]
+        go [0] m    = [m]
+        go [k] m    = [k,0,m]
+        go (k:ks) m = k : go ks m
+func_base b n = reverse $ go n
+  where go m | abs m < abs b = [m]
+             | otherwise     = mod m b : go (div m b)
+
+func_base2 :: TNum -> [TNum]
+func_base2 = func_base 2
+
+func_base10 :: TNum -> [TNum]
+func_base10 = func_base 10
+
+-- x y -> y interpreted in base x
+func_abase :: TNum -> [TNum] -> TNum
+func_abase b ds = sum [b^n * d | (n, d) <- zip [0..] $ reverse ds]
+
+func_abase2 :: [TNum] -> TNum
+func_abase2 = func_abase 2
+
+func_abas10 :: [TNum] -> TNum
+func_abas10 = func_abase 10

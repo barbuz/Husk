@@ -148,7 +148,10 @@ commandsList = [
   ('»', bins "mapacR"),
   ('R', bins "replic replif"),
   ('a', bins "abs"),
-  ('±', bins "sign")
+  ('±', bins "sign"),
+  ('B', bins "base abase"),
+  ('d', bins "base10 abas10"),
+  ('ḋ', bins "base2 abase2")
   ]
 
 -- Compute builtins from space-delimited list
@@ -183,6 +186,12 @@ builtinsList = [
   ("divds", simply $ num ~> num ~> num),
   ("sign",  simply $ num ~> num),
   ("abs",   simply $ num ~> num),
+  ("base",  simply $ num ~> num ~> lst num),
+  ("base2", simply $ num ~> lst num),
+  ("base10",simply $ num ~> lst num),
+  ("abase", simply $ num ~> lst num ~> num),
+  ("abase2",simply $ lst num ~> num),
+  ("abas10",simply $ lst num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
