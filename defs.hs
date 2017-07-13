@@ -800,3 +800,30 @@ func_abase2 = func_abase 2
 
 func_abas10 :: [TNum] -> TNum
 func_abas10 = func_abase 10
+
+func_double :: TNum -> TNum
+func_double = (* 2)
+
+func_halve :: TNum -> TNum
+func_halve (TInt n) | mod n 2 == 0 = TInt $ div n 2
+func_halve n = n / 2
+
+-- a b -> b^a
+func_power :: TNum -> TNum -> TNum
+func_power (TInt m) n
+  | m >= 0    = n^m
+  | otherwise = n^^m
+func_power m n = n**m
+
+func_square :: TNum -> TNum
+func_square n = n * n
+
+-- Should return an integer if input is perfect square
+func_sqrt :: TNum -> TNum
+func_sqrt n | n < 0 = -func_sqrt (-n)
+func_sqrt (TInt n) = go n $ div (n+1) 2
+  where go a b | a <= b,
+                 a*a == n  = TInt a
+               | a <= b    = func_sqrt $ TDbl $ fromInteger n
+               | otherwise = go b $ div (b + div n b) 2
+func_sqrt d = d**(0.5)

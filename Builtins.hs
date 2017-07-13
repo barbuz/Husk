@@ -151,7 +151,12 @@ commandsList = [
   ('±', bins "sign"),
   ('B', bins "base abase"),
   ('d', bins "base10 abas10"),
-  ('ḋ', bins "base2 abase2")
+  ('ḋ', bins "base2 abase2"),
+  ('D', bins "double"),
+  ('½', bins "halve"),
+  ('^', bins "power"),
+  ('□', bins "square"),
+  ('√', bins "sqrt")
   ]
 
 -- Compute builtins from space-delimited list
@@ -192,6 +197,11 @@ builtinsList = [
   ("abase", simply $ num ~> lst num ~> num),
   ("abase2",simply $ lst num ~> num),
   ("abas10",simply $ lst num ~> num),
+  ("double",simply $ num ~> num),
+  ("halve", simply $ num ~> num),
+  ("power", simply $ num ~> num ~> num),
+  ("square",simply $ num ~> num),
+  ("sqrt",  simply $ num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
