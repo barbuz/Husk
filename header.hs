@@ -7,3 +7,4 @@ import System.Environment (getArgs)
 import qualified Data.Char as C
 import           Data.Char (chr,ord)
 import Data.List
+import qualified Data.Set as S (member, insert, singleton)

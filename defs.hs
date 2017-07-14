@@ -287,9 +287,17 @@ func_fix :: (a -> a) -> a
 func_fix = fix
 
 func_fixp :: Concrete a => (a -> a) -> a -> a
-func_fixp f a = go a $ f a
-  where go x y | x == y    = y
-               | otherwise = go y $ f y
+func_fixp f a = go (S.singleton a) $ f a
+  where go xs x | x `S.member` xs = x
+                | otherwise       = go (S.insert x xs) $ f x
+
+func_fixpL :: Concrete a => (a -> [a]) -> a -> [a]
+func_fixpL f a = cs
+  where f' = concatMap f
+        b = func_fixp (take 1 . f') [a]
+        n = succ $ length $ takeWhile (/= b) $ tail $ iterate (take 1 . f') b
+        f'' = foldr1 (.) $ replicate n f'
+        cs = b ++ tail (f'' cs)
 
 func_app :: (a -> b) -> a -> b
 func_app = id
@@ -550,6 +558,15 @@ func_argdup f x = f x x
 
 func_iter :: (a -> a) -> a -> [a]
 func_iter = iterate
+
+func_iterL :: (a -> [a]) -> [a] -> [a]
+func_iterL f = go
+  where go [] = []
+        go xs = xs ++ go (concatMap f xs)
+
+func_iterP :: ([a] -> a) -> [a] -> [a]
+func_iterP f = \as -> as ++ go as
+  where go xs | x <- f xs = x : go (xs ++ [x])
 
 func_rep :: a -> [a]
 func_rep = repeat
