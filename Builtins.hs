@@ -97,7 +97,7 @@ commandsList = [
   ('§', bins "fork fork2"),
   ('´', bins "argdup"),
   ('∞', bins "rep"),
-  ('¡', bins "iter iterL iterP"),
+  ('¡', bins "iter iterP iterL"),
   ('c', bins "chr ord"),
   ('s', bins "show"),
   ('r', bins "read"),
