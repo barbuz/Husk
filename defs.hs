@@ -844,3 +844,28 @@ func_sqrt (TInt n) = go n $ div (n+1) 2
                | a <= b    = func_sqrt $ TDbl $ fromInteger n
                | otherwise = go b $ div (b + div n b) 2
 func_sqrt d = d**(0.5)
+
+hasLength m [] = m <= 0
+hasLength m (x:xs) = m <= 0 || hasLength (m-1) xs
+
+func_cuts :: [TNum] -> [a] -> [[a]]
+func_cuts [] _ = []
+func_cuts _ [] = []
+func_cuts (m:ms) xs
+  | m < 0, hasLength (-m) xs
+  = genericTake (-m) xs : func_cuts ms (tail xs)
+  | m < 0 = []
+  | (ys, zs) <- genericSplitAt m xs
+  = ys : func_cuts ms zs
+
+func_cut :: TNum -> [a] -> [[a]]
+func_cut n = func_cuts $ repeat (-n)
+
+func_join :: [a] -> [[a]] -> [a]
+func_join x = concat . go
+  where go [] = []
+        go [y] = [y]
+        go (y:ys) = y : x : go ys
+
+func_join' :: a -> [[a]] -> [a]
+func_join' = func_join . pure

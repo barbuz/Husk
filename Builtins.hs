@@ -156,7 +156,9 @@ commandsList = [
   ('½', bins "halve"),
   ('^', bins "power"),
   ('□', bins "square"),
-  ('√', bins "sqrt")
+  ('√', bins "sqrt"),
+  ('C', bins "cut cuts"),
+  ('J', bins "join join'")
   ]
 
 -- Compute builtins from space-delimited list
@@ -266,7 +268,10 @@ builtinsList = [
   ("list4", forall "x" [] $ x ~> x ~> x ~> x ~> lst x),
   ("replic",forall "x" [] $ num ~> x ~> lst x),
   ("replif",forall "x" [] $ x ~> num ~> lst x),
-  
+  ("cuts",  forall "x" [] $ lst num ~> lst x ~> lst (lst x)),
+  ("cut",   forall "x" [] $ num ~> lst x ~> lst (lst x)),
+  ("join",  forall "x" [] $ lst x ~> lst (lst x) ~> lst x),
+  ("join'", forall "x" [] $ x ~> lst (lst x) ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
