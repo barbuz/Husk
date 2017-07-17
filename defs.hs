@@ -280,6 +280,16 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
 roundAway :: Double -> Integer
 roundAway d = if d<0 then floor d else ceiling d
 
+-- Class of all Husk types (used for defaulting)
+
+class Husky a where
+  defVal :: a
+
+instance {-# OVERLAPPING #-} (Husky b) => Husky (a -> b) where
+  defVal = const defVal
+
+instance (Concrete a) => Husky a where
+  defVal = func_false
 
 -- Built-in functions
 
@@ -361,11 +371,13 @@ func_snoc x y = x ++ [y]
 func_cat :: [a] -> [a] -> [a]
 func_cat = (++)
 
-func_head :: [a] -> a
-func_head = head
+func_head :: (Husky a) => [a] -> a
+func_head [] = defVal
+func_head (x:_) = x
 
-func_last :: [a] -> a
-func_last = last
+func_last :: (Husky a) => [a] -> a
+func_last [] = defVal
+func_last xs = last xs
 
 func_tail :: [a] -> [a]
 func_tail [] = []
@@ -485,14 +497,16 @@ func_flip = flip
 func_foldl :: (b -> a -> b) -> b -> [a] -> b
 func_foldl = foldl
 
-func_foldl1 :: (a -> a -> a) -> [a] -> a
-func_foldl1 = foldl1
+func_foldl1 :: (Husky a) => (a -> a -> a) -> [a] -> a
+func_foldl1 _ [] = defVal
+func_foldl1 f xs = foldl1 f xs
 
 func_foldr :: (a -> b -> b) -> b -> [a] -> b
 func_foldr = foldr
 
-func_foldr1 :: (a -> a -> a) -> [a] -> a
-func_foldr1 = foldr1
+func_foldr1 :: (Husky a) => (a -> a -> a) -> [a] -> a
+func_foldr1 _ [] = defVal
+func_foldr1 f xs = foldr1f xs
 
 
 func_take :: TNum -> [a] -> [a]
@@ -533,18 +547,18 @@ func_list :: b -> (a -> [a] -> b) -> [a] -> b
 func_list c _ [] = c
 func_list _ f (x:xs) = f x xs
 
-func_listN :: (a -> [a] -> b) -> [a] -> b
-func_listN _ []      = error "listN only supports nonempty lists."
+func_listN :: (Husky b) => (a -> [a] -> b) -> [a] -> b
+func_listN _ []     = defVal
 func_listN f (x:xs) = f x xs
 
 func_listF :: b -> (([a] -> b) -> (a -> [a] -> b)) -> [a] -> b
 func_listF c f = go
-  where go [] = c
+  where go []     = c
         go (x:xs) = f go x xs
 
-func_listNF :: (([a] -> b) -> (a -> [a] -> b)) -> [a] -> b
+func_listNF :: (Husky b) => (([a] -> b) -> (a -> [a] -> b)) -> [a] -> b
 func_listNF f = go
-  where go [] = error "listNF only supports nonempty lists."
+  where go []     = defVal
         go (x:xs) = f go x xs
 
 func_fork :: (a -> b -> c) -> (x -> a) -> (x -> b) -> x -> c
@@ -883,5 +897,5 @@ func_join x = concat . go
 func_join' :: a -> [[a]] -> [a]
 func_join' = func_join . pure
 
-func_subseq :: [a] -> [[a]]
-func_subseq = subsequences
+func_powset :: [a] -> [[a]]
+func_powset = subsequences
