@@ -127,7 +127,7 @@ lineExpr = do
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
 expression = mkPrattParser opTable term
-  where term = between (char '(') rParen expression <|> builtin <|> number <|> character <|> str <|> comprstr <|> intseq <|> lambda <|> try lambdaArg <|> subscript
+  where term = between (char '(') rParen expression <|> builtin <|> try float <|> integer <|> character <|> str <|> comprstr <|> intseq <|> lambda <|> try lambdaArg <|> subscript
         opTable = [[InfixL $ optional soleSpace >> return (EOp invisibleOp)]]
         invisibleOp = bins "com4 com3 com2 com app"
 
@@ -137,15 +137,24 @@ builtin = do
   label <- oneOf commands
   return $ cmd label
 
--- Parse a number (integer or float)
-number :: Parser (Exp [Lit Scheme])
-number = do
-  prefix <- many1 digit
-  maybeSuffix <- optionMaybe $ char '.' >> many digit
-  case maybeSuffix of
-    Nothing     -> return $ ELit [Value prefix numType]
-    Just []     -> return $ ELit [Value (prefix ++ ".0") numType]
-    Just suffix -> return $ ELit [Value (prefix ++ "." ++ suffix) numType]
+-- Parse an integer
+integer :: Parser (Exp [Lit Scheme])
+integer = do
+  digits <- many1 digit
+  return $ ELit [Value digits numType]
+  where numType = Scheme [] $ CType [] $ TConc TNum
+
+-- Parse a float
+float :: Parser (Exp [Lit Scheme])
+float = do
+  prefix <- many digit
+  char '.'
+  suffix <- many digit
+  case (prefix,suffix) of
+    ("","") -> return $ ELit [Value "0.5" numType]
+    (_ ,"") -> return $ ELit [Value (prefix ++ ".5") numType]
+    ("", _) -> return $ ELit [Value ("0." ++ suffix) numType]
+    (_ , _) -> return $ ELit [Value (prefix ++ "." ++ suffix) numType]
   where numType = Scheme [] $ CType [] $ TConc TNum
  
 -- Parse a character
