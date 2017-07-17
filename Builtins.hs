@@ -161,7 +161,7 @@ commandsList = [
   ('X', bins "slice"),
   ('Ẋ', bins "mapad2 mapad3"),
   ('J', bins "join join'"),
-  ('Ṗ', bins "subseq")
+  ('Ṗ', bins "powset")
   ]
 
 -- Compute builtins from space-delimited list
