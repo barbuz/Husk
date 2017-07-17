@@ -848,18 +848,31 @@ func_sqrt d = d**(0.5)
 hasLength m [] = m <= 0
 hasLength m (x:xs) = m <= 0 || hasLength (m-1) xs
 
+func_slice :: TNum -> [a] -> [[a]]
+func_slice n | n < 0 = map (genericTake (-n)) . init . tails
+func_slice n = takeWhile ((>= n) . genericLength) . map (genericTake n) . tails
+
 func_cuts :: [TNum] -> [a] -> [[a]]
 func_cuts [] _ = []
 func_cuts _ [] = []
 func_cuts (m:ms) xs
-  | m < 0, hasLength (-m) xs
-  = genericTake (-m) xs : func_cuts ms (tail xs)
-  | m < 0 = []
+  | m < 0, (ys, zs) <- genericSplitAt (-m) $ reverse xs
+  = reverse ys : func_cuts ms (reverse zs)
   | (ys, zs) <- genericSplitAt m xs
   = ys : func_cuts ms zs
 
 func_cut :: TNum -> [a] -> [[a]]
-func_cut n = func_cuts $ repeat (-n)
+func_cut n | n < 0     = map reverse . reverse . func_cuts (repeat (-n)) . reverse
+           | otherwise = func_cuts $ repeat n
+
+func_mapad2 :: (a -> a -> b) -> [a] -> [b]
+func_mapad2 _ [] = []
+func_mapad2 f xs = zipWith f xs $ tail xs
+
+func_mapad3 :: (a -> a -> a -> b) -> [a] ->[b]
+func_mapad3 _ [] = []
+func_mapad3 _ [_] = []
+func_mapad3 f xs = zipWith3 f xs (tail xs) $ tail $ tail xs
 
 func_join :: [a] -> [[a]] -> [a]
 func_join x = concat . go
@@ -869,3 +882,6 @@ func_join x = concat . go
 
 func_join' :: a -> [[a]] -> [a]
 func_join' = func_join . pure
+
+func_subseq :: [a] -> [[a]]
+func_subseq = subsequences

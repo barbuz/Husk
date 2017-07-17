@@ -158,7 +158,10 @@ commandsList = [
   ('□', bins "square"),
   ('√', bins "sqrt"),
   ('C', bins "cut cuts"),
-  ('J', bins "join join'")
+  ('X', bins "slice"),
+  ('Ẋ', bins "mapad2 mapad3"),
+  ('J', bins "join join'"),
+  ('Ṗ', bins "subseq")
   ]
 
 -- Compute builtins from space-delimited list
@@ -270,8 +273,10 @@ builtinsList = [
   ("replif",forall "x" [] $ x ~> num ~> lst x),
   ("cuts",  forall "x" [] $ lst num ~> lst x ~> lst (lst x)),
   ("cut",   forall "x" [] $ num ~> lst x ~> lst (lst x)),
+  ("slice", forall "x" [] $ num ~> lst x ~> lst (lst x)),
   ("join",  forall "x" [] $ lst x ~> lst (lst x) ~> lst x),
   ("join'", forall "x" [] $ x ~> lst (lst x) ~> lst x),
+  ("powset",forall "x" [] $ lst x ~> lst (lst x)),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -307,6 +312,8 @@ builtinsList = [
   ("lmap",  forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> y ~> lst z),
   ("mapacL",forall "xyz" [] $ (x ~> y ~> x) ~> (x ~> y ~> z) ~> x ~> lst y ~> lst z),
   ("mapacR",forall "xyz" [] $ (y ~> x ~> x) ~> (y ~> x ~> z) ~> x ~> lst y ~> lst z),
+  ("mapad2",forall "xy" [] $ (x ~> x ~> y) ~> lst x ~> lst y),
+  ("mapad3",forall "xy" [] $ (x ~> x ~> x ~> y) ~> lst x ~> lst y),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
