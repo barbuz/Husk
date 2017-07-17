@@ -350,8 +350,8 @@ builtinsList = [
   ("and'",  forall "x" [con x, con y] $ x ~> y ~> num),
   ("max",   forall "x" [con x] $ x ~> x ~> x),
   ("min",   forall "x" [con x] $ x ~> x ~> x),
-  ("any",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
-  ("all",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> y),
+  ("any",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> num),
+  ("all",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> num),
   ("subl",  forall "x" [con x] $ lst x ~> lst x ~> num),
   ("congr", forall "x" [con x] $ x ~> x ~> num),
   

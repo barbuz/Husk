@@ -506,7 +506,7 @@ func_foldr = foldr
 
 func_foldr1 :: (Husky a) => (a -> a -> a) -> [a] -> a
 func_foldr1 _ [] = defVal
-func_foldr1 f xs = foldr1f xs
+func_foldr1 f xs = foldr1 f xs
 
 
 func_take :: TNum -> [a] -> [a]
@@ -701,12 +701,18 @@ func_subl super sub = subindex 1 super sub
   where subindex i _ [] = i
         subindex i super@(_:xs) sub = if sub`isPrefixOf`super then i else subindex (i+1) xs sub
         subindex _ [] _  = 0
-        
-func_any :: Concrete b => (a->b) -> [a] -> b
-func_any f = foldl func_or func_false . map f
 
-func_all :: Concrete b => (a->b) -> [a] -> b
-func_all f = foldl func_and func_true . map f
+-- Index of first truthy, or 0
+func_any :: Concrete b => (a->b) -> [a] -> TNum
+func_any f = go 1
+  where go _ [] = 0
+        go n (x:xs)
+          | isTruthy $ f x = n
+          | otherwise      = go (n+1) xs
+
+-- 1/0
+func_all :: Concrete b => (a->b) -> [a] -> TNum
+func_all f = boolToNum . all (isTruthy . f)
 
 func_trsp :: [[a]] -> [[a]]
 func_trsp = transpose
