@@ -462,7 +462,21 @@ func_concat :: [[a]] -> [a]
 func_concat = concat
 
 func_cartes :: [[a]] -> [[a]]
-func_cartes = mapM id
+func_cartes [] = [[]]
+func_cartes (x:xs) = func_mix (:) x $ func_cartes xs
+
+func_mix :: (a -> b -> c) -> [a] -> [b] -> [c]
+func_mix f = go
+  where go [] _ = []
+        go _ [] = []
+        go (a:as) (b:bs) = f a b : merge3 (flip f b <$> as) (f a <$> bs) (go as bs)
+        merge3 (x:xs) (y:ys) (z:zs) = x : y : z : merge3 xs ys zs
+        merge3 xs ys [] = merge2 xs ys
+        merge3 xs [] zs = merge2 xs zs
+        merge3 [] ys zs = merge2 ys zs
+        merge2 (x:xs) (y:ys) = x : y : merge2 xs ys
+        merge2 xs [] = xs
+        merge2 [] ys = ys
 
 func_if :: Concrete a => b -> b -> a -> b
 func_if b c a = if isTruthy a then b else c

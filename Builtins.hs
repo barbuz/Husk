@@ -161,7 +161,8 @@ commandsList = [
   ('X', bins "slice"),
   ('Ẋ', bins "mapad2 mapad3"),
   ('J', bins "join join'"),
-  ('Ṗ', bins "powset")
+  ('Ṗ', bins "powset"),
+  ('×', bins "mix")
   ]
 
 -- Compute builtins from space-delimited list
@@ -314,6 +315,7 @@ builtinsList = [
   ("mapacR",forall "xyz" [] $ (y ~> x ~> x) ~> (y ~> x ~> z) ~> x ~> lst y ~> lst z),
   ("mapad2",forall "xy" [] $ (x ~> x ~> y) ~> lst x ~> lst y),
   ("mapad3",forall "xy" [] $ (x ~> x ~> x ~> y) ~> lst x ~> lst y),
+  ("mix",   forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> lst y ~> lst z),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
