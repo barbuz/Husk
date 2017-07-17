@@ -929,3 +929,6 @@ func_oelem = go 1
                       
 func_oelem' :: Concrete a => a -> [a] -> TNum
 func_oelem' = flip func_oelem
+
+func_isprime :: TNum -> TNum
+func_isprime = func_oelem $ func_intseq 'p'

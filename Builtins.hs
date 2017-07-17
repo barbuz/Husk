@@ -163,7 +163,8 @@ commandsList = [
   ('J', bins "join join'"),
   ('Ṗ', bins "powset"),
   ('×', bins "mix"),
-  ('£', bins "oelem oelem'")
+  ('£', bins "oelem oelem'"),
+  ('ṗ', bins "isprime")
   ]
 
 -- Compute builtins from space-delimited list
@@ -209,6 +210,7 @@ builtinsList = [
   ("power", simply $ num ~> num ~> num),
   ("square",simply $ num ~> num),
   ("sqrt",  simply $ num ~> num),
+  ("isprime",simply$ num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
