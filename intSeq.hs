@@ -1,7 +1,7 @@
 
 -- Built-in integer sequences
 
-func_intseq :: Char -> [Integer]
+func_intseq :: Char -> [TNum]
 --Even
 func_intseq '0' = [0,2..]
 --Odd
