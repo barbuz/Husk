@@ -919,3 +919,13 @@ func_join' = func_join . pure
 
 func_powset :: [a] -> [[a]]
 func_powset = subsequences
+
+func_oelem :: Concrete a => [a] -> a -> TNum
+func_oelem = go 1
+  where go _ [] _ = 0
+        go n (x:xs) y | y>x = go (n+1) xs y
+                      | y==x = n
+                      | otherwise = 0
+                      
+func_oelem' :: Concrete a => a -> [a] -> TNum
+func_oelem' = flip func_oelem

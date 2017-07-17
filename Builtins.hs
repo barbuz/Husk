@@ -162,7 +162,8 @@ commandsList = [
   ('Ẋ', bins "mapad2 mapad3"),
   ('J', bins "join join'"),
   ('Ṗ', bins "powset"),
-  ('×', bins "mix")
+  ('×', bins "mix"),
+  ('£', bins "oelem oelem'")
   ]
 
 -- Compute builtins from space-delimited list
@@ -278,6 +279,8 @@ builtinsList = [
   ("join",  forall "x" [] $ lst x ~> lst (lst x) ~> lst x),
   ("join'", forall "x" [] $ x ~> lst (lst x) ~> lst x),
   ("powset",forall "x" [] $ lst x ~> lst (lst x)),
+  ("oelem",  forall "x" [con x] $ lst x ~> x ~> num),
+  ("oelem'",  forall "x" [con x] $ x ~> lst x ~> num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
