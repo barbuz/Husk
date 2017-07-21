@@ -951,3 +951,27 @@ func_cycle xs = cycle xs
 
 func_cumsum :: [TNum] -> [TNum]
 func_cumsum = scanl (+) 0
+
+func_isanum :: Char -> TNum
+func_isanum = boolToNum . C.isAlphaNum
+
+func_isalph :: Char -> TNum
+func_isalph = boolToNum . C.isAlpha
+
+func_isuppr :: Char -> TNum
+func_isuppr = boolToNum . C.isUpper
+
+func_islowr :: Char -> TNum
+func_islowr = boolToNum . C.isLower
+
+func_isdigt :: Char -> TNum
+func_isdigt = boolToNum . C.isDigit
+
+func_touppr :: Char -> Char
+func_touppr = C.toUpper
+
+func_tolowr :: Char -> Char
+func_tolowr = C.toLower
+
+func_swcase :: Char -> Char
+func_swcase c = if C.isUpper c then C.toLower c else C.toUpper c
