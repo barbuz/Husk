@@ -168,7 +168,12 @@ commandsList = [
   ('Q', bins "slices"),
   ('Ṙ', bins "clone clone' clones"),
   ('¢', bins "cycle"),
-  ('∫', bins "cumsum")
+  ('∫', bins "cumsum"),
+  ('⌈', bins "ceil"),
+  ('⌊', bins "floor"),
+  ('⌋', bins "gcd"),
+  ('⌉', bins "lcm"),
+  ('ε', bins "small")
   ]
 
 -- Compute builtins from space-delimited list
@@ -215,6 +220,11 @@ builtinsList = [
   ("square",simply $ num ~> num),
   ("sqrt",  simply $ num ~> num),
   ("isprime",simply$ num ~> num),
+  ("ceil",  simply $ num ~> num),
+  ("floor", simply $ num ~> num),
+  ("gcd",   simply $ num ~> num ~> num),
+  ("lcm",   simply $ num ~> num ~> num),
+  ("small", simply $ num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),

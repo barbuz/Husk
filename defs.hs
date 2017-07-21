@@ -975,3 +975,18 @@ func_tolowr = C.toLower
 
 func_swcase :: Char -> Char
 func_swcase c = if C.isUpper c then C.toLower c else C.toUpper c
+
+func_ceil :: TNum -> TNum
+func_ceil = ceiling
+
+func_floor :: TNum -> TNum
+func_floor = floor
+
+func_gcd :: TNum -> TNum -> TNum
+func_gcd = gcd
+
+func_lcm :: TNum -> TNum -> TNum
+func_lcm = lcm
+
+func_small :: TNum -> TNum
+func_small = boolToNum . (<= 1) . abs
