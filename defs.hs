@@ -932,3 +932,22 @@ func_oelem' = flip func_oelem
 
 func_isprime :: TNum -> TNum
 func_isprime = func_oelem $ func_intseq 'p'
+
+func_slices :: [a] -> [[a]]
+func_slices xs = [] : (init . tails =<< inits xs)
+
+func_clone :: TNum -> [a] -> [a]
+func_clone n = concatMap $ func_replic n
+
+func_clone' :: [a] -> TNum -> [a]
+func_clone' = flip func_clone
+
+func_clones :: [TNum] -> [a] -> [a]
+func_clones ns xs = concat $ zipWith func_replic ns xs
+
+func_cycle :: [a] -> [a]
+func_cycle [] = []
+func_cycle xs = cycle xs
+
+func_cumsum :: [TNum] -> [TNum]
+func_cumsum = scanl (+) 0

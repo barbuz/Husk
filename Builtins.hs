@@ -164,7 +164,11 @@ commandsList = [
   ('Ṗ', bins "powset"),
   ('×', bins "mix"),
   ('£', bins "oelem oelem'"),
-  ('ṗ', bins "isprime")
+  ('ṗ', bins "isprime"),
+  ('Q', bins "slices"),
+  ('Ṙ', bins "clone clone' clones"),
+  ('¢', bins "cycle"),
+  ('∫', bins "cumsum")
   ]
 
 -- Compute builtins from space-delimited list
@@ -281,8 +285,14 @@ builtinsList = [
   ("join",  forall "x" [] $ lst x ~> lst (lst x) ~> lst x),
   ("join'", forall "x" [] $ x ~> lst (lst x) ~> lst x),
   ("powset",forall "x" [] $ lst x ~> lst (lst x)),
-  ("oelem",  forall "x" [con x] $ lst x ~> x ~> num),
-  ("oelem'",  forall "x" [con x] $ x ~> lst x ~> num),
+  ("oelem", forall "x" [con x] $ lst x ~> x ~> num),
+  ("oelem'",forall "x" [con x] $ x ~> lst x ~> num),
+  ("slices",forall "x" [] $ lst x ~> lst (lst x)),
+  ("clone", forall "x" [] $ num ~> lst x ~> lst x),
+  ("clone'",forall "x" [] $ lst x ~> num ~> lst x),
+  ("clones",forall "x" [] $ lst num ~> lst x ~> lst x),
+  ("cycle", forall "x" [] $ lst x ~> lst x),
+  ("cumsum",simply $ lst num ~> lst num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
