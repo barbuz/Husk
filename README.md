@@ -1,6 +1,6 @@
 # Husk
 
-Husk is a functional [golfing language](https://en.wikipedia.org/wiki/Code_golf), inspired by (and implemented in) [Haskell](www.haskell.org).
+Husk is a functional [golfing language](https://en.wikipedia.org/wiki/Code_golf), inspired by (and implemented in) [Haskell](https://haskell.org).
 Documentation can be found on the [Wiki](https://github.com/barbuz/Husk/wiki).
 
 This language is still in an early development phase, so anything may be subject to modification without prior notice.
