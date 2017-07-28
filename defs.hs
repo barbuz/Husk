@@ -470,13 +470,21 @@ func_mix f = go
   where go [] _ = []
         go _ [] = []
         go (a:as) (b:bs) = f a b : merge3 (flip f b <$> as) (f a <$> bs) (go as bs)
-        merge3 (x:xs) (y:ys) (z:zs) = x : y : z : merge3 xs ys zs
-        merge3 xs ys [] = merge2 xs ys
-        merge3 xs [] zs = merge2 xs zs
-        merge3 [] ys zs = merge2 ys zs
-        merge2 (x:xs) (y:ys) = x : y : merge2 xs ys
-        merge2 xs [] = xs
-        merge2 [] ys = ys
+
+-- Lazy merges
+merge3 :: [a] -> [a] -> [a] -> [a]
+merge3 (x:xs) ys zs = x : next ys
+  where next (b:bs) = b : next' zs
+          where next' (c:cs) = c : merge3 xs bs cs
+                next' [] = merge2 xs ys
+        next [] = merge2 xs zs
+merge3 [] ys zs = merge2 ys zs
+
+merge2 :: [a] -> [a] -> [a]
+merge2 (x:xs) ys = x : next ys
+  where next (y:ys) = y : merge2 xs ys
+        next [] = xs
+merge2 [] ys = ys
 
 func_if :: Concrete a => b -> b -> a -> b
 func_if b c a = if isTruthy a then b else c
@@ -990,3 +998,25 @@ func_lcm = lcm
 
 func_small :: TNum -> TNum
 func_small = boolToNum . (<= 1) . abs
+
+func_twice :: (a -> a) -> (a -> a)
+func_twice f = \x -> f (f x)
+
+-- Mod in range [1..m] or [m..-1]
+func_mod1 :: TNum -> TNum -> TNum
+func_mod1 m n | s <- signum m = s + mod (n-s) m
+
+func_powstN :: TNum -> [a] -> [[a]]
+func_powstN n
+  | n < 0     = \xs -> foldl merge2 [] $ map (flip only xs) [0 .. -n]
+  | otherwise = only n
+  where only n [] = [[] | 0 <= n && n < 1]
+        only n (x:xs)
+          | 0 <= n && n < 1 = [[]]
+          | otherwise = map (x:) (only (n-1) xs) `merge2` only n xs
+
+func_rangeN :: TNum -> TNum -> [TNum]
+func_rangeN a b = [a .. b]
+
+func_rangeC :: Char -> Char -> [Char]
+func_rangeC a b = [a .. b]

@@ -161,7 +161,7 @@ commandsList = [
   ('X', bins "slice"),
   ('Ẋ', bins "mapad2 mapad3"),
   ('J', bins "join join'"),
-  ('Ṗ', bins "powset"),
+  ('Ṗ', bins "powset powstN"),
   ('×', bins "mix"),
   ('£', bins "oelem oelem'"),
   ('ṗ', bins "isprime"),
@@ -173,7 +173,10 @@ commandsList = [
   ('⌊', bins "floor"),
   ('⌋', bins "gcd"),
   ('⌉', bins "lcm"),
-  ('ε', bins "small")
+  ('ε', bins "small"),
+  ('‰', bins "mod1"),
+  ('‼', bins "twice"),
+  ('…', bins "rangeN rangeC")
   ]
 
 -- Compute builtins from space-delimited list
@@ -225,6 +228,7 @@ builtinsList = [
   ("gcd",   simply $ num ~> num ~> num),
   ("lcm",   simply $ num ~> num ~> num),
   ("small", simply $ num ~> num),
+  ("mod1",  simply $ num ~> num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
@@ -295,6 +299,7 @@ builtinsList = [
   ("join",  forall "x" [] $ lst x ~> lst (lst x) ~> lst x),
   ("join'", forall "x" [] $ x ~> lst (lst x) ~> lst x),
   ("powset",forall "x" [] $ lst x ~> lst (lst x)),
+  ("powstN",forall "x" [] $ num ~> lst x ~> lst (lst x)),
   ("oelem", forall "x" [con x] $ lst x ~> x ~> num),
   ("oelem'",forall "x" [con x] $ x ~> lst x ~> num),
   ("slices",forall "x" [] $ lst x ~> lst (lst x)),
@@ -303,6 +308,8 @@ builtinsList = [
   ("clones",forall "x" [] $ lst num ~> lst x ~> lst x),
   ("cycle", forall "x" [] $ lst x ~> lst x),
   ("cumsum",simply $ lst num ~> lst num),
+  ("rangeN",simply $ num ~> num ~> lst num),
+  ("rangeC",simply $ chr ~> chr ~> lst chr),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -341,6 +348,7 @@ builtinsList = [
   ("mapad2",forall "xy" [] $ (x ~> x ~> y) ~> lst x ~> lst y),
   ("mapad3",forall "xy" [] $ (x ~> x ~> x ~> y) ~> lst x ~> lst y),
   ("mix",   forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> lst y ~> lst z),
+  ("twice", forall "x" [] $ (x ~> x) ~> (x ~> x)),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
