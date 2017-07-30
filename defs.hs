@@ -136,7 +136,27 @@ instance Floating TNum where
 instance RealFrac TNum where
   properFraction (TInt a) = (fromInteger a, TInt 0)
   properFraction (TDbl a) | (n, r) <- properFraction a = (n, TDbl r)
-  
+
+
+-- Class of all Husk types (used for defaulting)
+
+class Husky a where
+  defVal :: a
+
+instance Husky TNum where
+  defVal = 0
+
+instance Husky Char where
+  defVal = '\0'
+
+instance (Husky a) => Husky [a] where
+  defVal = []
+
+instance (Husky a, Husky b) => Husky (a,b) where
+  defVal = (defVal, defVal)
+
+instance (Husky b) => Husky (a -> b) where
+  defVal = const defVal
 
 -- String conversion
 class ToString a where
@@ -156,10 +176,11 @@ instance Concrete a => ToString a where
 
 
 -- Class of concrete values
-class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
+class (Husky a, Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   isTruthy :: a -> Bool
   toTruthy :: a -> TNum
   func_false :: a
+  func_false = defVal
   func_true :: a
   func_lt :: a -> a -> TNum
   func_gt :: a -> a -> TNum
@@ -181,7 +202,8 @@ class (Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   func_and y x = if isTruthy x then y else x
   
   func_read :: [Char] -> a
-  func_read = read
+  func_read x | ((val, _):_) <- reads x = val
+              | otherwise = defVal
 
 func_or' :: (Concrete a, Concrete b) => a -> b -> TNum
 func_or' x y = func_or (toTruthy x) (toTruthy y)
@@ -193,7 +215,6 @@ instance Concrete TNum where
   isTruthy = (/= 0)
   toTruthy (TDbl d) = TInt $ roundAway d
   toTruthy n = n
-  func_false = 0
   func_true = 1
   func_lt y x = max 0 $ toTruthy (y-x)
   func_gt y x = max 0 $ toTruthy (x-y)
@@ -212,7 +233,6 @@ instance Concrete TNum where
 instance Concrete Char where
   isTruthy = (/= 0).ord
   toTruthy = fromIntegral.ord
-  func_false = '\0'
   func_true = '\n'
   func_lt y x = fromIntegral $ max 0 (ord y - ord x)
   func_gt y x = fromIntegral $ max 0 (ord x - ord y)
@@ -231,7 +251,6 @@ instance Concrete Char where
 instance Concrete a => Concrete [a] where
   isTruthy = (/= [])
   toTruthy = genericLength
-  func_false = []
   func_true = [func_true]
   func_lt = go 1
     where go n [] (_:_) = n
@@ -264,7 +283,6 @@ instance Concrete a => Concrete [a] where
 instance (Concrete a, Concrete b) => Concrete (a, b) where
   isTruthy (x, y) = isTruthy x && isTruthy y
   toTruthy (x, y) = toTruthy x * toTruthy y
-  func_false = (func_false, func_false)
   func_true = (func_true, func_true)
   func_lt (x, y) (x', y') = if x == x' then func_lt y y' else func_lt x x'
   func_gt (x, y) (x', y') = if x == x' then func_gt y y' else func_gt x x'
@@ -279,17 +297,6 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
 
 roundAway :: Double -> Integer
 roundAway d = if d<0 then floor d else ceiling d
-
--- Class of all Husk types (used for defaulting)
-
-class Husky a where
-  defVal :: a
-
-instance {-# OVERLAPPING #-} (Husky b) => Husky (a -> b) where
-  defVal = const defVal
-
-instance (Concrete a) => Husky a where
-  defVal = func_false
 
 -- Built-in functions
 
@@ -775,9 +782,11 @@ func_c2i :: Char -> TNum
 func_c2i c | Just i <- elemIndex c "0123456789" = fromIntegral i
            | otherwise                          = 0
 
--- Read the first number found in the string
+-- Read the first number found in the string, or 0 if nothing found
 func_s2i :: String -> TNum
-func_s2i = read . takeWhile C.isDigit . dropWhile (not . C.isDigit)
+func_s2i s = case takeWhile C.isDigit $ dropWhile (not . C.isDigit) s of
+               "" -> 0
+               x -> read x
 
 func_list2 :: a -> a -> [a]
 func_list2 x y = [x,y]
