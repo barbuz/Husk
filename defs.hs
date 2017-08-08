@@ -1029,3 +1029,30 @@ func_rangeN a b = [a .. b]
 
 func_rangeC :: Char -> Char -> [Char]
 func_rangeC a b = [a .. b]
+
+func_find :: (Husky a, Concrete b) => (a -> b) -> [a] -> a
+func_find f = func_head . func_filter f
+
+func_findN :: (Concrete a) => (TNum -> a) -> TNum -> TNum
+func_findN f n = func_find f [n..]
+
+func_same :: (Concrete a) => [a] -> TNum
+func_same [] = 1
+func_same (x:xs) = boolToNum $ all (==x) xs
+
+func_single :: [a] -> TNum
+func_single [_] = 1
+func_single _ = 0
+
+func_iter2 :: (x -> (x,y)) -> x -> [y]
+func_iter2 f = map (snd . f) . iterate (fst . f)
+
+func_rangeL :: [TNum] -> [TNum]
+func_rangeL (m:ns@(n:_))
+  | range <- if m <= n then [m .. n-1] else [m, m-1 .. n+1] = range ++ func_rangeL ns
+func_rangeL ns = ns
+
+func_rangeS :: [Char] -> [Char]
+func_rangeS (m:ns@(n:_))
+  | range <- if m <= n then [m .. pred n] else [m, pred m .. succ n] = range ++ func_rangeS ns
+func_rangeS ns = ns

@@ -97,7 +97,7 @@ commandsList = [
   ('§', bins "fork fork2"),
   ('´', bins "argdup"),
   ('∞', bins "rep"),
-  ('¡', bins "iter iterP iterL"),
+  ('¡', bins "iter iterP iterL iter2"),
   ('c', bins "chr ord"),
   ('s', bins "show"),
   ('r', bins "read"),
@@ -173,10 +173,12 @@ commandsList = [
   ('⌊', bins "floor"),
   ('⌋', bins "gcd"),
   ('⌉', bins "lcm"),
-  ('ε', bins "small"),
+  ('ε', bins "small single"),
   ('‰', bins "mod1"),
   ('‼', bins "twice"),
-  ('…', bins "rangeN rangeC")
+  ('…', bins "rangeN rangeC rangeL rangeS"),
+  ('ḟ', bins "find findN"),
+  ('E', bins "same")
   ]
 
 -- Compute builtins from space-delimited list
@@ -310,6 +312,10 @@ builtinsList = [
   ("cumsum",simply $ lst num ~> lst num),
   ("rangeN",simply $ num ~> num ~> lst num),
   ("rangeC",simply $ chr ~> chr ~> lst chr),
+  ("same",  forall "x" [con x] $ lst x ~> num),
+  ("single",forall "x" [] $ lst x ~> num),
+  ("rangeL",simply $ lst num ~> lst num),
+  ("rangeS",simply $ lst chr ~> lst chr),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -334,6 +340,7 @@ builtinsList = [
   ("iter",  forall "x" [] $ (x ~> x) ~> x ~> lst x),
   ("iterL", forall "x" [] $ (x ~> lst x) ~> lst x ~> lst x),
   ("iterP", forall "x" [] $ (lst x ~> x) ~> lst x ~> lst x),
+  ("iter2", forall "xy" [] $ (x ~> tup x y) ~> x ~> lst y),
   ("rep",   forall "x" [] $ x ~> lst x),
   ("zip'",  forall "x" [] $ (x ~> x ~> x) ~> lst x ~> lst x ~> lst x),
   ("cmap",  forall "xy" [] $ (x ~> lst y) ~> lst x ~> lst y),
@@ -349,6 +356,8 @@ builtinsList = [
   ("mapad3",forall "xy" [] $ (x ~> x ~> x ~> y) ~> lst x ~> lst y),
   ("mix",   forall "xyz" [] $ (x ~> y ~> z) ~> lst x ~> lst y ~> lst z),
   ("twice", forall "x" [] $ (x ~> x) ~> (x ~> x)),
+  ("find",  forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
+  ("findN", forall "x" [con x] $ (num ~> x) ~> num ~> num),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
