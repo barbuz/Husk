@@ -123,7 +123,7 @@ commandsList = [
   ('w', bins "words unwords"),
   ('¶', bins "lines unlines"),
   ('p', bins "pfac"),
-  ('~', bins "subs subs2"),
+  ('σ', bins "subs subs2"),
   ('g', bins "group"),
   ('ġ', bins "groupOn groupBy"),
   ('ḣ', bins "heads"),
@@ -160,7 +160,7 @@ commandsList = [
   ('C', bins "cut cuts"),
   ('X', bins "slice"),
   ('Ẋ', bins "mapad2 mapad3"),
-  ('J', bins "join join'"),
+  ('J', bins "join join' joinE"),
   ('Ṗ', bins "powset powstN"),
   ('×', bins "mix"),
   ('£', bins "oelem oelem'"),
@@ -178,7 +178,8 @@ commandsList = [
   ('‼', bins "twice"),
   ('…', bins "rangeN rangeC rangeL rangeS"),
   ('ḟ', bins "find findN"),
-  ('E', bins "same")
+  ('E', bins "same"),
+  ('~', bins "branch")
   ]
 
 -- Compute builtins from space-delimited list
@@ -316,6 +317,7 @@ builtinsList = [
   ("single",forall "x" [] $ lst x ~> num),
   ("rangeL",simply $ lst num ~> lst num),
   ("rangeS",simply $ lst chr ~> lst chr),
+  ("joinE", forall "x" [] $ lst x ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -375,6 +377,7 @@ builtinsList = [
   ("fork2", forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> v ~> x) ~> (u ~> v ~> y) ~> u ~> v ~> z),
   ("argdup",forall "xy" [] $ (x ~> x ~> y) ~> x ~> y),
   ("combin",forall "xyz" [] $ (y ~> y ~> z) ~> (x ~> y) ~> (x ~> x ~> z)),
+  ("branch",forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> x) ~> (v ~> y) ~> (u ~> v ~> z)),
 
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> num),

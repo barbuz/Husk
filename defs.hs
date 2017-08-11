@@ -1047,12 +1047,21 @@ func_single _ = 0
 func_iter2 :: (x -> (x,y)) -> x -> [y]
 func_iter2 f = map (snd . f) . iterate (fst . f)
 
+rangify :: (Enum a, Ord a) => [a] -> [a]
+rangify (m:ns@(n:_)) = range ++ rangify ns
+  where range | m < n  = [m .. pred n]
+              | m > n  = [m, pred m .. succ n]
+              | m == n = [m]
+rangify ns = ns
+
 func_rangeL :: [TNum] -> [TNum]
-func_rangeL (m:ns@(n:_))
-  | range <- if m <= n then [m .. n-1] else [m, m-1 .. n+1] = range ++ func_rangeL ns
-func_rangeL ns = ns
+func_rangeL = rangify
 
 func_rangeS :: [Char] -> [Char]
-func_rangeS (m:ns@(n:_))
-  | range <- if m <= n then [m .. pred n] else [m, pred m .. succ n] = range ++ func_rangeS ns
-func_rangeS ns = ns
+func_rangeS = rangify
+
+func_joinE :: [a] -> [a] -> [a]
+func_joinE xs ys = func_join xs $ map pure ys
+
+func_branch :: (x -> y -> z) -> (a -> x) -> (b -> y) -> a -> b -> z
+func_branch f g h x y = f (g x) (h y)
