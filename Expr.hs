@@ -130,7 +130,10 @@ holds c@(Vect t1 t2 s1 s2)
 
 holds c@(Vect2 t1 t2 t3 s1 s2 s3)
   | TList _ <- t1 = Nothing
-  | TList _ <- t2 = Nothing -- List functions are not bi-vectorizable for now
+  | TList _ <- t2 = Nothing
+  | TFun _ _ <- t1 = Nothing
+  | TFun _ _ <- t2 = Nothing
+  | TFun _ _ <- t3 = Nothing -- Lists and functions are not bi-vectorizable for now
   | s1 == t1, s2 == t2, s3 == t3 = Just $ Enforce [] []
   | Nothing <- uniDepth t1 s1 = Nothing
   | Nothing <- uniDepth t2 s2 = Nothing
@@ -154,8 +157,10 @@ defInst (Vect t1 t2 s1 s2) = [(s1, iterate TList t1 !! max 0 (n2 - n1)),
         Just n2 = uniDepth t2 s2
 defInst (Vect2 t1 t2 t3 s1 s2 s3)
   | n1 >= n2  = [(s1, iterate TList t1 !! max 0 (n3 - n1)),
+                 (s2, iterate TList t2 !! n2),
                  (s3, iterate TList t3 !! max 0 (n1 - n3))]
-  | otherwise = [(s2, iterate TList t2 !! max 0 (n3 - n2)),
+  | otherwise = [(s1, iterate TList t1 !! n1),
+                 (s2, iterate TList t2 !! max 0 (n3 - n2)),
                  (s3, iterate TList t3 !! max 0 (n2 - n3))]
   where Just n1 = uniDepth t1 s1
         Just n2 = uniDepth t2 s2
