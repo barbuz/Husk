@@ -720,7 +720,12 @@ func_groupOn :: Concrete b => (a -> b) -> [a] -> [[a]]
 func_groupOn f = groupBy (\x y -> f x == f y)
 
 func_groupBy :: Concrete b => (a -> a -> b) -> [a] -> [[a]]
-func_groupBy f = groupBy (\x y -> isTruthy $ f x y)
+func_groupBy _ [] = []
+func_groupBy p (a:as) = consHead a $ go a as
+  where go _ [] = [[]]
+        go a (x:xs) | isTruthy $ p a x = consHead x $ go x xs
+                    | otherwise        = [] : consHead x (go x xs)
+        consHead x ~(xs:xss) = (x:xs):xss
 
 func_perms :: [a] -> [[a]]
 func_perms = permutations
