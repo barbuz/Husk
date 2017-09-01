@@ -1089,3 +1089,6 @@ func_bhook f g a b = f a (g a b)
 
 func_bhookf :: (x -> y -> z) -> (u -> y -> x) -> u -> y -> z
 func_bhookf f g a b = f (g a b) b
+
+func_until :: Concrete b => (a -> b) -> (a -> a) -> a -> a
+func_until p = until (isTruthy . p)

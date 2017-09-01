@@ -180,7 +180,8 @@ commandsList = [
   ('ḟ', bins "find findN"),
   ('E', bins "same"),
   ('~', bins "branch"),
-  ('ṙ', bins "rotate rotatf")
+  ('ṙ', bins "rotate rotatf"),
+  ('Ω', bins "until")
   ]
 
 -- Compute builtins from space-delimited list
@@ -363,6 +364,7 @@ builtinsList = [
   ("twice", forall "x" [] $ (x ~> x) ~> (x ~> x)),
   ("find",  forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
   ("findN", forall "x" [con x] $ (num ~> x) ~> num ~> num),
+  ("until", forall "xy" [con y] $ (x ~> y) ~> (x ~> x) ~> (x ~> x)),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
