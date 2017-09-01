@@ -218,8 +218,10 @@ instance Concrete TNum where
   func_true = 1
   func_lt y x = max 0 $ toTruthy (y-x)
   func_gt y x = max 0 $ toTruthy (x-y)
-  func_le y x = max 0 $ toTruthy (y-x+1)
-  func_ge y x = max 0 $ toTruthy (x-y+1)
+  func_le y x | x > y = 0
+              | otherwise = toTruthy $ y-x+1
+  func_ge y x | x < y = 0
+              | otherwise = toTruthy $ x-y+1
   func_neq y x = abs $ toTruthy (x-y)
   
   func_congr 0 0 = 1
