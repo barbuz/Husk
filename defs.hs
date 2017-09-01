@@ -1072,3 +1072,14 @@ func_joinE xs ys = func_join xs $ map pure ys
 
 func_branch :: (x -> y -> z) -> (a -> x) -> (b -> y) -> a -> b -> z
 func_branch f g h x y = f (g x) (h y)
+
+func_rotate :: TNum -> [a] -> [a]
+func_rotate n xs | n >= 0    = iterate lrot xs !! fromIntegral n
+                 | otherwise = iterate rrot xs !! fromIntegral (-n)
+  where lrot [] = []
+        lrot (x:xs) = xs ++ [x]
+        rrot [] = []
+        rrot xs = last xs : init xs
+
+func_rotatf :: [a] -> TNum -> [a]
+func_rotatf = flip func_rotate

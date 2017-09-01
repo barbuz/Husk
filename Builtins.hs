@@ -179,7 +179,8 @@ commandsList = [
   ('…', bins "rangeN rangeC rangeL rangeS"),
   ('ḟ', bins "find findN"),
   ('E', bins "same"),
-  ('~', bins "branch")
+  ('~', bins "branch"),
+  ('ṙ', bins "rotate rotatf")
   ]
 
 -- Compute builtins from space-delimited list
@@ -318,6 +319,8 @@ builtinsList = [
   ("rangeL",simply $ lst num ~> lst num),
   ("rangeS",simply $ lst chr ~> lst chr),
   ("joinE", forall "x" [] $ lst x ~> lst x ~> lst x),
+  ("rotate",forall "x" [] $ num ~> lst x ~> lst x),
+  ("rotatf",forall "x" [] $ lst x ~> num ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
