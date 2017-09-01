@@ -287,7 +287,7 @@ builtinsList = [
   ("subs2", forall "x" [con x] $ lst x ~> lst x ~> lst x ~> lst x),
   ("group", forall "x" [con x] $ lst x ~> lst (lst x)),
   ("groupOn",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
-  ("groupBy",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst y)), 
+  ("groupBy",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst x)), 
   ("perms", forall "x" [] $ lst x ~> lst (lst x)),
   ("trsp",  forall "x" [] $ lst (lst x) ~> lst (lst x)),
   ("trspw", forall "x" [] $ x ~> lst (lst x) ~> lst (lst x)),
