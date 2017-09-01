@@ -1083,3 +1083,9 @@ func_rotate n xs | n >= 0    = iterate lrot xs !! fromIntegral n
 
 func_rotatf :: [a] -> TNum -> [a]
 func_rotatf = flip func_rotate
+
+func_bhook :: (x -> y -> z) -> (x -> u -> y) -> x -> u -> z
+func_bhook f g a b = f a (g a b)
+
+func_bhookf :: (x -> y -> z) -> (u -> y -> x) -> u -> y -> z
+func_bhookf f g a b = f (g a b) b
