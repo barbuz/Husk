@@ -3,7 +3,7 @@
 
 func_intseq :: Char -> [TNum]
 --Even
-func_intseq '0' = [0,2..]
+func_intseq '0' = [2,4..]
 --Odd
 func_intseq '1' = [1,3..]
 --Powers of 2
