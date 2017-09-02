@@ -5,6 +5,7 @@ module InputParser where
 
 import Expr
 import Infer
+import Debug
 import Text.Parsec
 import Data.List (intercalate,nub)
 import Control.Monad (foldM)
@@ -107,4 +108,4 @@ parseInput :: Int -> String -> Either String (Maybe (String, Type))
 parseInput inputIndex str =
   case parse (try input <|> plainStr) ("input" ++ show inputIndex) str of
     Left err -> Left $ show err
-    Right val -> Right val
+    Right val -> Right $ trace' ("input " ++ show inputIndex ++ ", " ++ str ++ ", is " ++ show val) val
