@@ -249,7 +249,7 @@ infer env hint (ELine num) =
 infer _ hint (ELit lits) = do lit <- lift lits
                               res@(CType _ typ, _) <- inferLit lit
                               case hint of
-                                Just hintTyp -> unify typ $ hintTyp
+                                Just hintTyp -> unify typ hintTyp
                                 _            -> return ()
                               return res
 
@@ -258,7 +258,7 @@ infer env hint (EAbs name exp) =
   do newVar <- newTVar "b"
      case hint of
        Just (TFun arg _) -> unify newVar arg
-       _                           -> return ()
+       _                 -> return ()
      let TypeEnv envMinusName = remove env name
          newEnv = TypeEnv $ Map.union envMinusName $ Map.singleton name $ Scheme [] $ CType [] newVar
      (CType cons typ, newExp) <- case hint of
@@ -293,47 +293,22 @@ infer env hint exp@(EApp fun arg) = --traceShow' (fun,arg) $
 -- Infix operator: infer as binary function, but in order first arg -> second arg -> operator
 -- If second arg is lambda or line reference, order is first -> operator -> second to take advantage of hints
 -- Replace with two function applications in result
-infer env hint exp@(EOp op argL argR)
-  | absOrLine argR = do
-      newVar <- newTVar "c"
-      case hint of
-        Just typ -> unify newVar typ
-        _        -> return ()
-      (CType lCons lTyp, lExp) <- infer env Nothing argL
-      newEnv <- substitute env
-      (CType opCons opTyp, opExp) <- infer newEnv Nothing op
-      newEnv2 <- substitute newEnv
-      (CType rCons rTyp, rExp) <- case opTyp of
-        TFun funcLArg (TFun funcRArg funcRes) -> do
-          unify funcRes newVar
-          unify funcLArg lTyp
-          infer newEnv2 (Just funcRArg) argR
-        _                                     -> do
-          infer newEnv2 Nothing argR
-      unify opTyp (TFun lTyp $ TFun rTyp newVar)
-      varTyp <- substitute newVar
-      cons <- checkCons . nub =<< substitute (opCons ++ rCons ++ lCons)
-      [newOpExp, newLExp, newRExp] <- mapM substitute [opExp, lExp, rExp]
-      return (CType cons varTyp, EApp (EApp newOpExp newLExp) newRExp)
-  | otherwise = do
-      newVar <- newTVar "c"
-      case hint of
-        Just typ -> unify newVar typ
-        _        -> return ()
-      (CType lCons lTyp, lExp) <- infer env Nothing argL
-      newEnv <- substitute env
-      (CType rCons rTyp, rExp) <- infer newEnv Nothing argR
-      newEnv2 <- substitute newEnv
-      (CType opCons opTyp, opExp) <- let opHint = Just $ TFun lTyp $ TFun rTyp newVar
-                                     in infer newEnv2 opHint op
-      unify opTyp (TFun lTyp $ TFun rTyp newVar)
-      varTyp <- substitute newVar
-      cons <- checkCons . nub =<< substitute (opCons ++ rCons ++ lCons)
-      [newOpExp, newLExp, newRExp] <- mapM substitute [opExp, lExp, rExp]
-      return (CType cons varTyp, EApp (EApp newOpExp newLExp) newRExp)
-        where absOrLine (ELine _) = True
-              absOrLine (EAbs _ _) = True
-              absOrLine _ = False
+infer env hint exp@(EOp op argL argR) = do
+  newVar <- newTVar "c"
+  case hint of
+    Just typ -> unify newVar typ
+    _        -> return ()
+  (CType lCons lTyp, lExp) <- infer env Nothing argL
+  newEnv <- substitute env
+  (CType rCons rTyp, rExp) <- infer newEnv Nothing argR
+  newEnv2 <- substitute newEnv
+  (CType opCons opTyp, opExp) <- let opHint = Just $ TFun lTyp $ TFun rTyp newVar
+                                 in infer newEnv2 opHint op
+  unify opTyp (TFun lTyp $ TFun rTyp newVar)
+  varTyp <- substitute newVar
+  cons <- checkCons . nub =<< substitute (opCons ++ rCons ++ lCons)
+  [newOpExp, newLExp, newRExp] <- mapM substitute [opExp, lExp, rExp]
+  return (CType cons varTyp, EApp (EApp newOpExp newLExp) newRExp)
 
 -- Let binding: infer type of var from fix-enhanced exp, generalize to polytype, infer body, check and reduce constraints
 infer env _ (ELet name exp body) =
