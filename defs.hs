@@ -1095,3 +1095,9 @@ func_until p = until (isTruthy . p)
 
 func_divs :: TNum -> [TNum]
 func_divs n = [d | d <- [1..n], isTruthy $ func_divds d n]
+
+func_uwshow :: Concrete a => [a] -> [Char]
+func_uwshow = unwords . map show
+
+func_ulshow :: Concrete a => [a] -> [Char]
+func_ulshow = unlines . map show
