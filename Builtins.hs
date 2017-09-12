@@ -182,7 +182,8 @@ commandsList = [
   ('~', bins "branch"),
   ('ṙ', bins "rotate rotatf"),
   ('Ω', bins "until"),
-  ('Ḋ', bins "divs")
+  ('Ḋ', bins "divs"),
+  ('δ', bins "decorM decorL decorV decorN")
   ]
 
 -- Compute builtins from space-delimited list
@@ -367,6 +368,10 @@ builtinsList = [
   ("find",  forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
   ("findN", forall "x" [con x] $ (num ~> x) ~> num ~> num),
   ("until", forall "xy" [con y] $ (x ~> y) ~> (x ~> x) ~> (x ~> x)),
+  ("decorM",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> lst (lst (tup x u))) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> lst (lst u)),
+  ("decorL",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> lst (tup x u)) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> lst u),
+  ("decorV",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> tup x u) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> u),
+  ("decorN",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> u) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> u),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

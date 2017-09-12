@@ -1101,3 +1101,15 @@ func_uwshow = unwords . map show
 
 func_ulshow :: Concrete a => [a] -> [Char]
 func_ulshow = unlines . map show
+
+func_decorM :: (((a, b) -> c) -> [(a,b)] -> [[(a, b')]]) -> (a -> b -> c) -> [a] -> [b] -> [[b']]
+func_decorM f g xs ys = map (map snd) $ f (uncurry g) $ zip xs ys
+
+func_decorL :: (((a, b) -> c) -> [(a,b)] -> [(a, b')]) -> (a -> b -> c) -> [a] -> [b] -> [b']
+func_decorL f g xs ys = map snd $ f (uncurry g) $ zip xs ys
+
+func_decorV :: (((a, b) -> c) -> [(a,b)] -> (a, b')) -> (a -> b -> c) -> [a] -> [b] -> b'
+func_decorV f g xs ys = snd $ f (uncurry g) $ zip xs ys
+
+func_decorN :: (((a, b) -> c) -> [(a,b)] -> d) -> (a -> b -> c) -> [a] -> [b] -> d
+func_decorN f g xs ys = f (uncurry g) $ zip xs ys
