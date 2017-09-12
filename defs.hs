@@ -1092,3 +1092,6 @@ func_bhookf f g a b = f (g a b) b
 
 func_until :: Concrete b => (a -> b) -> (a -> a) -> a -> a
 func_until p = until (isTruthy . p)
+
+func_divs :: TNum -> [TNum]
+func_divs n = [d | d <- [1..n], isTruthy $ func_divds d n]

@@ -181,7 +181,8 @@ commandsList = [
   ('E', bins "same"),
   ('~', bins "branch"),
   ('ṙ', bins "rotate rotatf"),
-  ('Ω', bins "until")
+  ('Ω', bins "until"),
+  ('Ḋ', bins "divs")
   ]
 
 -- Compute builtins from space-delimited list
@@ -234,6 +235,7 @@ builtinsList = [
   ("lcm",   simply $ num ~> num ~> num),
   ("small", simply $ num ~> num),
   ("mod1",  simply $ num ~> num ~> num),
+  ("divs",  simply $ num ~> lst num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
