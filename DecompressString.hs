@@ -16,8 +16,9 @@ decompressString s = go "" s where
 --We need to read it at runtime, otherwise compilation is too slow and memory-hungry
 --dictionary = Map.fromDistinctAscList $ map read $ lines listdict where
 dictionary :: [(String,String)]
-dictionary = map read $lines listdict where
+dictionary = map parse $lines listdict where
+    parse s | (first,tab:second) <- span (/='\t') s = (second,first)
     listdict = unsafePerformIO $ getDict
     getDict = do
               path <- getExecutablePath
-              readFile $ replaceFileName path "dict.hs"
+              readFile $ replaceFileName path "dictionary.tsv"

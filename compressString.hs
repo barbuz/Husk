@@ -1,4 +1,4 @@
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import Data.List ((\\), nub, inits)
 import System.Environment (getArgs)
 import Debug.Trace (trace)
@@ -6,11 +6,11 @@ import Debug.Trace (trace)
 type Node = (Int,[String],String)
 
 main = do args <- getArgs
-          dictionary <- readFile "dict.hs"
+          dictionary <- readFile "dictionary.tsv"
           putStr $ unlines $ compressString (head args) $ buildDict dictionary
        where
-         buildDict text = Map.fromList $ map (swap.read) $ lines text
-         swap (a,b) = (b,a)
+         buildDict text = Map.fromList $ map splitTab $ lines text
+         splitTab s | (first,tab:second) <- span (/='\t') s = (first,second)
 
 compressString :: String -> Map.Map String String -> [String]
 compressString s dictionary = astar [(length s, [""],map replaceNewlines s)] where
