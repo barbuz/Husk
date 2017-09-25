@@ -6,11 +6,15 @@ import Debug.Trace (trace)
 type Node = (Int,[String],String)
 
 main = do args <- getArgs
+          if null args then error "You must pass the string to compress as an argument to this program." else return ()
           dictionary <- readFile "dictionary.tsv"
-          putStr $ unlines $ compressString (head args) $ buildDict dictionary
+          let results = compressString (head args) $ buildDict dictionary
+          putStrLn $ "Compressed length: "++show (length $ head results)++" bytes."
+          putStr $ unlines $ map quote results
        where
          buildDict text = Map.fromList $ map splitTab $ lines text
          splitTab s | (first,tab:second) <- span (/='\t') s = (first,second)
+         quote s = '¨':s++"¨"
 
 compressString :: String -> Map.Map String String -> [String]
 compressString s dictionary = astar [(length s, [""],map replaceNewlines s)] where
