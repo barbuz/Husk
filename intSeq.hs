@@ -1,23 +1,39 @@
-
 -- Built-in integer sequences
 
 func_intseq :: Char -> [TNum]
+
+--Alternate signs
+func_intseq '±' = concat $ transpose [[1..],[-1,-2..]]
+
+--Yes/no sequence
+func_intseq '¬' = cycle [1,0]
+
+--Negatives
+func_intseq '-' = [-1,-2..]
+
 --Even
 func_intseq '0' = [2,4..]
+
 --Odd
 func_intseq '1' = [1,3..]
+
 --Powers of 2
 func_intseq '2' = map (2^) [1..]
+
 --Powers of 3
 func_intseq '3' = map (3^) [1..]
+
 --Powers of 5
 func_intseq '5' = map (5^) [1..]
+
 --Powers of 7
 func_intseq '7' = map (7^) [1..]
+
 --Fibonacci
 func_intseq 'f' = fibs
   where
     fibs = 1 : 1 : zipWith (+) fibs (tail fibs)
+
 --Primes (quite efficient implementation, but not the most efficient)
 func_intseq 'p' = 2 : oddprimes
   where 
@@ -30,8 +46,21 @@ func_intseq 'p' = 2 : oddprimes
            EQ ->     minus  xs     ys 
            GT ->     minus (x:xs)  ys
     minus  xs     _     = xs
+
+--Ruler sequence (exponent of highest power of 2 dividing n), OEIS A007814
+func_intseq 'r' = 0:concatMap(\x->[x+1,0])(func_intseq 'r')
+
+--Digits of Pi. Algorithm taken from: Gibbons, Jeremy. "Unbounded spigot algorithms for the digits of pi." The American Mathematical Monthly 113.4 (2006): 318-328.
+func_intseq 'π' = g(1,180,60,2) where
+   g(q,r,t,i) = let (u,y)=(3*(3*i+1)*(3*i+2),div(q*(27*i-12)+5*r)(5*t))
+                in y : g(10*q*i*(2*i-1),10*u*(q*(5*i-2)+r-y*t),t*u,i+1)
+
 --Powers of 10
 func_intseq '⁰' = map (10^) [1..]
+
+--Money values (1,2,5 and their multiples by 10)
+func_intseq '€' = concat $ iterate (map (*10)) [1,2,5]
+
 --Squares
 func_intseq '□' = map (^2) [1..]
 
