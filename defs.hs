@@ -1113,3 +1113,15 @@ func_decorV f g xs ys = snd $ f (uncurry g) $ zip xs ys
 
 func_decorN :: (((a, b) -> c) -> [(a,b)] -> d) -> (a -> b -> c) -> [a] -> [b] -> d
 func_decorN f g xs ys = f (uncurry g) $ zip xs ys
+
+func_prep0 :: Husky a => [a] -> [a]
+func_prep0 xs = defVal:xs
+
+func_doubL :: [a] -> [a]
+func_doubL xs = xs++xs
+
+func_halfL :: [a] -> [[a]]
+func_halfL xs = go xs xs where
+        go (y:_:ys) (z:zs) = let [zs',zs''] = go ys zs in [z:zs',zs'']
+        go (y:ys)   (z:zs) = [[z],zs]
+        go    _      zs    = [[],zs]

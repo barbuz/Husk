@@ -152,8 +152,8 @@ commandsList = [
   ('B', bins "base abase"),
   ('d', bins "base10 abas10"),
   ('ḋ', bins "base2 abase2"),
-  ('D', bins "double isuppr"),
-  ('½', bins "halve islowr"),
+  ('D', bins "double isuppr doubL"),
+  ('½', bins "halve islowr halfL"),
   ('^', bins "power"),
   ('□', bins "square isanum"),
   ('√', bins "sqrt isalph"),
@@ -183,7 +183,8 @@ commandsList = [
   ('ṙ', bins "rotate rotatf"),
   ('Ω', bins "until"),
   ('Ḋ', bins "divs"),
-  ('δ', bins "decorM decorL decorV decorN")
+  ('δ', bins "decorM decorL decorV decorN"),
+  ('Θ', bins "prep0")
   ]
 
 -- Compute builtins from space-delimited list
@@ -325,6 +326,9 @@ builtinsList = [
   ("joinE", forall "x" [] $ lst x ~> lst x ~> lst x),
   ("rotate",forall "x" [] $ num ~> lst x ~> lst x),
   ("rotatf",forall "x" [] $ lst x ~> num ~> lst x),
+  ("prep0", forall "x" [] $ lst x ~> lst x),
+  ("doubL", forall "x" [] $ lst x ~> lst x),
+  ("halfL", forall "x" [] $ lst x ~> lst (lst x)),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
