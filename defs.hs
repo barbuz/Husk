@@ -279,8 +279,8 @@ instance Concrete a => Concrete [a] where
   func_congr _  [] = 0
   func_congr (x:xs) (y:ys) = if func_congr x y == 0 then 0 else func_congr xs ys
   
-  func_heads=inits
-  func_tails=tails
+  func_heads=tail.inits
+  func_tails=init.tails
 
 instance (Concrete a, Concrete b) => Concrete (a, b) where
   isTruthy (x, y) = isTruthy x && isTruthy y
