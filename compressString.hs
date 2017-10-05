@@ -1,44 +1,58 @@
 import qualified Data.Map.Strict as Map
-import Data.List ((\\), nub, inits)
+import Data.List (inits)
 import System.Environment (getArgs)
-import Debug.Trace (trace)
+import System.Console.GetOpt
+import System.IO (hPutStrLn,stderr)
+--import Debug.Trace (trace)
 
-type Node = (Int,[String],String)
+type Node = (Int,[String])
+
+consoleOpts :: [OptDescr Bool]
+consoleOpts = [Option ['1'] [] (NoArg $ True) "Return only a single result"]
 
 main = do args <- getArgs
-          if null args then error "You must pass the string to compress as an argument to this program." else return ()
-          dictionary <- readFile "dictionary.tsv"
-          let results = compressString (head args) $ buildDict dictionary
-          putStrLn $ "Compressed length: "++show (length $ head results)++" bytes."
-          putStr $ unlines $ map quote results
+          let parsedArgs = getOpt Permute consoleOpts args
+          
+          case parsedArgs of
+            (opt,plainText:[],[]) -> do
+              putStrLn $ "Original length: "++show (length plainText)++" bytes."
+              dictionary <- readFile "dictionary.tsv"
+              let results = compressString (elem True opt) plainText $ buildDict dictionary
+              putStrLn $ "Compressed length: "++show (length $ head results)++" bytes."
+              putStr $ unlines $ map quote results
+            (_,_,errors) -> hPutStrLn stderr $ unlines errors ++ usageInfo "Usage: compressString [OPT] string" consoleOpts
        where
          buildDict text = Map.fromList $ map splitTab $ lines text
          splitTab s | (first,tab:second) <- span (/='\t') s = (first,second)
          quote s = '¨':s++"¨"
 
-compressString :: String -> Map.Map String String -> [String]
-compressString s dictionary = astar [(length s, [""],map replaceNewlines s)] where
+replaceNewlines :: Char -> Char
+replaceNewlines '\n' = '¶'
+replaceNewlines c = c
 
-  replaceNewlines :: Char -> Char
-  replaceNewlines '\n' = '¶'
-  replaceNewlines c = c
+compressString :: Bool -> String -> Map.Map String String -> [String]
+compressString opt s dictionary = go [(0, [""])] (map replaceNewlines s) where
   
-  astar :: [Node] -> [String]
-  astar ((_,encoded,[]):_) = encoded
-  astar (node:nodes) = astar $ foldl insert nodes (expand node)
+  go :: [Node] -> String -> [String]
+  go ((_,encoded):_) []      = encoded
+  go (node:nodes) plain  = go (chooseBest nodes (extend node (encodeStart plain))) $ tail plain
   
-  insert :: [Node] -> Node -> [Node]
-  insert [] n = [n]
-  insert (h@(f,encoded,plain):nodes) n@(f2,encoded2,plain2) 
-        | f<f2          = h: insert nodes n
-        | f>f2          = n:h:nodes
-        | plain==plain2 = (f,nub (encoded++encoded2),plain):nodes
-        | otherwise     = h:n:nodes
+  encodeStart :: String -> [Node]
+  encodeStart s = map buildNode $ take maxDictWordLen $ tail $ inits s where
+    maxDictWordLen = 10
+    buildNode ngram | Just code <- Map.lookup ngram dictionary = (length code,[code])
+                    | otherwise                                = (0,[])
 
-  --estimated cost of a partial solution is the length of the part yet to be encoded plus 5 times the length of the encoded part
-  --this is done because in the best case a string will be reduced to a fifth of its length
-  expand :: Node -> [Node]
-  expand (f,encoded,plain) = map extend ngrams where
-    ngrams = filter (flip Map.member dictionary) $take 10 $ tail $ inits plain
-    extend ngram = let Just code = Map.lookup ngram dictionary in 
-                     (f+5*(length code)-length ngram, map (++code) encoded, plain\\ngram)
+  extend :: Node -> [Node] -> [Node]
+  extend node nodes = map (addNode node) nodes where
+    addNode _ (0,[]) = (0,[])
+    addNode (l1,previous) (l2,[current]) = (l1+l2,map (++current) previous)
+  
+  chooseBest :: [Node] -> [Node] -> [Node]
+  chooseBest  as             []            = as
+  chooseBest  []             bs            = bs
+  chooseBest (a:as)         (b@(_,[]):bs)  = a:chooseBest as bs        
+  chooseBest (a@(_,[]):as)  (b:bs)         = b:chooseBest as bs   
+  chooseBest (a@(l1,w1):as) (b@(l2,w2):bs) | l1 < l2             = a:chooseBest as bs
+                                           | l1 ==l2 && not opt  = (l1,w1++w2):chooseBest as bs
+                                           | otherwise           = b:chooseBest as bs
