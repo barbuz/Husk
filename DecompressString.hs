@@ -17,4 +17,4 @@ dictionary = Map.fromDistinctAscList $ map splitTabs $ lines dict where
     splitTabs s | (first,tab:second) <- span (/='\t') s = (first,second)
     dict = unsafePerformIO $ getDict
     getDict = do
-              readFile $ "rdictionary.tsv"
+              readFile $ "revdictionary.tsv"
