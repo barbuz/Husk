@@ -22,7 +22,7 @@ main = do args <- getArgs
               putStr $ unlines $ map quote results
             (_,_,errors) -> hPutStrLn stderr $ unlines errors ++ usageInfo "Usage: compressString [OPT] string" consoleOpts
        where
-         buildDict text = Map.fromList $ map splitTab $ lines text
+         buildDict text = Map.fromDistinctAscList $ map splitTab $ lines text
          splitTab s | (first,tab:second) <- span (/='\t') s = (first,second)
          quote s = '¨':s++"¨"
 
