@@ -974,7 +974,10 @@ func_cycle [] = []
 func_cycle xs = cycle xs
 
 func_cumsum :: [TNum] -> [TNum]
-func_cumsum = scanl (+) 0
+func_cumsum = tail . scanl (+) 0
+
+func_cumcat :: [[a]] -> [[a]]
+func_cumcat = tail . scanl (++) []
 
 func_isanum :: Char -> TNum
 func_isanum = boolToNum . C.isAlphaNum
