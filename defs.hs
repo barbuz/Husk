@@ -1,5 +1,7 @@
 -- Built-in functions
 
+import Numeric (showFFloat)
+
 -- Type of numeric values
 data TNum = TInt Integer
           | TDbl Double
@@ -27,7 +29,7 @@ boolToNum False = 0
 -- Instances for TNum
 instance Show TNum where
   show (TInt n) = show n
-  show (TDbl d) = show d
+  show (TDbl d) = showFFloat Nothing d ""
 
 instance Read TNum where
   readsPrec n str = case readsPrec n str :: [(Integer, String)] of
