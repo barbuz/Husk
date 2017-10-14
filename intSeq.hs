@@ -50,6 +50,9 @@ func_intseq 'p' = 2 : oddprimes
 --Ruler sequence (exponent of highest power of 2 dividing n), OEIS A007814
 func_intseq 'r' = 0:concatMap(\x->[x+1,0])(func_intseq 'r')
 
+--Money values (1,2,5 and their multiples by 10)
+func_intseq '₅' = concat $ iterate (map (*10)) [1,2,5]
+
 --Digits of Pi. Algorithm taken from: Gibbons, Jeremy. "Unbounded spigot algorithms for the digits of pi." The American Mathematical Monthly 113.4 (2006): 318-328.
 func_intseq 'π' = g(1,180,60,2) where
    g(q,r,t,i) = let (u,y)=(3*(3*i+1)*(3*i+2),div(q*(27*i-12)+5*r)(5*t))
@@ -58,8 +61,8 @@ func_intseq 'π' = g(1,180,60,2) where
 --Powers of 10
 func_intseq '⁰' = map (10^) [1..]
 
---Money values (1,2,5 and their multiples by 10)
-func_intseq '€' = concat $ iterate (map (*10)) [1,2,5]
+--Euro coins and notes values
+func_intseq '€' = [0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500]
 
 --Squares
 func_intseq '□' = map (^2) [1..]
