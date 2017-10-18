@@ -184,7 +184,8 @@ commandsList = [
   ('Ω', bins "until"),
   ('Ḋ', bins "divs"),
   ('δ', bins "decorM decorL decorV decorN"),
-  ('Θ', bins "prep0")
+  ('Θ', bins "prep0"),
+  ('≈', bins "simil")
   ]
 
 -- Compute builtins from space-delimited list
@@ -420,6 +421,7 @@ builtinsList = [
   ("all",   forall "xy" [con y] $ (x ~> y) ~> lst x ~> num),
   ("subl",  forall "x" [con x] $ lst x ~> lst x ~> num),
   ("congr", forall "x" [con x] $ x ~> x ~> num),
+  ("simil", forall "x" [con x] $ x ~> x ~> num),
   
   -- Chars and strings
   ("chr",   simply $ num ~> chr),

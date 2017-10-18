@@ -190,6 +190,7 @@ class (Husky a, Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   func_ge :: a -> a -> TNum
   func_neq :: a -> a -> TNum
   func_congr :: a -> a -> TNum
+  func_simil :: a -> a -> TNum
   
   func_heads :: a -> [a]
   func_tails :: a -> [a]
@@ -231,6 +232,9 @@ instance Concrete TNum where
   func_congr _ 0 = 0
   func_congr _ _ = 1
   
+  func_simil x y | abs (x-y) <= 1 = 1
+                 | otherwise      = 0
+  
   func_heads x = [1..x]
   func_tails x = [x,x-1..1]
 
@@ -248,6 +252,9 @@ instance Concrete Char where
   func_congr '\0' _    = 0
   func_congr _    '\0' = 0
   func_congr _    _    = 1
+  
+  func_simil x y | x == succ y || y == succ x = 1
+                 | otherwise                  = 0
   
   func_heads x = ['\0'..x]
   func_tails x = [x, pred x..'\0']
@@ -281,6 +288,10 @@ instance Concrete a => Concrete [a] where
   func_congr _  [] = 0
   func_congr (x:xs) (y:ys) = if func_congr x y == 0 then 0 else func_congr xs ys
   
+  func_simil (x:xs) (y:ys) = func_simil xs ys
+  func_simil []     []     = 1
+  func_simil _      _      = 0
+  
   func_heads=tail.inits
   func_tails=init.tails
 
@@ -295,6 +306,7 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   func_neq (x, y) (x', y') = if x == x' then func_neq y y' else func_neq x x'
   
   func_congr (a,b) (c,d) = if func_congr a c + func_congr b d == 2 then 1 else 0
+  func_simil (a,b) (c,d) = if func_simil a c + func_simil b d == 2 then 1 else 0
   
   func_heads (a,b) = [(c,d)|c<-func_heads a,d<-func_heads b]
   func_tails (a,b) = [(c,d)|c<-func_tails a,d<-func_tails b]
