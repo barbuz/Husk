@@ -5,22 +5,29 @@ import Numeric (showFFloat)
 -- Type of numeric values
 data TNum = TInt Integer
           | TDbl Double
+          | PInfty
+          | NInfty
 
 instance Eq TNum where
   TInt a == TInt b = a == b
   TInt a == TDbl b = fromInteger a == b
   TDbl a == TInt b = a == fromInteger b
   TDbl a == TDbl b = a == b
+  PInfty == PInfty = True
+  NInfty == NInfty = True
+  _ == _           = False
 
 instance Ord TNum where
   compare (TInt a) (TInt b) = compare a b
   compare (TInt a) (TDbl b) = compare (fromInteger a) b
   compare (TDbl a) (TInt b) = compare a (fromInteger b)
   compare (TDbl a) (TDbl b) = compare a b
-
-doublify :: TNum -> TNum
-doublify (TInt n) = TDbl $ fromInteger n
-doublify d = d
+  compare PInfty PInfty     = EQ
+  compare PInfty _          = GT
+  compare NInfty NInfty     = EQ
+  compare NInfty _          = LT
+  compare _ PInfty          = LT
+  compare _ NInfty          = GT
 
 boolToNum :: Bool -> TNum
 boolToNum True = 1
@@ -30,115 +37,234 @@ boolToNum False = 0
 instance Show TNum where
   show (TInt n) = show n
   show (TDbl d) = showFFloat Nothing d ""
+  show PInfty   = "Inf"
+  show NInfty   = "-Inf"
 
 instance Read TNum where
-  readsPrec n str = case readsPrec n str :: [(Integer, String)] of
-    [] -> [(TDbl d, rest) | (d, rest) <- readsPrec n str :: [(Double, String)]]
-    p  -> [(TInt k, rest) | (k, rest) <- p]
+  readsPrec n str
+    | p@(_:_) <- tryInt           = [(TInt k, rest) | (k, rest) <- p]
+    | p@(_:_) <- tryDbl           = [(TDbl k, rest) | (k, rest) <- p]
+    | 'I':'n':'f':rest <- str     = [(PInfty, rest)]
+    | '-':'I':'n':'f':rest <- str = [(NInfty, rest)]
+    where tryInt = readsPrec n str :: [(Integer, String)]
+          tryDbl = readsPrec n str :: [(Double, String)]
 
 instance Num TNum where
   TInt a + TInt b = TInt $ a + b
   TInt a + TDbl b = TDbl $ fromInteger a + b
   TDbl a + TInt b = TDbl $ a + fromInteger b
   TDbl a + TDbl b = TDbl $ a + b
+  PInfty + NInfty = TInt 0
+  PInfty + _      = PInfty
+  NInfty + PInfty = TInt 0
+  NInfty + _      = NInfty
+  _      + PInfty = PInfty
+  _      + NInfty = NInfty
 
   TInt a - TInt b = TInt $ a - b
   TInt a - TDbl b = TDbl $ fromInteger a - b
   TDbl a - TInt b = TDbl $ a - fromInteger b
   TDbl a - TDbl b = TDbl $ a - b
+  PInfty - PInfty = TInt 0
+  PInfty - _      = PInfty
+  NInfty - NInfty = TInt 0
+  NInfty - _      = NInfty
+  _      - PInfty = NInfty
+  _      - NInfty = PInfty
   
   TInt a * TInt b = TInt $ a * b
   TInt a * TDbl b = TDbl $ fromInteger a * b
   TDbl a * TInt b = TDbl $ a * fromInteger b
   TDbl a * TDbl b = TDbl $ a * b
+  PInfty * n      = case compare n 0 of
+    GT -> PInfty
+    EQ -> TInt 0
+    LT -> NInfty
+  n * PInfty      = PInfty * n
+  NInfty * n      = case compare n 0 of
+    GT -> NInfty
+    EQ -> TInt 0
+    LT -> PInfty
+  n * NInfty      = NInfty * n
 
   abs (TInt a) = TInt $ abs a
   abs (TDbl a) = TDbl $ abs a
+  abs PInfty   = PInfty
+  abs NInfty   = PInfty
 
   signum (TInt a) = TInt $ signum a
   signum (TDbl a) = TDbl $ signum a
+  signum PInfty   = TInt 1
+  signum NInfty   = TInt (-1)
 
   negate (TInt a) = TInt $ negate a
   negate (TDbl a) = TDbl $ negate a
+  negate PInfty   = NInfty
+  negate NInfty   = PInfty
 
   fromInteger = TInt
 
 instance Real TNum where
   toRational (TInt a) = toRational a
   toRational (TDbl a) = toRational a
+  toRational PInfty   = error "Infinity is not rational."
+  toRational NInfty   = error "Infinity is not rational."
 
 instance Enum TNum where
   toEnum n = TInt $ toEnum n
   
   fromEnum (TInt n) = fromEnum n
   fromEnum (TDbl n) = fromEnum n
+  fromEnum PInfty   = maxBound
+  fromEnum NInfty   = minBound
+  
+  succ = (+1)
+  pred = (-1+)
+  
+  enumFrom = iterate succ
+  enumFromThen a b = iterate (+(b-a)) a
+  enumFromTo a c = case compare a c of
+    GT -> []
+    EQ -> [a]
+    LT -> takeWhile (<= c) $ iterate succ a
+  enumFromThenTo a b c = case (compare a c, compare a b) of
+    (GT, GT) -> takeWhile (>= c) $ iterate (+(b-a)) a
+    (GT, _)  -> []
+    (EQ, GT) -> [a]
+    (EQ, EQ) -> repeat a
+    (EQ, LT) -> [a]
+    (LT, GT) -> []
+    (LT, EQ) -> repeat a
+    (LT, LT) -> takeWhile (<= c) $ iterate (+(b-a)) a
 
 instance Integral TNum where
   toInteger (TInt n) = n
   toInteger (TDbl d) = truncate d
+  toInteger PInfty   = error "Infinity is not integral."
+  toInteger NInfty   = error "Infinity is not integral."
   
   quotRem (TInt a) (TInt b) | (x, y) <- quotRem a b = (TInt x, TInt y)
   quotRem (TInt a) b        = quotRem (TDbl $ fromInteger a) b
   quotRem a        (TInt b) = quotRem a (TDbl $ fromInteger b)
   quotRem (TDbl a) (TDbl b) = (TInt $ truncate $ a / b, TDbl $ a - b * fromInteger (truncate $ a / b))
+  quotRem PInfty PInfty     = (TInt 1, TInt 0)
+  quotRem PInfty NInfty     = (TInt (-1), TInt 0)
+  quotRem PInfty a          = (signum a * PInfty, TInt 0)
+  quotRem NInfty PInfty     = (TInt (-1), TInt 0)
+  quotRem NInfty NInfty     = (TInt 1, TInt 0)
+  quotRem NInfty a          = (signum a * NInfty, TInt 0)
+  quotRem a PInfty          = (TInt 0, a)
+  quotRem a NInfty          = (TInt 0, -a)
 
 instance Fractional TNum where
   fromRational r = TDbl $ fromRational r
 
-  TInt a / TInt b = TDbl $ fromInteger a / fromInteger b
-  TInt a / TDbl b = TDbl $ fromInteger a / b
-  TDbl a / TInt b = TDbl $ a / fromInteger b
-  TDbl a / TDbl b = TDbl $ a / b
+  TInt a / TInt b = fixInf $ TDbl $ fromInteger a / fromInteger b
+  TInt a / TDbl b = fixInf $ TDbl $ fromInteger a / b
+  TDbl a / TInt b = fixInf $ TDbl $ a / fromInteger b
+  TDbl a / TDbl b = fixInf $ TDbl $ a / b
+  PInfty / PInfty = TInt 1
+  PInfty / NInfty = TInt (-1)
+  PInfty / a      = case compare a 0 of
+    GT -> PInfty
+    EQ -> PInfty
+    LT -> NInfty
+  NInfty / PInfty = TInt (-1)
+  NInfty / NInfty = TInt 1
+  NInfty / a      = case compare a 0 of
+    GT -> NInfty
+    EQ -> NInfty
+    LT -> PInfty
+  _      / PInfty = TInt 0
+  _      / NInfty = TInt 0
+
+fixInf a@(TDbl x)
+  | isInfinite x = PInfty * a
+  | otherwise    = a
 
 instance Floating TNum where
   pi = TDbl pi
 
   exp (TDbl a) = TDbl $ exp a
   exp (TInt a) = TDbl $ exp $ fromInteger a
+  exp PInfty   = PInfty
+  exp NInfty   = TInt 0
 
   log (TDbl a) = TDbl $ log a
   log (TInt a) = TDbl $ log $ fromInteger a
+  log PInfty   = PInfty
+  log NInfty   = error "Cannot take logarithm of negative number."
 
   sqrt (TDbl a) = TDbl $ sqrt a
   sqrt (TInt a) = TDbl $ sqrt $ fromInteger a
+  sqrt PInfty   = PInfty
+  sqrt NInfty   = NInfty
 
   sin (TDbl a) = TDbl $ sin a
   sin (TInt a) = TDbl $ sin $ fromInteger a
+  sin PInfty   = TInt 0
+  sin NInfty   = TInt 0
 
   cos (TDbl a) = TDbl $ cos a
   cos (TInt a) = TDbl $ cos $ fromInteger a
+  cos PInfty   = TInt 0
+  cos NInfty   = TInt 0
 
   tan (TDbl a) = TDbl $ tan a
   tan (TInt a) = TDbl $ tan $ fromInteger a
+  tan PInfty   = TInt 0
+  tan NInfty   = TInt 0
 
   asin (TDbl a) = TDbl $ asin a
   asin (TInt a) = TDbl $ asin $ fromInteger a
+  asin PInfty   = error "Cannot take inverse sin of infinity."
+  asin NInfty   = error "Cannot take inverse sin of infinity."
 
   acos (TDbl a) = TDbl $ acos a
   acos (TInt a) = TDbl $ acos $ fromInteger a
+  acos PInfty   = error "Cannot take inverse cos of infinity."
+  acos NInfty   = error "Cannot take inverse cos of infinity."
 
   atan (TDbl a) = TDbl $ atan a
   atan (TInt a) = TDbl $ atan $ fromInteger a
+  atan PInfty   = pi/2
+  atan NInfty   = -pi/2
 
   sinh (TDbl a) = TDbl $ sinh a
   sinh (TInt a) = TDbl $ sinh $ fromInteger a
+  sinh PInfty   = PInfty
+  sinh NInfty   = NInfty
 
   cosh (TDbl a) = TDbl $ cosh a
   cosh (TInt a) = TDbl $ cosh $ fromInteger a
+  cosh PInfty   = PInfty
+  cosh NInfty   = PInfty
+  
+  tanh (TDbl a) = TDbl $ tanh a
+  tanh (TInt a) = TDbl $ tanh $ fromInteger a
+  tanh PInfty   = TInt 1
+  tanh NInfty   = TInt (-1)
 
   asinh (TDbl a) = TDbl $ asinh a
   asinh (TInt a) = TDbl $ asinh $ fromInteger a
+  asinh PInfty   = PInfty
+  asinh NInfty   = NInfty
 
   acosh (TDbl a) = TDbl $ acosh a
   acosh (TInt a) = TDbl $ acosh $ fromInteger a
+  acosh PInfty   = PInfty
+  acosh NInfty   = error "Cannot take inverse cosh of infinity."
 
   atanh (TDbl a) = TDbl $ atanh a
   atanh (TInt a) = TDbl $ atanh $ fromInteger a
+  atanh PInfty   = error "Cannot take inverse tanh of infinity."
+  atanh NInfty   = error "Cannot take inverse tanh of infinity."
 
 instance RealFrac TNum where
   properFraction (TInt a) = (fromInteger a, TInt 0)
   properFraction (TDbl a) | (n, r) <- properFraction a = (n, TDbl r)
-
+  properFraction PInfty   = (0, PInfty)
+  properFraction NInfty   = (0, NInfty)
 
 -- Class of all Husk types (used for defaulting)
 
@@ -191,6 +317,9 @@ class (Husky a, Show a, Read a, Eq a, Ord a, ToString a) => Concrete a where
   func_neq :: a -> a -> TNum
   func_congr :: a -> a -> TNum
   
+  func_maxval :: a
+  func_minval :: a
+  
   func_heads :: a -> [a]
   func_tails :: a -> [a]
   
@@ -226,6 +355,9 @@ instance Concrete TNum where
               | otherwise = toTruthy $ x-y+1
   func_neq y x = abs $ toTruthy (x-y)
   
+  func_maxval = PInfty
+  func_minval = NInfty
+  
   func_congr 0 0 = 1
   func_congr 0 _ = 0
   func_congr _ 0 = 0
@@ -243,6 +375,9 @@ instance Concrete Char where
   func_le y x = fromIntegral $ max 0 (ord y - ord x + 1)
   func_ge y x = fromIntegral $ max 0 (ord x - ord y + 1)
   func_neq y x = abs.fromIntegral $ (ord x)-(ord y)
+  
+  func_maxval = maxBound
+  func_minval = minBound
       
   func_congr '\0' '\0' = 1
   func_congr '\0' _    = 0
@@ -276,6 +411,9 @@ instance Concrete a => Concrete [a] where
                              | otherwise = go (n+1) xs ys
           go n _ _ = n
   
+  func_maxval = repeat func_maxval
+  func_minval = []
+  
   func_congr [] [] = 1
   func_congr [] _  = 0
   func_congr _  [] = 0
@@ -293,6 +431,9 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
   func_le (x, y) (x', y') = if x > x' then func_lt y y' else func_le x x'
   func_ge (x, y) (x', y') = if x < x' then func_gt y y' else func_ge x x'
   func_neq (x, y) (x', y') = if x == x' then func_neq y y' else func_neq x x'
+  
+  func_maxval = (func_maxval, func_maxval)
+  func_minval = (func_minval, func_minval)
   
   func_congr (a,b) (c,d) = if func_congr a c + func_congr b d == 2 then 1 else 0
   
@@ -449,12 +590,13 @@ func_countf c = genericLength . filter (isTruthy . c)
 func_count :: Concrete a => a -> [a] -> TNum
 func_count x = genericLength . filter (== x)
 
-func_index :: TNum -> [a] -> a
-func_index i
-  | toInteger i>0 = flip genericIndex (toInteger i-1).cycle
-  | otherwise     = flip genericIndex (-toInteger i).cycle.reverse
+func_index :: (Husky a) => TNum -> [a] -> a
+func_index _ [] = defVal
+func_index i xs
+  | toInteger i>0 = genericIndex (cycle xs) $ toInteger i-1
+  | otherwise     = genericIndex (reverse $ cycle xs) $ -toInteger i
 
-func_index2 :: [a] -> TNum -> a
+func_index2 :: (Husky a) => [a] -> TNum -> a
 func_index2 = flip func_index
 
 func_rev :: [a] -> [a]
@@ -665,10 +807,10 @@ func_min :: Concrete a => a -> a -> a
 func_min = min
 
 func_maxl :: Concrete a => [a] -> a
-func_maxl = maximum
+func_maxl = foldr max func_maxval
 
 func_minl :: Concrete a => [a] -> a
-func_minl = minimum
+func_minl = foldr min func_minval
 
 func_del :: Concrete a => a -> [a] -> [a]
 func_del = delete
