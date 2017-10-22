@@ -1272,3 +1272,24 @@ func_halfL xs = go xs xs where
         go (y:_:ys) (z:zs) = let [zs',zs''] = go ys zs in [z:zs',zs'']
         go (y:ys)   (z:zs) = [[z],zs]
         go    _      zs    = [[],zs]
+
+-- Merge a potentially infinite number of potentially infinite lists
+-- Each list is assumed to be sorted with respect to comparison predicate f
+-- If there are more than two lists, the heads are assumed to be sorted with respect to f as well
+func_merge :: (Concrete b) => (a -> a -> b) -> [[a]] -> [a]
+func_merge f = go
+  where go [] = []
+        go [xs] = xs
+        go ([]:xss) = go xss
+        go [xs, []] = xs
+        go [xs@(x:_), ys@(y:_)] | not . isTruthy $ f x y = go [ys, xs]
+        go ((x:xs):yss) = x : go (put xs yss)
+        put [] yss = yss
+        put xs [] = [xs]
+        put xs ([]:yss) = put xs yss
+        put xs@(x:_) yss@(ys@(y:_):zss)
+         | isTruthy $ f x y = xs : yss
+         | otherwise        = ys : put xs zss
+
+func_merge2 :: (Concrete b) => (a -> b) -> [[a]] -> [a]
+func_merge2 f = func_merge (\x y -> f x `func_ge` f y)

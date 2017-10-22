@@ -184,7 +184,8 @@ commandsList = [
   ('Ω', bins "until"),
   ('Ḋ', bins "divs"),
   ('δ', bins "decorM decorL decorV decorN"),
-  ('Θ', bins "prep0")
+  ('Θ', bins "prep0"),
+  ('Ξ', bins "merge merge2")
   ]
 
 -- Compute builtins from space-delimited list
@@ -377,6 +378,8 @@ builtinsList = [
   ("decorL",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> lst (tup x u)) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> lst u),
   ("decorV",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> tup x u) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> u),
   ("decorN",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> u) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> u),
+  ("merge", forall "xy" [con y] $ (x ~> x ~> y) ~> lst (lst x) ~> lst x),
+  ("merge2",forall "xy" [con y] $ (x ~> y) ~> lst (lst x) ~> lst x),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
