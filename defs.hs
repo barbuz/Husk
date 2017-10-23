@@ -808,10 +808,10 @@ func_min :: Concrete a => a -> a -> a
 func_min = min
 
 func_maxl :: Concrete a => [a] -> a
-func_maxl = foldr max func_maxval
+func_maxl = foldr max func_minval
 
 func_minl :: Concrete a => [a] -> a
-func_minl = foldr min func_minval
+func_minl = foldr min func_maxval
 
 func_del :: Concrete a => a -> [a] -> [a]
 func_del = delete
