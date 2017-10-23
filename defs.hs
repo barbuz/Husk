@@ -46,6 +46,7 @@ instance Read TNum where
     | p@(_:_) <- tryDbl           = [(TDbl k, rest) | (k, rest) <- p]
     | 'I':'n':'f':rest <- str     = [(PInfty, rest)]
     | '-':'I':'n':'f':rest <- str = [(NInfty, rest)]
+    | otherwise                   = []
     where tryInt = readsPrec n str :: [(Integer, String)]
           tryDbl = readsPrec n str :: [(Double, String)]
 
