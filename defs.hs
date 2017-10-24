@@ -594,8 +594,10 @@ func_count x = genericLength . filter (== x)
 func_index :: (Husky a) => TNum -> [a] -> a
 func_index _ [] = defVal
 func_index i xs
+  | PInfty <- i   = last xs
+  | NInfty <- i   = head xs
   | toInteger i>0 = genericIndex (cycle xs) $ toInteger i-1
-  | otherwise     = genericIndex (reverse $ cycle xs) $ -toInteger i
+  | otherwise     = genericIndex (cycle $ reverse xs) $ -toInteger i
 
 func_index2 :: (Husky a) => [a] -> TNum -> a
 func_index2 = flip func_index
