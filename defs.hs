@@ -46,6 +46,7 @@ instance Read TNum where
     | p@(_:_) <- tryDbl           = [(TDbl k, rest) | (k, rest) <- p]
     | 'I':'n':'f':rest <- str     = [(PInfty, rest)]
     | '-':'I':'n':'f':rest <- str = [(NInfty, rest)]
+    | otherwise                   = []
     where tryInt = readsPrec n str :: [(Integer, String)]
           tryDbl = readsPrec n str :: [(Double, String)]
 
@@ -605,8 +606,10 @@ func_count x = genericLength . filter (== x)
 func_index :: (Husky a) => TNum -> [a] -> a
 func_index _ [] = defVal
 func_index i xs
+  | PInfty <- i   = last xs
+  | NInfty <- i   = head xs
   | toInteger i>0 = genericIndex (cycle xs) $ toInteger i-1
-  | otherwise     = genericIndex (reverse $ cycle xs) $ -toInteger i
+  | otherwise     = genericIndex (cycle $ reverse xs) $ -toInteger i
 
 func_index2 :: (Husky a) => [a] -> TNum -> a
 func_index2 = flip func_index
@@ -819,10 +822,10 @@ func_min :: Concrete a => a -> a -> a
 func_min = min
 
 func_maxl :: Concrete a => [a] -> a
-func_maxl = foldr max func_maxval
+func_maxl = foldr max func_minval
 
 func_minl :: Concrete a => [a] -> a
-func_minl = foldr min func_minval
+func_minl = foldr min func_maxval
 
 func_del :: Concrete a => a -> [a] -> [a]
 func_del = delete
