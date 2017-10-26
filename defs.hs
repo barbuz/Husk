@@ -276,7 +276,7 @@ instance Husky TNum where
   defVal = 0
 
 instance Husky Char where
-  defVal = '\0'
+  defVal = ' '
 
 instance (Husky a) => Husky [a] where
   defVal = []
@@ -372,9 +372,9 @@ instance Concrete TNum where
   func_tails x = [x,x-1..1]
 
 instance Concrete Char where
-  isTruthy = (/= 0).ord
-  toTruthy = fromIntegral.ord
-  func_true = '\n'
+  isTruthy = not . C.isSpace
+  toTruthy = boolToNum.isTruthy
+  func_true = '!'
   func_lt y x = fromIntegral $ max 0 (ord y - ord x)
   func_gt y x = fromIntegral $ max 0 (ord x - ord y)
   func_le y x = fromIntegral $ max 0 (ord y - ord x + 1)
@@ -384,10 +384,8 @@ instance Concrete Char where
   func_maxval = maxBound
   func_minval = minBound
       
-  func_congr '\0' '\0' = 1
-  func_congr '\0' _    = 0
-  func_congr _    '\0' = 0
-  func_congr _    _    = 1
+  func_congr x y | isTruthy x == isTruthy y = 1
+                 | otherwise                = 0
   
   func_simil x y | x == succ y || y == succ x = 1
                  | otherwise                  = 0
