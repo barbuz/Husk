@@ -186,7 +186,9 @@ commandsList = [
   ('δ', bins "decorM decorL decorV decorN"),
   ('Θ', bins "prep0"),
   ('Ξ', bins "merge merge2"),
-  ('≈', bins "simil")
+  ('≈', bins "simil"),
+  ('◄', bins "minby minon minlby minlon"),
+  ('►', bins "maxby maxon maxlby maxlon")
   ]
 
 -- Compute builtins from space-delimited list
@@ -381,6 +383,14 @@ builtinsList = [
   ("decorN",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> u) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> u),
   ("merge", forall "xy" [con y] $ (x ~> x ~> y) ~> lst (lst x) ~> lst x),
   ("merge2",forall "xy" [con y] $ (x ~> y) ~> lst (lst x) ~> lst x),
+  ("minby", forall "xy" [con y] $ (x ~> x ~> y) ~> x ~> x ~> x),
+  ("maxby", forall "xy" [con y] $ (x ~> x ~> y) ~> x ~> x ~> x),
+  ("minon", forall "xy" [con y] $ (x ~> y) ~> x ~> x ~> x),
+  ("maxon", forall "xy" [con y] $ (x ~> y) ~> x ~> x ~> x),
+  ("minlby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> x),
+  ("maxlby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> x),
+  ("minlon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
+  ("maxlon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

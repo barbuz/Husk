@@ -1306,3 +1306,34 @@ func_merge f = go
 
 func_merge2 :: (Concrete b) => (a -> b) -> [[a]] -> [a]
 func_merge2 f = func_merge (\x y -> f x `func_ge` f y)
+
+-- Minima and maxima with custom comparison
+-- TODO: make the list operations respect partial orders in some way
+
+func_minby :: Concrete b => (a -> a -> b) -> a -> a -> a
+func_minby p x y = if isTruthy $ p x y then y else x
+
+func_maxby :: Concrete b => (a -> a -> b) -> a -> a -> a
+func_maxby p x y = if isTruthy $ p x y then x else y
+
+func_minon :: Concrete b => (a -> b) -> a -> a -> a
+func_minon f x y = if f x <= f y then x else y
+
+func_maxon :: Concrete b => (a -> b) -> a -> a -> a
+func_maxon f x y = if f x <= f y then y else x
+
+func_minlby :: (Husky a, Concrete b) => (a -> a -> b) -> [a] -> a
+func_minlby _ [] = defVal
+func_minlby p xs = foldr1 (func_minby p) xs
+
+func_maxlby :: (Husky a, Concrete b) => (a -> a -> b) -> [a] -> a
+func_maxlby _ [] = defVal
+func_maxlby p xs = foldr1 (func_maxby p) xs
+
+func_minlon :: (Husky a, Concrete b) => (a -> b) -> [a] -> a
+func_minlon _ [] = defVal
+func_minlon f xs = foldr1 (func_minon f) xs
+
+func_maxlon :: (Husky a, Concrete b) => (a -> b) -> [a] -> a
+func_maxlon _ [] = defVal
+func_maxlon f xs = foldr1 (func_maxon f) xs
