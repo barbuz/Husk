@@ -189,7 +189,9 @@ commandsList = [
   ('≈', bins "simil"),
   ('◄', bins "minby minon minlby minlon"),
   ('►', bins "maxby maxon maxlby maxlon"),
-  ('∂', bins "adiags")
+  ('∂', bins "adiags"),
+  ('ŀ', bins "lrange ixes"),
+  ('ṡ', bins "srange rvixes")
   ]
 
 -- Compute builtins from space-delimited list
@@ -285,7 +287,7 @@ builtinsList = [
   ("elem'",  forall "x" [con x] $ x ~> lst x ~> num),
   ("sort",  forall "x" [con x] $ lst x ~> lst x),
   ("sorton",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst x),
-  ("sortby",forall "x" [] $ (x ~> x ~> num) ~> lst x ~> lst x),
+  ("sortby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst x),
   ("maxl",  forall "x" [con x] $ lst x ~> x),
   ("minl",  forall "x" [con x] $ lst x ~> x),
   ("diffl", forall "x" [con x] $ lst x ~> lst x ~> lst x),
@@ -343,6 +345,10 @@ builtinsList = [
   ("lmaptp",forall "xyz" [] $ (x ~> z) ~> tup x y ~> tup z y),
   ("rmaptp",forall "xyz" [] $ (y ~> z) ~> tup x y ~> tup x z),
   ("adiags",forall "x" [] $ lst (lst x) ~> lst (lst x)),
+  ("lrange",simply $ num ~> lst num),
+  ("srange",simply $ num ~> lst num),
+  ("ixes",  forall "x" [] $ lst x ~> lst num),
+  ("rvixes",forall "x" [] $ lst x ~> lst num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
