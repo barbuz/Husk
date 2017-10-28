@@ -1337,3 +1337,25 @@ func_minlon f xs = foldr1 (func_minon f) xs
 func_maxlon :: (Husky a, Concrete b) => (a -> b) -> [a] -> a
 func_maxlon _ [] = defVal
 func_maxlon f xs = foldr1 (func_maxon f) xs
+
+
+func_aptp :: (a -> b -> c) -> (a, b) -> c
+func_aptp f (x, y) = f x y
+
+func_apftp :: (a -> b -> c) -> (b, a) -> c
+func_apftp f (x, y) = f y x
+
+func_scltp :: (a -> b -> c) -> (a, b) -> (c, b)
+func_scltp f (x, y) = (f x y, y)
+
+func_scrtp :: (a -> b -> c) -> (a, b) -> (a, c)
+func_scrtp f (x, y) = (x, f x y)
+
+func_maptp :: (a -> b) -> (a, a) -> (b, b)
+func_maptp f (x, y) = (f x, f y)
+
+func_lmaptp :: (a -> c) -> (a, b) -> (c, b)
+func_lmaptp f (x, y) = (f x, y)
+
+func_rmaptp :: (b -> c) -> (a, b) -> (a, c)
+func_rmaptp f (x, y) = (x, f y)
