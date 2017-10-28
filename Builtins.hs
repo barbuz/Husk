@@ -188,7 +188,8 @@ commandsList = [
   ('Ξ', bins "merge merge2"),
   ('≈', bins "simil"),
   ('◄', bins "minby minon minlby minlon"),
-  ('►', bins "maxby maxon maxlby maxlon")
+  ('►', bins "maxby maxon maxlby maxlon"),
+  ('∂', bins "adiags")
   ]
 
 -- Compute builtins from space-delimited list
@@ -341,6 +342,7 @@ builtinsList = [
   ("maptp", forall "xy" [] $ (x ~> y) ~> tup x x ~> tup y y),
   ("lmaptp",forall "xyz" [] $ (x ~> z) ~> tup x y ~> tup z y),
   ("rmaptp",forall "xyz" [] $ (y ~> z) ~> tup x y ~> tup x z),
+  ("adiags",forall "x" [] $ lst (lst x) ~> lst (lst x)),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

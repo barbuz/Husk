@@ -1359,3 +1359,12 @@ func_lmaptp f (x, y) = (f x, y)
 
 func_rmaptp :: (b -> c) -> (a, b) -> (a, c)
 func_rmaptp f (x, y) = (x, f y)
+
+
+func_adiags :: [[a]] -> [[a]]
+func_adiags = init . go 1
+  where go _ [] = []
+        go n xss =
+          let (prefix, suffix) = splitAt n xss
+              (diag, rests) = unzip [(x, xs) | (x:xs) <- prefix]
+          in diag : go (length diag + 1) (rests ++ suffix)
