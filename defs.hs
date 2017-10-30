@@ -387,7 +387,7 @@ instance Concrete Char where
   func_congr x y | isTruthy x == isTruthy y = 1
                  | otherwise                = 0
   
-  func_simil x y | x == succ y || y == succ x = 1
+  func_simil x y | x==y || x == succ y || y == succ x = 1
                  | otherwise                  = 0
   
   func_heads x = ['\0'..x]
