@@ -63,7 +63,7 @@ commandsList = [
   ('Ġ', bins "scanr scanr1 scrtp"),
   ('f', bins "filter select"),
   ('L', bins "len nlen"),
-  ('#', bins "countf count"),
+  ('#', bins "countf count count2"),
   ('N', bins "nats"),
   ('!', bins "index index2"),
   ('↑', bins "take take2 takew"),
@@ -130,8 +130,8 @@ commandsList = [
   ('ṫ', bins "tails"),
   ('¦', bins "divds"),
   ('P', bins "perms"),
-  ('V', bins "any"),
-  ('Λ', bins "all"),
+  ('V', bins "any any2"),
+  ('Λ', bins "all all2"),
   ('T', bins "trsp trspw"),
   ('ż', bins "zip'"),
   ('ṁ', bins "cmap cmapr smap smapr"),
@@ -191,7 +191,8 @@ commandsList = [
   ('►', bins "maxby maxon maxlby maxlon"),
   ('∂', bins "adiags"),
   ('ŀ', bins "lrange ixes"),
-  ('ṡ', bins "srange rvixes")
+  ('ṡ', bins "srange rvixes"),
+  ('Ψ', bins "toadjM toadjL toadjV toadjN")
   ]
 
 -- Compute builtins from space-delimited list
@@ -349,6 +350,7 @@ builtinsList = [
   ("srange",simply $ num ~> lst num),
   ("ixes",  forall "x" [] $ lst x ~> lst num),
   ("rvixes",forall "x" [] $ lst x ~> lst num),
+  ("count2",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -406,6 +408,10 @@ builtinsList = [
   ("maxlby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> x),
   ("minlon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
   ("maxlon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
+  ("toadjM", forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> lst (lst (tup x x))) ~> (x ~> x ~> y) ~> lst x ~> lst (lst x)),
+  ("toadjL", forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> lst (tup x x)) ~> (x ~> x ~> y) ~> lst x ~> lst x),
+  ("toadjV", forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> tup x x) ~> (x ~> x ~> y) ~> lst x ~> x),
+  ("toadjN", forall "xyz" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> z) ~> (x ~> x ~> y) ~> lst x ~> z),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
@@ -450,6 +456,8 @@ builtinsList = [
   ("subl",  forall "x" [con x] $ lst x ~> lst x ~> num),
   ("congr", forall "x" [con x] $ x ~> x ~> num),
   ("simil", forall "x" [con x] $ x ~> x ~> num),
+  ("any2",  forall "xy"[con y] $ (x ~> x ~> y) ~> lst x ~> num),
+  ("all2",  forall "xy"[con y] $ (x ~> x ~> y) ~> lst x ~> num),
   
   -- Chars and strings
   ("chr",   simply $ num ~> chr),
