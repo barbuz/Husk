@@ -1382,3 +1382,12 @@ func_srange n | n >= 0    = [-n .. n]
 
 func_rvixes :: [x] -> [TNum]
 func_rvixes xs = reverse [1 .. genericLength xs]
+
+func_cpow :: TNum -> [x] -> [[x]]
+func_cpow n xs = func_cartes $ func_replic n xs
+
+func_cpow' :: [x] -> TNum -> [[x]]
+func_cpow' = flip func_cpow
+
+func_cpowN :: TNum -> TNum -> [[TNum]]
+func_cpowN n = func_cpow n . func_heads
