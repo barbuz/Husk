@@ -1431,3 +1431,24 @@ func_keyby p = go []
         put x [] = [[x]]
         put x (ys:yss) | and [isTruthy $ p y x | y <- ys] = (ys++[x]) : yss
                        | otherwise                        = ys : put x yss
+
+func_unzip :: [(x, y)] -> ([x], [y])
+func_unzip = unzip
+
+func_split :: Concrete x => x -> [x] -> [[x]]
+func_split x = go
+  where go [] = [[]]
+        go (y:ys) | x == y            = [] : go ys
+                  | (zs:zss) <- go ys = (y:zs) : zss
+                  | otherwise         = [[y]]
+
+func_split' :: Concrete x => [x] -> x -> [[x]]
+func_split' = flip func_split
+
+func_splitL :: Concrete x => [x] -> [x] -> [[x]]
+func_splitL xs = go
+  where go [] = [[]]
+        go ys     | Just zs <- stripPrefix xs ys = [] : go zs
+        go (y:ys) | (zs:zss) <- go ys            = (y:zs) : zss
+                  | otherwise                    = [[y]]
+

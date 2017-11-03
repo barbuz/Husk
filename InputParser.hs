@@ -13,8 +13,9 @@ import Control.Monad (foldM)
 type InputParser = Parsec String () (Maybe (String, Type))
 
 unifyInputs :: Type -> Type -> Maybe Type
+unifyInputs t1 t2 | trace' ("unifying input types " ++ show t1 ++ " and " ++ show t2) False = undefined
 unifyInputs (TPair t1 t2) (TPair s1 s2) = do
-  r1 <- unifyInputs t1 s2
+  r1 <- unifyInputs t1 s1
   r2 <- unifyInputs t2 s2
   return $ TPair r1 r2
 unifyInputs (TList t1) (TList t2) = unifyInputs t1 t2 >>= return . TList

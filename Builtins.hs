@@ -41,6 +41,8 @@ cmd char = error $ "No builtin bound to character " ++ [char]
 commands :: String
 commands = map fst commandsList
 
+-- Unused characters: ∟¿⌐$@AHWYZ[]bjlnqvy{}·ΔΦαβγζηθρςτχψ¥ȦḂĊĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
+
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
 commandsList = [
@@ -132,7 +134,7 @@ commandsList = [
   ('P', bins "perms"),
   ('V', bins "any any2"),
   ('Λ', bins "all all2"),
-  ('T', bins "trsp trspw"),
+  ('T', bins "trsp trspw unzip"),
   ('ż', bins "zip'"),
   ('ṁ', bins "cmap cmapr smap smapr"),
   ('≡', bins "congr"),
@@ -195,7 +197,8 @@ commandsList = [
   ('π', bins "cpow cpow' cpowN"),
   ('Ψ', bins "toadjM toadjL toadjV toadjN"),
   ('Ë', bins "sameon sameby"),
-  ('k', bins "keyon keyby")
+  ('k', bins "keyon keyby"),
+  ('x', bins "split split' splitL")
   ]
 
 -- Compute builtins from space-delimited list
@@ -357,6 +360,10 @@ builtinsList = [
   ("cpow'", forall "x" [] $ lst x ~> num ~> lst (lst x)),
   ("cpowN", simply $ num ~> num ~> lst (lst num)),
   ("count2",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> num),
+  ("unzip", forall "xy" [] $ lst (tup x y) ~> tup (lst x) (lst y)),
+  ("split", forall "x" [con x] $ x ~> lst x ~> lst (lst x)),
+  ("split'",forall "x" [con x] $ lst x ~> x ~> lst (lst x)),
+  ("splitL",forall "x" [con x] $ lst x ~> lst x ~> lst (lst x)),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
