@@ -387,7 +387,7 @@ instance Concrete Char where
   func_congr x y | isTruthy x == isTruthy y = 1
                  | otherwise                = 0
   
-  func_simil x y | x == succ y || y == succ x = 1
+  func_simil x y | x==y || x == succ y || y == succ x = 1
                  | otherwise                  = 0
   
   func_heads x = ['\0'..x]
@@ -1388,3 +1388,24 @@ func_cpow' = flip func_cpow
 
 func_cpowN :: TNum -> TNum -> [[TNum]]
 func_cpowN n = func_cpow n . func_heads
+
+func_toadjM :: (((a, a) -> c) -> [(a,a)] -> [[(a, a)]]) -> (a -> a -> c) -> [a] -> [[a]]
+func_toadjM f g xs = func_decorM f g (func_tail xs) xs
+
+func_toadjL :: (((a, a) -> c) -> [(a,a)] -> [(a, a)]) -> (a -> a -> c) -> [a] -> [a]
+func_toadjL f g xs = func_decorL f g (func_tail xs) xs
+
+func_toadjV :: (((a, a) -> c) -> [(a,a)] -> (a, a)) -> (a -> a -> c) -> [a] -> a
+func_toadjV f g xs = func_decorV f g (func_tail xs) xs
+
+func_toadjN :: (((a, a) -> c) -> [(a,a)] -> b) -> (a -> a -> c) -> [a] -> b
+func_toadjN f g xs = func_decorN f g (func_tail xs) xs
+
+func_all2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
+func_all2 = func_toadjN func_all
+
+func_any2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
+func_any2 = func_toadjN func_any
+
+func_count2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
+
