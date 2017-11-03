@@ -1408,4 +1408,26 @@ func_any2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
 func_any2 = func_toadjN func_any
 
 func_count2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
+func_count2 = func_toadjN func_countf
 
+func_sameon :: Concrete y => (x -> y) -> [x] -> TNum
+func_sameon f = func_same . map f
+
+func_sameby :: Concrete y => (x -> x -> y) -> [x] -> TNum
+func_sameby p xs = boolToNum $ and [isTruthy $ p x y | (x:ys) <- tails xs, y <- ys]
+
+func_keyon :: Concrete y => (x -> y) -> [x] -> [[x]]
+func_keyon f = go []
+  where go ps [] = map snd ps
+        go ps (x:xs) = go (put (f x, x) ps) xs
+        put (y,x) [] = [(y,[x])]
+        put p@(y,x) (q@(k,vs):ks) | y == k    = (k, vs++[x]) : ks
+                                  | otherwise = q : put p ks
+
+func_keyby :: Concrete y => (x -> x -> y) -> [x] -> [[x]]
+func_keyby p = go []
+  where go yss [] = yss
+        go yss (x:xs) = go (put x yss) xs
+        put x [] = [[x]]
+        put x (ys:yss) | and [isTruthy $ p y x | y <- ys] = (ys++[x]) : yss
+                       | otherwise                        = ys : put x yss

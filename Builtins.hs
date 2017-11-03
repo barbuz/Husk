@@ -193,7 +193,9 @@ commandsList = [
   ('ŀ', bins "lrange ixes"),
   ('ṡ', bins "srange rvixes"),
   ('π', bins "cpow cpow' cpowN"),
-  ('Ψ', bins "toadjM toadjL toadjV toadjN")
+  ('Ψ', bins "toadjM toadjL toadjV toadjN"),
+  ('Ë', bins "sameon sameby"),
+  ('k', bins "keyon keyby")
   ]
 
 -- Compute builtins from space-delimited list
@@ -408,20 +410,24 @@ builtinsList = [
   ("maxby", forall "xy" [con y] $ (x ~> x ~> y) ~> x ~> x ~> x),
   ("minon", forall "xy" [con y] $ (x ~> y) ~> x ~> x ~> x),
   ("maxon", forall "xy" [con y] $ (x ~> y) ~> x ~> x ~> x),
-  ("minlby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> x),
-  ("maxlby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> x),
-  ("minlon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
-  ("maxlon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
-  ("toadjM", forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> lst (lst (tup x x))) ~> (x ~> x ~> y) ~> lst x ~> lst (lst x)),
-  ("toadjL", forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> lst (tup x x)) ~> (x ~> x ~> y) ~> lst x ~> lst x),
-  ("toadjV", forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> tup x x) ~> (x ~> x ~> y) ~> lst x ~> x),
-  ("toadjN", forall "xyz" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> z) ~> (x ~> x ~> y) ~> lst x ~> z),
+  ("minlby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> x),
+  ("maxlby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> x),
+  ("minlon",forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
+  ("maxlon",forall "xy" [con y] $ (x ~> y) ~> lst x ~> x),
+  ("toadjM",forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> lst (lst (tup x x))) ~> (x ~> x ~> y) ~> lst x ~> lst (lst x)),
+  ("toadjL",forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> lst (tup x x)) ~> (x ~> x ~> y) ~> lst x ~> lst x),
+  ("toadjV",forall "xy" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> tup x x) ~> (x ~> x ~> y) ~> lst x ~> x),
+  ("toadjN",forall "xyz" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> z) ~> (x ~> x ~> y) ~> lst x ~> z),
+  ("sameon",forall "xy" [con y] $ (x ~> y) ~> lst x ~> num),
+  ("sameby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> num),
+  ("keyon",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
+  ("keyby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst x)),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
   ("hookf", forall "xyz" [] $ (x ~> y ~> z) ~> (y ~> x) ~> y ~> z),
-  ("bhook",  forall "xyzu" [] $ (x ~> y ~> z) ~> (x ~> u ~> y) ~> x ~> u ~> z),
-  ("bhookf", forall "xyzu" [] $ (x ~> y ~> z) ~> (u ~> y ~> x) ~> u ~> y ~> z),
+  ("bhook", forall "xyzu" [] $ (x ~> y ~> z) ~> (x ~> u ~> y) ~> x ~> u ~> z),
+  ("bhookf",forall "xyzu" [] $ (x ~> y ~> z) ~> (u ~> y ~> x) ~> u ~> y ~> z),
   ("const", forall "xy" [] $ x ~> y ~> x),
   ("id",    forall "x" [] $ x ~> x),
   ("fix",   forall "x" [] $ (x ~> x) ~> x),
