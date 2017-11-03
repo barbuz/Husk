@@ -1452,3 +1452,5 @@ func_splitL xs = go
         go (y:ys) | (zs:zss) <- go ys            = (y:zs) : zss
                   | otherwise                    = [[y]]
 
+func_joinV :: x -> [x] -> [x]
+func_joinV = intersperse

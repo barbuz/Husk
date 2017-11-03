@@ -162,7 +162,7 @@ commandsList = [
   ('C', bins "cut cuts"),
   ('X', bins "slice"),
   ('Ẋ', bins "mapad2 mapad3"),
-  ('J', bins "join join' joinE"),
+  ('J', bins "join join' joinE joinV"),
   ('Ṗ', bins "powset powstN"),
   ('×', bins "mix"),
   ('£', bins "oelem oelem'"),
@@ -364,6 +364,7 @@ builtinsList = [
   ("split", forall "x" [con x] $ x ~> lst x ~> lst (lst x)),
   ("split'",forall "x" [con x] $ lst x ~> x ~> lst (lst x)),
   ("splitL",forall "x" [con x] $ lst x ~> lst x ~> lst (lst x)),
+  ("joinV", forall "x" [] $ x ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
