@@ -632,10 +632,7 @@ func_cartes [] = [[]]
 func_cartes (x:xs) = func_mix (:) x $ func_cartes xs
 
 func_mix :: (a -> b -> c) -> [a] -> [b] -> [c]
-func_mix f = go
-  where go [] _ = []
-        go _ [] = []
-        go (a:as) (b:bs) = f a b : merge3 (flip f b <$> as) (f a <$> bs) (go as bs)
+func_mix f xs ys = concat $ func_adiags $ func_table f xs ys
 
 -- Lazy merges
 merge3 :: [a] -> [a] -> [a] -> [a]
