@@ -5,6 +5,9 @@ func_intseq :: Char -> [TNum]
 --Alternate signs
 func_intseq '±' = concat $ transpose [[1..],[-1,-2..]]
 
+--All integers
+func_intseq 'Z' = 0 : func_intseq '±'
+
 --Yes/no sequence
 func_intseq '¬' = cycle [1,0]
 
@@ -66,6 +69,21 @@ func_intseq '€' = [0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,200,500]
 
 --Squares
 func_intseq '□' = map (^2) [1..]
+
+--Palindromic numbers in base 10
+func_intseq '↔' = filter (((==) =<< reverse) . func_base10) [1..]
+
+--Palindromic numbers in base 2
+func_intseq '↕' = filter (((==) =<< reverse) . func_base2) [1..]
+
+--Powers of -1
+func_intseq '_' = cycle [-1,1]
+
+--Inverses of positive integers
+func_intseq '\\' = map recip [1..]
+
+--Powers of 1/2
+func_intseq '½' = map (recip . (2^)) [1..]
 
 
 func_intseq c = error $ "Unimplemented integer sequence for character '"++c:"'"
