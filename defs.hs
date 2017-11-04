@@ -1454,3 +1454,27 @@ func_splitL xs = go
 
 func_joinV :: x -> [x] -> [x]
 func_joinV = intersperse
+
+lenBelow xs n | n <= 0 = False
+lenBelow [] n = True
+lenBelow (_:xs) n = lenBelow xs (n-1)
+
+func_replen :: [x] -> TNum -> [x]
+func_replen [] _ = []
+func_replen xs n | n < 0     = func_replen (reverse xs) (-n)
+                 | n == 0    = []
+                 | otherwise = go (cycle xs) xs 0
+  where go _ [] _ = []
+        go as (_:bs) m | mn <- func_floor $ m+n = func_take mn as ++ go (func_drop mn as) bs (func_mod 1 $ m+n)
+
+func_repln' :: TNum -> [x] -> [x]
+func_repln' = flip func_replen
+
+func_isect :: Concrete x => [x] -> [x] -> [x]
+func_isect [] _ = []
+func_isect _ [] = []
+func_isect (x:xs) ys | Just zs <- del ys = x : func_isect xs zs
+                     | otherwise         = func_isect xs ys
+  where del [] = Nothing
+        del (y:ys) | y == x    = Just ys
+                   | otherwise = (y:) <$> del ys

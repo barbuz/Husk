@@ -48,7 +48,7 @@ commandsList :: [(Char, Exp [Lit Scheme])]
 commandsList = [
   ('+', bins "add cat"),
   ('-', bins "sub diffl del"),
-  ('*', bins "mul"),
+  ('*', bins "mul replen repln' isect"),
   ('/', bins "div"),
   ('÷', bins "idiv"),
   ('%', bins "mod"),
@@ -365,6 +365,9 @@ builtinsList = [
   ("split'",forall "x" [con x] $ lst x ~> x ~> lst (lst x)),
   ("splitL",forall "x" [con x] $ lst x ~> lst x ~> lst (lst x)),
   ("joinV", forall "x" [] $ x ~> lst x ~> lst x),
+  ("replen",forall "x" [] $ lst x ~> num ~> lst x),
+  ("repln'",forall "x" [] $ num ~> lst x ~> lst x),
+  ("isect", forall "x" [con x] $ lst x ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
