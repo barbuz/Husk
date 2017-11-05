@@ -1417,12 +1417,7 @@ func_sameby :: Concrete y => (x -> x -> y) -> [x] -> TNum
 func_sameby p xs = boolToNum $ and [isTruthy $ p x y | (x:ys) <- tails xs, y <- ys]
 
 func_keyon :: Concrete y => (x -> y) -> [x] -> [[x]]
-func_keyon f = go []
-  where go ps [] = map snd ps
-        go ps (x:xs) = go (put (f x, x) ps) xs
-        put (y,x) [] = [(y,[x])]
-        put p@(y,x) (q@(k,vs):ks) | y == k    = (k, vs++[x]) : ks
-                                  | otherwise = q : put p ks
+func_keyon f = func_groupOn f . func_sorton f
 
 func_keyby :: Concrete y => (x -> x -> y) -> [x] -> [[x]]
 func_keyby p = go []
