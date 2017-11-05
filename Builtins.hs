@@ -65,7 +65,7 @@ commandsList = [
   ('Ġ', bins "scanr scanr1 scrtp"),
   ('f', bins "filter select"),
   ('L', bins "len nlen"),
-  ('#', bins "countf count count2"),
+  ('#', bins "countf count count' count2"),
   ('N', bins "nats"),
   ('!', bins "index index2"),
   ('↑', bins "take take2 takew"),
@@ -370,6 +370,7 @@ builtinsList = [
   ("repln'",forall "x" [] $ num ~> lst x ~> lst x),
   ("isect", forall "x" [con x] $ lst x ~> lst x ~> lst x),
   ("mean",  simply $ lst num ~> num),
+  ("count'",forall "x" [con x] $ lst x ~> x ~> num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -433,8 +434,8 @@ builtinsList = [
   ("toadjN",forall "xyz" [] $ ((tup x x ~> y) ~> lst (tup x x) ~> z) ~> (x ~> x ~> y) ~> lst x ~> z),
   ("sameon",forall "xy" [con y] $ (x ~> y) ~> lst x ~> num),
   ("sameby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> num),
-  ("keyon",forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
-  ("keyby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst x)),
+  ("keyon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
+  ("keyby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst x)),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

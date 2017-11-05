@@ -601,6 +601,9 @@ func_countf c = genericLength . filter (isTruthy . c)
 func_count :: Concrete a => a -> [a] -> TNum
 func_count x = genericLength . filter (== x)
 
+func_count' :: Concrete a => [a] -> a -> TNum
+func_count' = flip func_count
+
 func_index :: (Husky a) => TNum -> [a] -> a
 func_index _ [] = defVal
 func_index i xs
