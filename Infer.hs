@@ -15,6 +15,89 @@ import Data.List (nub)
 import Control.Monad.State
 import Control.Monad (when, guard)
 
+-- Possible results for enforcing a typeclass
+data Enforce = Enforce {otherCons :: [TClass],       -- "simpler" typeclass constraints
+                        otherUnis :: [(Type, Type)]} -- types to be unified
+
+-- Find a nesting depth at which list-nested t1 equals t2
+eqDepth :: Type -> Type -> Maybe Int
+eqDepth t1 t2 | t1 == t2 = Just 0
+eqDepth (TList t1) (TList t2) = eqDepth t1 t2
+eqDepth t1 (TList t2) = succ <$> eqDepth t1 t2
+eqDepth _ _ = Nothing
+
+-- Find a nesting depth at which list-nested t1 could possibly be unified with t2
+uniDepth :: Type -> Type -> Maybe Int
+uniDepth t1 t2 | unifiable t1 t2 = Just 0
+  where unifiable (TVar _) _ = True
+        unifiable _ (TVar _) = True
+        unifiable t1@(TConc _) t2@(TConc _) = t1 == t2
+        unifiable (TPair l1 r1) (TPair l2 r2) = unifiable l1 l2 && unifiable r1 r2
+        unifiable (TList t1) (TList t2) = unifiable t1 t2
+        unifiable (TFun a1 r1) (TFun a2 r2) = unifiable a1 a2 && unifiable r1 r2
+        unifiable _ _ = False
+uniDepth (TList t1) (TList t2) = uniDepth t1 t2
+uniDepth t1 (TList t2) = succ <$> uniDepth t1 t2
+uniDepth _ _ = Nothing
+
+-- Check typeclass constraint, return constraints and unifications to be enforced
+-- "Nothing" means the constraint failed
+holds :: TClass -> Maybe Enforce
+holds c@(Concrete (TVar _))    = Just $ Enforce [c] []
+holds (Concrete (TConc _))     = Just $ Enforce [] []
+holds (Concrete (TList t))     = holds (Concrete t)
+holds (Concrete (TPair t1 t2)) = do
+  Enforce h1 _ <- holds (Concrete t1)
+  Enforce h2 _ <- holds (Concrete t2)
+  return $ Enforce (h1 ++ h2) []
+holds (Concrete (TFun _ _))    = Nothing
+
+holds c@(Vect t1 t2 s1 s2)
+  | s1 == t1, s2 == t2 = Just $ Enforce [] []
+  | Nothing <- uniDepth t1 s1 = Nothing
+  | Nothing <- uniDepth t2 s2 = Nothing
+  | Just n <- eqDepth t1 s1 = Just $ Enforce [] [(iterate TList t2 !! n, s2)]
+  | Just n <- eqDepth t2 s2 = Just $ Enforce [] [(iterate TList t1 !! n, s1)]
+  | otherwise = Just $ Enforce [c] []
+
+holds c@(Vect2 t1 t2 t3 s1 s2 s3)
+  | TList _ <- t1 = Nothing
+  | TList _ <- t2 = Nothing
+  | TFun _ _ <- t1 = Nothing
+  | TFun _ _ <- t2 = Nothing
+  | TFun _ _ <- t3 = Nothing -- Lists and functions are not bi-vectorizable for now
+  | s1 == t1, s2 == t2, s3 == t3 = Just $ Enforce [] []
+  | Nothing <- uniDepth t1 s1 = Nothing
+  | Nothing <- uniDepth t2 s2 = Nothing
+  | Nothing <- uniDepth t3 s3 = Nothing
+  | Just n1 <- eqDepth t1 s1,
+    Just n2 <- eqDepth t2 s2  = Just $ Enforce [] [(iterate TList t3 !! max n1 n2, s3)]
+  | Just n1 <- eqDepth t1 s1,
+    Just n3 <- eqDepth t3 s3,
+    n1 < n3                   = Just $ Enforce [] [(iterate TList t2 !! n3, s2)]
+  | Just n2 <- eqDepth t2 s2,
+    Just n3 <- eqDepth t3 s3,
+    n2 < n3                   = Just $ Enforce [] [(iterate TList t1 !! n3, s1)]
+  | otherwise = Just $ Enforce [c] []
+
+-- Default typeclass instances, given as unifiable pairs of types
+defInst :: TClass -> [(Type, Type)]
+defInst (Concrete t)       = [(t, TConc TNum)]
+defInst (Vect t1 t2 s1 s2) = [(s1, iterate TList t1 !! max 0 (n2 - n1)),
+                              (s2, iterate TList t2 !! max 0 (n1 - n2))]
+  where Just n1 = uniDepth t1 s1
+        Just n2 = uniDepth t2 s2
+defInst (Vect2 t1 t2 t3 s1 s2 s3)
+  | n1 >= n2  = [(s1, iterate TList t1 !! max 0 (n3 - n1)),
+                 (s2, iterate TList t2 !! n2),
+                 (s3, iterate TList t3 !! max 0 (n1 - n3))]
+  | otherwise = [(s1, iterate TList t1 !! n1),
+                 (s2, iterate TList t2 !! max 0 (n3 - n2)),
+                 (s3, iterate TList t3 !! max 0 (n2 - n3))]
+  where Just n1 = uniDepth t1 s1
+        Just n2 = uniDepth t2 s2
+        Just n3 = uniDepth t3 s3
+
 -- Type substitution: map from type vars to types
 type Sub = Map.Map TLabel Type
 

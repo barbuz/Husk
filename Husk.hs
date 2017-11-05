@@ -8,6 +8,7 @@ import Infer
 import Parser
 import InputParser
 import Codepage
+import Codegen
 import FileQuoter
 import System.Environment (getArgs)
 import System.Console.GetOpt
