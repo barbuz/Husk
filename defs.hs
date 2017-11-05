@@ -1113,7 +1113,7 @@ func_isprime :: TNum -> TNum
 func_isprime = func_oelem $ func_intseq 'p'
 
 func_slices :: [a] -> [[a]]
-func_slices xs = [] : (init . tails =<< inits xs)
+func_slices xs = reverse . init . tails =<< inits xs
 
 func_clone :: TNum -> [a] -> [a]
 func_clone n = concatMap $ func_replic n
