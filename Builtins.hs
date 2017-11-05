@@ -41,7 +41,7 @@ cmd char = error $ "No builtin bound to character " ++ [char]
 commands :: String
 commands = map fst commandsList
 
--- Unused characters: ∟¿⌐$@AHWYZ[]bjlnqvy{}·ΔΦαβγζηθρςτχψ¥ȦḂĊĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
+-- Unused characters: ∟¿⌐$@HWYZ[]bjlnqvy{}·ΔΦαβγζηθρςτχψ¥ȦḂĊĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
 
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
@@ -198,7 +198,8 @@ commandsList = [
   ('Ψ', bins "toadjM toadjL toadjV toadjN"),
   ('Ë', bins "sameon sameby"),
   ('k', bins "keyon keyby"),
-  ('x', bins "split split' splitL")
+  ('x', bins "split split' splitL"),
+  ('A', bins "mean")
   ]
 
 -- Compute builtins from space-delimited list
@@ -368,6 +369,7 @@ builtinsList = [
   ("replen",forall "x" [] $ lst x ~> num ~> lst x),
   ("repln'",forall "x" [] $ num ~> lst x ~> lst x),
   ("isect", forall "x" [con x] $ lst x ~> lst x ~> lst x),
+  ("mean",  simply $ lst num ~> num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

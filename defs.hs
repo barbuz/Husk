@@ -1473,3 +1473,7 @@ func_isect (x:xs) ys | Just zs <- del ys = x : func_isect xs zs
   where del [] = Nothing
         del (y:ys) | y == x    = Just ys
                    | otherwise = (y:) <$> del ys
+
+func_mean :: [TNum] -> TNum
+func_mean [] = 0
+func_mean xs = sum xs / func_len xs
