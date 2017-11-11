@@ -1528,3 +1528,12 @@ func_uwpshw (a, b) = unwords [show a, show b]
 
 func_ulpshw :: (Concrete a, Concrete b) => (a, b) -> [Char]
 func_ulpshw (a, b) = unlines [show a, show b]
+
+func_subset :: (Concrete a) => [a] -> [a] -> TNum
+func_subset _ [] = 1
+func_subset [] _ = 0
+func_subset xs (y:ys) | Just zs <- del y xs = func_subset zs ys
+                      | otherwise           = 0
+  where del a [] = Nothing
+        del a (b:bs) | a == b    = Just bs
+                     | otherwise = (b:) <$> del a bs

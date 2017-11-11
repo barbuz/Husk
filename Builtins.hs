@@ -130,7 +130,7 @@ commandsList = [
   ('ġ', bins "groupOn groupBy"),
   ('ḣ', bins "heads"),
   ('ṫ', bins "tails"),
-  ('¦', bins "divds"),
+  ('¦', bins "divds subset"),
   ('P', bins "perms"),
   ('V', bins "any any2"),
   ('Λ', bins "all all2"),
@@ -381,6 +381,7 @@ builtinsList = [
   ("union", forall "x" [con x] $ lst x ~> lst x ~> lst x),
   ("ucons", forall "x" [con x] $ x ~> lst x ~> lst x),
   ("usnoc", forall "x" [con x] $ lst x ~> x ~> lst x),
+  ("subset",forall "x" [con x] $ lst x ~> lst x ~> num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
