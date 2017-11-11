@@ -41,14 +41,14 @@ cmd char = error $ "No builtin bound to character " ++ [char]
 commands :: String
 commands = map fst commandsList
 
--- Unused characters: ∟¿⌐$@HWYZ[]bjlnqvy{}·ΔΦαβγζηθρςτχψ¥ȦḂĊĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
+-- Unused characters: ∟¿⌐$@HWYZ[]bjlqy{}·ΔΦαβγζηθρςτχψ¥ȦḂĊĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
 
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
 commandsList = [
   ('+', bins "add cat"),
   ('-', bins "sub diffl del"),
-  ('*', bins "mul replen repln' isect"),
+  ('*', bins "mul replen repln' cart2 ccons csnoc"),
   ('/', bins "div"),
   ('÷', bins "idiv"),
   ('%', bins "mod"),
@@ -199,7 +199,9 @@ commandsList = [
   ('Ë', bins "sameon sameby"),
   ('k', bins "keyon keyby"),
   ('x', bins "split split' splitL"),
-  ('A', bins "mean")
+  ('A', bins "mean"),
+  ('n', bins "bwand isect"),
+  ('v', bins "bwor union ucons usnoc")
   ]
 
 -- Compute builtins from space-delimited list
@@ -253,6 +255,8 @@ builtinsList = [
   ("small", simply $ num ~> num),
   ("mod1",  simply $ num ~> num ~> num),
   ("divs",  simply $ num ~> lst num),
+  ("bwand", simply $ num ~> num ~> num),
+  ("bwor",  simply $ num ~> num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
@@ -371,6 +375,12 @@ builtinsList = [
   ("isect", forall "x" [con x] $ lst x ~> lst x ~> lst x),
   ("mean",  simply $ lst num ~> num),
   ("count'",forall "x" [con x] $ lst x ~> x ~> num),
+  ("cart2", forall "x" [] $ lst x ~> lst x ~> lst (lst x)),
+  ("ccons", forall "x" [] $ lst x ~> lst (lst x) ~> lst (lst x)),
+  ("csnoc", forall "x" [] $ lst (lst x) ~> lst x ~> lst (lst x)),
+  ("union", forall "x" [con x] $ lst x ~> lst x ~> lst x),
+  ("ucons", forall "x" [con x] $ x ~> lst x ~> lst x),
+  ("usnoc", forall "x" [con x] $ lst x ~> x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

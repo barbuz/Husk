@@ -1480,3 +1480,44 @@ func_isect (x:xs) ys | Just zs <- del ys = x : func_isect xs zs
 func_mean :: [TNum] -> TNum
 func_mean [] = 0
 func_mean xs = sum xs / func_len xs
+
+func_cart2 :: [a] -> [a] -> [[a]]
+func_cart2 xs ys = [[x,y] | x <- xs, y <- ys]
+
+func_ccons :: [a] -> [[a]] -> [[a]]
+func_ccons xs yss = [x:ys | x <- xs, ys <- yss]
+
+func_csnoc :: [[a]] -> [a] -> [[a]]
+func_csnoc xss ys = [xs++[y] | xs <- xss, y <- ys]
+
+func_bwand :: TNum -> TNum -> TNum
+func_bwand r s
+  | (m, a) <- properFraction r,
+    (n, b) <- properFraction s = go (1/2) (TInt $ m .&. n) a b
+  where go _ t 0 _ = t
+        go _ t _ 0 = t
+        go d t x y | t == t+d     = t
+                   | x < d, y < d = go (d/2) t x y
+                   | x < d        = go (d/2) t x (y-d)
+                   | y < d        = go (d/2) t (x-d) y
+                   | otherwise    = go (d/2) (t+d) (x-d) (y-d)
+
+func_bwor :: TNum -> TNum -> TNum
+func_bwor r s
+  | (m, a) <- properFraction r,
+    (n, b) <- properFraction s = go (1/2) (TInt $ m .|. n) a b
+  where go _ t 0 0 = t
+        go d t x y | t == t+d     = t
+                   | x < d, y < d = go (d/2) t x y
+                   | x < d        = go (d/2) (t+d) x (y-d)
+                   | y < d        = go (d/2) (t+d) (x-d) y
+                   | otherwise    = go (d/2) (t+d) (x-d) (y-d)
+
+func_union :: Concrete x => [x] -> [x] -> [x]
+func_union xs ys = (filter (`notElem` ys) $ nub xs) ++ ys
+
+func_ucons :: Concrete x => x -> [x] -> [x]
+func_ucons x ys = if x `elem` ys then ys else x:ys
+
+func_usnoc :: Concrete x => [x] -> x -> [x]
+func_usnoc xs y = if y `elem` xs then xs else xs++[y]
