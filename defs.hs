@@ -1521,3 +1521,10 @@ func_ucons x ys = if x `elem` ys then ys else x:ys
 
 func_usnoc :: Concrete x => [x] -> x -> [x]
 func_usnoc xs y = if y `elem` xs then xs else xs++[y]
+
+
+func_uwpshw :: (Concrete a, Concrete b) => (a, b) -> [Char]
+func_uwpshw (a, b) = unwords [show a, show b]
+
+func_ulpshw :: (Concrete a, Concrete b) => (a, b) -> [Char]
+func_ulpshw (a, b) = unlines [show a, show b]
