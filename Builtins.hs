@@ -41,7 +41,7 @@ cmd char = error $ "No builtin bound to character " ++ [char]
 commands :: String
 commands = map fst commandsList
 
--- Unused characters: ∟¿⌐$@HWYZ[]bjlqy{}ΔΦαβγζηθρςτχψ¥ȦḂĊĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
+-- Unused characters: ∟¿⌐$@HWYZ[]bjlqy{}ΔΦαβγζηθρςτχψ¥ȦḂĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
 
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
@@ -159,7 +159,7 @@ commandsList = [
   ('^', bins "power"),
   ('□', bins "square isanum"),
   ('√', bins "sqrt isalph"),
-  ('C', bins "cut cuts"),
+  ('C', bins "cut cut2 cuts"),
   ('X', bins "slice"),
   ('Ẋ', bins "mapad2 mapad3"),
   ('J', bins "join join' joinE joinV"),
@@ -202,7 +202,8 @@ commandsList = [
   ('A', bins "mean"),
   ('n', bins "bwand isect"),
   ('v', bins "bwor union ucons usnoc"),
-  ('·', bins "comf")
+  ('·', bins "comf"),
+  ('Ċ', bins "gaps gaps2 gapsL")
   ]
 
 -- Compute builtins from space-delimited list
@@ -324,6 +325,7 @@ builtinsList = [
   ("replif",forall "x" [] $ x ~> num ~> lst x),
   ("cuts",  forall "x" [] $ lst num ~> lst x ~> lst (lst x)),
   ("cut",   forall "x" [] $ num ~> lst x ~> lst (lst x)),
+  ("cut2",  forall "x" [] $ lst x ~> num ~> lst (lst x)),
   ("slice", forall "x" [] $ num ~> lst x ~> lst (lst x)),
   ("join",  forall "x" [] $ lst x ~> lst (lst x) ~> lst x),
   ("join'", forall "x" [] $ x ~> lst (lst x) ~> lst x),
@@ -383,6 +385,9 @@ builtinsList = [
   ("ucons", forall "x" [con x] $ x ~> lst x ~> lst x),
   ("usnoc", forall "x" [con x] $ lst x ~> x ~> lst x),
   ("subset",forall "x" [con x] $ lst x ~> lst x ~> num),
+  ("gaps",  forall "x" [] $ num ~> lst x ~> lst x),
+  ("gaps2", forall "x" [] $ lst x ~> num ~> lst x),
+  ("gapsL", forall "x" [] $ lst num ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

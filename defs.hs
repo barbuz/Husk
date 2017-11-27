@@ -1454,3 +1454,17 @@ func_subset xs (y:ys) | Just zs <- del y xs = func_subset zs ys
 
 func_comf :: (x -> y -> z) -> (u -> y) -> x -> u -> z
 func_comf f g = \x y -> f x $ g y
+
+func_gaps :: (Husky a) => TNum -> [a] -> [a]
+func_gaps n = func_gapsL $ repeat n
+
+func_gaps2 :: (Husky a) => [a] -> TNum -> [a]
+func_gaps2 = flip func_gaps
+
+func_gapsL :: (Husky a) => [TNum] -> [a] -> [a]
+func_gapsL ns = concat . zipWith go ns . func_cuts (abs <$> ns)
+  where go n | n < 0     = func_drop (-n-1)
+             | otherwise = func_take 1
+
+func_cut2 :: [a] -> TNum -> [[a]]
+func_cut2 = flip func_cut
