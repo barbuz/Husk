@@ -1451,3 +1451,6 @@ func_subset xs (y:ys) | Just zs <- del y xs = func_subset zs ys
   where del a [] = Nothing
         del a (b:bs) | a == b    = Just bs
                      | otherwise = (b:) <$> del a bs
+
+func_comf :: (x -> y -> z) -> (u -> y) -> x -> u -> z
+func_comf f g = \x y -> f x $ g y
