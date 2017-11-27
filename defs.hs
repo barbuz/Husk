@@ -1277,7 +1277,7 @@ func_rmaptp f (x, y) = (x, f y)
 
 
 func_adiags :: [[a]] -> [[a]]
-func_adiags = init . go 1
+func_adiags = func_init . go 1
   where go _ [] = []
         go n xss =
           let (prefix, suffix) = splitAt n xss
