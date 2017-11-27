@@ -2,32 +2,27 @@
 
 import Numeric (showFFloat)
 
--- Type of numeric values
-data TNum = TInt Integer
-          | TDbl Double
-          | PInfty
-          | NInfty
+-- Type of numeric values: integer fractions and Doubles
+--  1:%0 is infinity
+-- -1:%0 is negative infinity
+--  0:%0 is Any
+data TNum = !Integer :% !Integer
+          | TDbl !Double
+
+-- Convert to Double
+doublify :: TNum -> Double
+doublify (p :% q) = fromInteger p / fromInteger q
+doublify (TDbl a) = a
 
 instance Eq TNum where
-  TInt a == TInt b = a == b
-  TInt a == TDbl b = fromInteger a == b
-  TDbl a == TInt b = a == fromInteger b
-  TDbl a == TDbl b = a == b
-  PInfty == PInfty = True
-  NInfty == NInfty = True
-  _ == _           = False
+  p :% 0 == q :% 0 = p == q
+  p :% q == r :% s = p*s == q*r
+  x == y           = doublify x == doublify y
 
 instance Ord TNum where
-  compare (TInt a) (TInt b) = compare a b
-  compare (TInt a) (TDbl b) = compare (fromInteger a) b
-  compare (TDbl a) (TInt b) = compare a (fromInteger b)
-  compare (TDbl a) (TDbl b) = compare a b
-  compare PInfty PInfty     = EQ
-  compare PInfty _          = GT
-  compare NInfty NInfty     = EQ
-  compare NInfty _          = LT
-  compare _ PInfty          = LT
-  compare _ NInfty          = GT
+  compare (p :% 0) (r :% 0) = compare p r
+  compare (p :% q) (r :% s) = compare (p*s) (q*r)
+  compare x y               = compare (doublify x) (doublify y)
 
 boolToNum :: Bool -> TNum
 boolToNum True = 1
@@ -35,89 +30,71 @@ boolToNum False = 0
 
 -- Instances for TNum
 instance Show TNum where
-  show (TInt n) = show n
+  show (p :% 1)    = show p
+  show (1 :% 0)    = "Inf"
+  show (0 :% 0)    = "Any"
+  show ((-1) :% 0) = "-Inf"
+  show (p :% q)    = show p ++ "/" ++ show q
   show (TDbl d) = showFFloat Nothing d ""
-  show PInfty   = "Inf"
-  show NInfty   = "-Inf"
 
 instance Read TNum where
   readsPrec n str
-    | p@(_:_) <- tryInt           = [(TInt k, rest) | (k, rest) <- p]
+    | p@(_:_) <- tryInt,
+      x@(_:_) <- [(k, q) | (k, '/':rest) <- p, q <- readsPrec n rest]
+    = [(cancel $ k :% m, rest2) | (k, (m, rest2)) <- x]
+    | p@(_:_) <- tryInt           = [(k :% 1, rest) | (k, rest) <- p]
     | p@(_:_) <- tryDbl           = [(TDbl k, rest) | (k, rest) <- p]
-    | 'I':'n':'f':rest <- str     = [(PInfty, rest)]
-    | '-':'I':'n':'f':rest <- str = [(NInfty, rest)]
+    | 'I':'n':'f':rest <- str     = [(1 :% 0, rest)]
+    | 'A':'n':'y':rest <- str     = [(0 :% 0, rest)]
+    | '-':'I':'n':'f':rest <- str = [((-1) :% 0, rest)]
     | otherwise                   = []
     where tryInt = readsPrec n str :: [(Integer, String)]
           tryDbl = readsPrec n str :: [(Double, String)]
 
+-- Simplify a fraction
+cancel :: TNum -> TNum
+cancel (p :% 0) = signum p :% 0
+cancel (p :% q)
+  | k <- signum q * p,
+    n <- abs q,
+    r <- gcd k n
+  = div k r :% div n r
+cancel a = a
+
+-- Create a binary numeric operator
+-- operate f (!) applies f to fractions and (!) to Doubles,
+-- converting fractions to Doubles when necessary
+operate :: (Integer -> Integer -> Integer -> Integer -> (Integer, Integer)) -> (Double -> Double -> TNum) -> TNum -> TNum -> TNum
+operate f _ (p :% q) (r :% s) | (x, y) <- f p q r s = cancel $ x :% y
+operate _ (!) a b = doublify a ! doublify b
+          
 instance Num TNum where
-  TInt a + TInt b = TInt $ a + b
-  TInt a + TDbl b = TDbl $ fromInteger a + b
-  TDbl a + TInt b = TDbl $ a + fromInteger b
-  TDbl a + TDbl b = TDbl $ a + b
-  PInfty + NInfty = TInt 0
-  PInfty + _      = PInfty
-  NInfty + PInfty = TInt 0
-  NInfty + _      = NInfty
-  _      + PInfty = PInfty
-  _      + NInfty = NInfty
+  (+) = operate (\p q r s -> (p*s + r*q, q*s)) ((TDbl .) . (+))
 
-  TInt a - TInt b = TInt $ a - b
-  TInt a - TDbl b = TDbl $ fromInteger a - b
-  TDbl a - TInt b = TDbl $ a - fromInteger b
-  TDbl a - TDbl b = TDbl $ a - b
-  PInfty - PInfty = TInt 0
-  PInfty - _      = PInfty
-  NInfty - NInfty = TInt 0
-  NInfty - _      = NInfty
-  _      - PInfty = NInfty
-  _      - NInfty = PInfty
+  (-) = operate (\p q r s -> (p*s - r*q, q*s)) ((TDbl .) . (-))
   
-  TInt a * TInt b = TInt $ a * b
-  TInt a * TDbl b = TDbl $ fromInteger a * b
-  TDbl a * TInt b = TDbl $ a * fromInteger b
-  TDbl a * TDbl b = TDbl $ a * b
-  PInfty * n      = case compare n 0 of
-    GT -> PInfty
-    EQ -> TInt 0
-    LT -> NInfty
-  n * PInfty      = PInfty * n
-  NInfty * n      = case compare n 0 of
-    GT -> NInfty
-    EQ -> TInt 0
-    LT -> PInfty
-  n * NInfty      = NInfty * n
+  (*) = operate (\p q r s -> (p*r, q*s)) ((TDbl .) . (*))
 
-  abs (TInt a) = TInt $ abs a
+  abs (p :% q) = abs p :% q
   abs (TDbl a) = TDbl $ abs a
-  abs PInfty   = PInfty
-  abs NInfty   = PInfty
 
-  signum (TInt a) = TInt $ signum a
-  signum (TDbl a) = TDbl $ signum a
-  signum PInfty   = TInt 1
-  signum NInfty   = TInt (-1)
+  signum (p :% _) = signum p :% 1
+  signum (TDbl a) = round (signum a) :% 1
 
-  negate (TInt a) = TInt $ negate a
+  negate (p :% q) = negate p :% q
   negate (TDbl a) = TDbl $ negate a
-  negate PInfty   = NInfty
-  negate NInfty   = PInfty
 
-  fromInteger = TInt
+  fromInteger = (:% 1)
 
 instance Real TNum where
-  toRational (TInt a) = toRational a
+  toRational (p :% q) = p % q
   toRational (TDbl a) = toRational a
-  toRational PInfty   = error "Infinity is not rational."
-  toRational NInfty   = error "Infinity is not rational."
 
 instance Enum TNum where
-  toEnum n = TInt $ toEnum n
+  toEnum n = toEnum n :% 1
   
-  fromEnum (TInt n) = fromEnum n
+  fromEnum (p :% q) = fromEnum $ p % q
   fromEnum (TDbl n) = fromEnum n
-  fromEnum PInfty   = maxBound
-  fromEnum NInfty   = minBound
   
   succ = (+1)
   pred = (-1+)
@@ -139,133 +116,66 @@ instance Enum TNum where
     (LT, LT) -> takeWhile (<= c) $ iterate (+(b-a)) a
 
 instance Integral TNum where
-  toInteger (TInt n) = n
+  toInteger (p :% q) = div p q
   toInteger (TDbl d) = truncate d
-  toInteger PInfty   = error "Infinity is not integral."
-  toInteger NInfty   = error "Infinity is not integral."
   
-  quotRem (TInt a) (TInt b) | (x, y) <- quotRem a b = (TInt x, TInt y)
-  quotRem (TInt a) b        = quotRem (TDbl $ fromInteger a) b
-  quotRem a        (TInt b) = quotRem a (TDbl $ fromInteger b)
-  quotRem (TDbl a) (TDbl b) = (TInt $ truncate $ a / b, TDbl $ a - b * fromInteger (truncate $ a / b))
-  quotRem PInfty PInfty     = (TInt 1, TInt 0)
-  quotRem PInfty NInfty     = (TInt (-1), TInt 0)
-  quotRem PInfty a          = (signum a * PInfty, TInt 0)
-  quotRem NInfty PInfty     = (TInt (-1), TInt 0)
-  quotRem NInfty NInfty     = (TInt 1, TInt 0)
-  quotRem NInfty a          = (signum a * NInfty, TInt 0)
-  quotRem a PInfty          = (TInt 0, a)
-  quotRem a NInfty          = (TInt 0, -a)
+  quotRem a@(_ :% _) b@(_ :% _)
+    | d@(p :% q) <- a / b,
+      k <- div p q :% 1
+    = if q == 0
+      then (d, a * signum d)
+      else (k, a - b*k)
+  quotRem a b
+    | x <- doublify a,
+      y <- doublify b,
+      r <- truncate $ x / y
+    = (r :% 1, TDbl $ x - y * fromInteger r)
 
 instance Fractional TNum where
-  fromRational r = TDbl $ fromRational r
+  fromRational r = numerator r :% denominator r
 
-  TInt a / TInt b = fixInf $ TDbl $ fromInteger a / fromInteger b
-  TInt a / TDbl b = fixInf $ TDbl $ fromInteger a / b
-  TDbl a / TInt b = fixInf $ TDbl $ a / fromInteger b
-  TDbl a / TDbl b = fixInf $ TDbl $ a / b
-  PInfty / PInfty = TInt 1
-  PInfty / NInfty = TInt (-1)
-  PInfty / a      = case compare a 0 of
-    GT -> PInfty
-    EQ -> PInfty
-    LT -> NInfty
-  NInfty / PInfty = TInt (-1)
-  NInfty / NInfty = TInt 1
-  NInfty / a      = case compare a 0 of
-    GT -> NInfty
-    EQ -> NInfty
-    LT -> PInfty
-  _      / PInfty = TInt 0
-  _      / NInfty = TInt 0
+  (/) = operate
+          (\p q r s -> (p*s, q*r))
+          (\x y -> if y == 0
+                   then round (signum x) :% 0
+                   else TDbl $ x/y)
 
-fixInf a@(TDbl x)
-  | isInfinite x = PInfty * a
-  | otherwise    = a
-
+-- Lift a numeric function to TNums
+-- The extra arguments are results for Inf and -Inf
+numeric :: (Double -> Double) -> TNum -> TNum -> (TNum -> TNum)
+numeric f pinf ninf = g
+  where g (1 :% 0)    = pinf
+        g (0 :% 0)    = 0 :% 0
+        g ((-1) :% 0) = ninf
+        g x           = TDbl $ f $ doublify x
+  
 instance Floating TNum where
   pi = TDbl pi
 
-  exp (TDbl a) = TDbl $ exp a
-  exp (TInt a) = TDbl $ exp $ fromInteger a
-  exp PInfty   = PInfty
-  exp NInfty   = TInt 0
+  exp = numeric exp (1 :% 0) 0
+  log = numeric log (1 :% 0) 0
+  sqrt = numeric sqrt (1 :% 0) ((-1) :% 0)
 
-  log (TDbl a) = TDbl $ log a
-  log (TInt a) = TDbl $ log $ fromInteger a
-  log PInfty   = PInfty
-  log NInfty   = error "Cannot take logarithm of negative number."
+  sin = numeric sin 0 0
+  cos = numeric cos 0 0
+  tan = numeric tan 0 0
 
-  sqrt (TDbl a) = TDbl $ sqrt a
-  sqrt (TInt a) = TDbl $ sqrt $ fromInteger a
-  sqrt PInfty   = PInfty
-  sqrt NInfty   = NInfty
+  asin = numeric asin 0 0
+  acos = numeric acos 0 0
+  atan = numeric atan (pi/2) (-pi/2)
 
-  sin (TDbl a) = TDbl $ sin a
-  sin (TInt a) = TDbl $ sin $ fromInteger a
-  sin PInfty   = TInt 0
-  sin NInfty   = TInt 0
+  sinh = numeric sinh (1 :% 0) ((-1) :% 0)
+  cosh = numeric cosh (1 :% 0) (1 :% 0)
+  tanh = numeric tanh 1 (-1)
 
-  cos (TDbl a) = TDbl $ cos a
-  cos (TInt a) = TDbl $ cos $ fromInteger a
-  cos PInfty   = TInt 0
-  cos NInfty   = TInt 0
-
-  tan (TDbl a) = TDbl $ tan a
-  tan (TInt a) = TDbl $ tan $ fromInteger a
-  tan PInfty   = TInt 0
-  tan NInfty   = TInt 0
-
-  asin (TDbl a) = TDbl $ asin a
-  asin (TInt a) = TDbl $ asin $ fromInteger a
-  asin PInfty   = error "Cannot take inverse sin of infinity."
-  asin NInfty   = error "Cannot take inverse sin of infinity."
-
-  acos (TDbl a) = TDbl $ acos a
-  acos (TInt a) = TDbl $ acos $ fromInteger a
-  acos PInfty   = error "Cannot take inverse cos of infinity."
-  acos NInfty   = error "Cannot take inverse cos of infinity."
-
-  atan (TDbl a) = TDbl $ atan a
-  atan (TInt a) = TDbl $ atan $ fromInteger a
-  atan PInfty   = pi/2
-  atan NInfty   = -pi/2
-
-  sinh (TDbl a) = TDbl $ sinh a
-  sinh (TInt a) = TDbl $ sinh $ fromInteger a
-  sinh PInfty   = PInfty
-  sinh NInfty   = NInfty
-
-  cosh (TDbl a) = TDbl $ cosh a
-  cosh (TInt a) = TDbl $ cosh $ fromInteger a
-  cosh PInfty   = PInfty
-  cosh NInfty   = PInfty
-  
-  tanh (TDbl a) = TDbl $ tanh a
-  tanh (TInt a) = TDbl $ tanh $ fromInteger a
-  tanh PInfty   = TInt 1
-  tanh NInfty   = TInt (-1)
-
-  asinh (TDbl a) = TDbl $ asinh a
-  asinh (TInt a) = TDbl $ asinh $ fromInteger a
-  asinh PInfty   = PInfty
-  asinh NInfty   = NInfty
-
-  acosh (TDbl a) = TDbl $ acosh a
-  acosh (TInt a) = TDbl $ acosh $ fromInteger a
-  acosh PInfty   = PInfty
-  acosh NInfty   = error "Cannot take inverse cosh of infinity."
-
-  atanh (TDbl a) = TDbl $ atanh a
-  atanh (TInt a) = TDbl $ atanh $ fromInteger a
-  atanh PInfty   = error "Cannot take inverse tanh of infinity."
-  atanh NInfty   = error "Cannot take inverse tanh of infinity."
+  asinh = numeric asinh (1 :% 0) ((-1) :% 0)
+  acosh = numeric acosh (1 :% 0) 0
+  atanh = numeric atanh 0 0
 
 instance RealFrac TNum where
-  properFraction (TInt a) = (fromInteger a, TInt 0)
+  properFraction a@(_ :% 0) = (0, a)
+  properFraction (p :% q) | r <- div p q = (fromInteger r, (p - r) :% q)
   properFraction (TDbl a) | (n, r) <- properFraction a = (n, TDbl r)
-  properFraction PInfty   = (0, PInfty)
-  properFraction NInfty   = (0, NInfty)
 
 -- Class of all Husk types (used for defaulting)
 
@@ -346,7 +256,7 @@ func_and' x y = func_and (toTruthy x) (toTruthy y)
 
 instance Concrete TNum where
   isTruthy = (/= 0)
-  toTruthy (TDbl d) = TInt $ roundAway d
+  toTruthy (TDbl d) = roundAway d :% 1
   toTruthy n = n
   func_true = 1
   func_lt y x = max 0 $ toTruthy (y-x)
@@ -357,8 +267,8 @@ instance Concrete TNum where
               | otherwise = toTruthy $ x-y+1
   func_neq y x = abs $ toTruthy (x-y)
   
-  func_maxval = PInfty
-  func_minval = NInfty
+  func_maxval = 1 :% 0
+  func_minval = (-1) :% 0
   
   func_congr 0 0 = 1
   func_congr 0 _ = 0
@@ -516,8 +426,8 @@ func_inv = recip
 
 -- Triangular numbers: sum of all numbers in [1..n]
 func_trian :: TNum -> TNum
-func_trian (TInt n) = TInt $ div (n*(n+1)) 2
-func_trian (TDbl r) = TDbl $ r*(r+1)/2
+func_trian (p :% 1) = div (p*(p+1)) 2 :% 1
+func_trian r        = r*(r+1)/2
 
 func_fact :: TNum -> TNum
 func_fact n = product [1..n]
@@ -607,10 +517,11 @@ func_count' = flip func_count
 func_index :: (Husky a) => TNum -> [a] -> a
 func_index _ [] = defVal
 func_index i xs
-  | PInfty <- i   = last xs
-  | NInfty <- i   = head xs
-  | toInteger i>0 = genericIndex (cycle xs) $ toInteger i-1
-  | otherwise     = genericIndex (cycle $ reverse xs) $ -toInteger i
+  | (1 :% 0) <- i    = last xs
+  | (0 :% 0) <- i    = defVal
+  | ((-1) :% 0) <- i = head xs
+  | toInteger i>0    = genericIndex (cycle xs) $ toInteger i-1
+  | otherwise        = genericIndex (cycle $ reverse xs) $ -toInteger i
 
 func_index2 :: (Husky a) => [a] -> TNum -> a
 func_index2 = flip func_index
@@ -940,8 +851,7 @@ func_combin :: (b -> b -> c) -> (a -> b) -> a -> a -> c
 func_combin f g x y = f (g x) (g y)
 
 func_n2i :: TNum -> TNum
-func_n2i n@(TInt _) = n
-func_n2i (TDbl d) = TInt $ floor $ d+0.5 --round halves towards positive infinity
+func_n2i x = func_floor $ x+1/2 --round halves towards positive infinity
 
 func_c2i :: Char -> TNum
 func_c2i c | Just i <- elemIndex c "0123456789" = fromIntegral i
@@ -1038,12 +948,11 @@ func_double :: TNum -> TNum
 func_double = (* 2)
 
 func_halve :: TNum -> TNum
-func_halve (TInt n) | mod n 2 == 0 = TInt $ div n 2
 func_halve n = n / 2
 
 -- a b -> b^a
 func_power :: TNum -> TNum -> TNum
-func_power (TInt m) n
+func_power (m :% 1) n
   | m >= 0    = n^m
   | otherwise = n^^m
 func_power m n = n**m
@@ -1051,15 +960,18 @@ func_power m n = n**m
 func_square :: TNum -> TNum
 func_square n = n * n
 
--- Should return an integer if input is perfect square
+-- Should return a rational if input is a perfect square
 func_sqrt :: TNum -> TNum
 func_sqrt n | n < 0 = -func_sqrt (-n)
-func_sqrt (TInt n) = go n $ div (n+1) 2
-  where go a b | a <= b,
-                 a*a == n  = TInt a
-               | a <= b    = func_sqrt $ TDbl $ fromInteger n
-               | otherwise = go b $ div (b + div n b) 2
-func_sqrt d = d**(0.5)
+func_sqrt (p :% q) | Just r <- isqrt p,
+                     Just s <- isqrt q
+                   = r :% s
+  where isqrt n = go n $ div (n+1) 2
+          where go a b | a <= b,
+                         a*a == n  = Just a
+                       | a <= b    = Nothing
+                       | otherwise = go b $ div (b + div n b) 2
+func_sqrt d = d**(1/2)
 
 hasLength m [] = m <= 0
 hasLength m (x:xs) = m <= 0 || hasLength (m-1) xs
@@ -1162,10 +1074,12 @@ func_swcase :: Char -> Char
 func_swcase c = if C.isUpper c then C.toLower c else C.toUpper c
 
 func_ceil :: TNum -> TNum
-func_ceil = ceiling
+func_ceil a@(_ :% 0) = a
+func_ceil x = ceiling x
 
 func_floor :: TNum -> TNum
-func_floor = floor
+func_floor a@(_ :% 0) = a
+func_floor x = floor x
 
 func_gcd :: TNum -> TNum -> TNum
 func_gcd = gcd
@@ -1493,7 +1407,7 @@ func_csnoc xss ys = [xs++[y] | xs <- xss, y <- ys]
 func_bwand :: TNum -> TNum -> TNum
 func_bwand r s
   | (m, a) <- properFraction r,
-    (n, b) <- properFraction s = go (1/2) (TInt $ m .&. n) a b
+    (n, b) <- properFraction s = go (1/2) ((m .&. n) :% 1) a b
   where go _ t 0 _ = t
         go _ t _ 0 = t
         go d t x y | t == t+d     = t
@@ -1505,7 +1419,7 @@ func_bwand r s
 func_bwor :: TNum -> TNum -> TNum
 func_bwor r s
   | (m, a) <- properFraction r,
-    (n, b) <- properFraction s = go (1/2) (TInt $ m .|. n) a b
+    (n, b) <- properFraction s = go (1/2) ((m .|. n) :% 1) a b
   where go _ t 0 0 = t
         go d t x y | t == t+d     = t
                    | x < d, y < d = go (d/2) t x y

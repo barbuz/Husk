@@ -28,11 +28,14 @@ number :: InputParser
 number = do
   minus <- optionMaybe $ char '-'
   prefix <- many1 digit
-  suffix <- optionMaybe $ char '.' >> many1 digit
+  suffix <- optionMaybe $ do
+    sep <- oneOf "./"
+    rest <- many1 digit
+    return (sep:rest)
   let number = case (minus, suffix) of
-        (Just _, Just suffix)  -> '-' : prefix ++ "." ++ suffix
+        (Just _, Just suffix)  -> '-' : prefix ++ suffix
         (Just _, Nothing)      -> '-' : prefix
-        (Nothing, Just suffix) -> prefix ++ "." ++ suffix
+        (Nothing, Just suffix) -> prefix ++ suffix
         (Nothing, Nothing)     -> prefix
   return $ Just (number, TConc TNum)
 
