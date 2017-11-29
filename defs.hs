@@ -1038,13 +1038,9 @@ func_isprime p | n :% 1 <- p,
       | elem n [2,3,5,7] = True
       | any (\p -> rem n p == 0) [2,3,5,7] = False
       | not $ fermatProbPrime 2 n = False
-      | not $ fermatProbPrime 3 n = False
-      -- TODO: Fix the Lucas test (it's currently broken)
-      {-
       | Nothing <- isqrt n,
         d <- [d | d <- zipWith (*) [5,7..] $ cycle [1, -1], jacobi d n == -1]!!0
       = lucasProbPrime d n
-      -}
       | otherwise = True
     oddify :: Integer -> (Integer, Integer)
     oddify k
@@ -1056,11 +1052,12 @@ func_isprime p | n :% 1 <- p,
       = rem (a^d) n == 1 || or [rem (a^(d*(2^r))) n == n-1 | r <- [0..s-1]]
       | otherwise = False
     jacobi :: Integer -> Integer -> Integer
+    jacobi _ 1 = 1
     jacobi 1 _ = 1
     jacobi 0 _ = 0
     jacobi a k
       | a < 0 || a >= k = jacobi (mod a k) k
-      | even a          = (-1)^(mod(k*k-1)8) * jacobi (div a 2) k
+      | even a          = (-1)^(div(k*k-1)8) * jacobi (div a 2) k
       | gcd a k > 1     = 0
       | otherwise       = (-1)^(div((a-1)*(k-1))4) * jacobi k a
     -- For Lucas sequences, we choose P = 1, Q = (1-D)/4
