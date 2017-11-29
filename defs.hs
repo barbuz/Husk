@@ -966,12 +966,14 @@ func_sqrt n | n < 0 = -func_sqrt (-n)
 func_sqrt (p :% q) | Just r <- isqrt p,
                      Just s <- isqrt q
                    = r :% s
-  where isqrt n = go n $ div (n+1) 2
-          where go a b | a <= b,
-                         a*a == n  = Just a
-                       | a <= b    = Nothing
-                       | otherwise = go b $ div (b + div n b) 2
 func_sqrt d = d**(1/2)
+
+isqrt :: Integer -> Maybe Integer
+isqrt n = go n $ div (n+1) 2
+  where go a b | a <= b,
+                 a*a == n  = Just a
+               | a <= b    = Nothing
+               | otherwise = go b $ div (b + div n b) 2
 
 hasLength m [] = m <= 0
 hasLength m (x:xs) = m <= 0 || hasLength (m-1) xs
@@ -1025,7 +1027,57 @@ func_oelem' :: Concrete a => a -> [a] -> TNum
 func_oelem' = flip func_oelem
 
 func_isprime :: TNum -> TNum
-func_isprime = func_oelem $ func_intseq 'p'
+func_isprime p | n :% 1 <- p,
+                 n >= 2,
+                 probablePrime n
+               = func_oelem (func_intseq 'p') p
+               | otherwise = 0
+  where
+    probablePrime :: Integer -> Bool
+    probablePrime n
+      | elem n [2,3,5,7] = True
+      | any (\p -> rem n p == 0) [2,3,5,7] = False
+      | not $ fermatProbPrime 2 n = False
+      | not $ fermatProbPrime 3 n = False
+      -- TODO: Fix the Lucas test (it's currently broken)
+      {-
+      | Nothing <- isqrt n,
+        d <- [d | d <- zipWith (*) [5,7..] $ cycle [1, -1], jacobi d n == -1]!!0
+      = lucasProbPrime d n
+      -}
+      | otherwise = True
+    oddify :: Integer -> (Integer, Integer)
+    oddify k
+      | even k, (d, s) <- oddify (div k 2) = (d, s+1)
+      | otherwise = (k, 0)
+    fermatProbPrime :: Integer -> Integer -> Bool
+    fermatProbPrime a n
+      | (d, s) <- oddify $ n-1
+      = rem (a^d) n == 1 || or [rem (a^(d*(2^r))) n == n-1 | r <- [0..s-1]]
+      | otherwise = False
+    jacobi :: Integer -> Integer -> Integer
+    jacobi 1 _ = 1
+    jacobi 0 _ = 0
+    jacobi a k
+      | a < 0 || a >= k = jacobi (mod a k) k
+      | even a          = (-1)^(mod(k*k-1)8) * jacobi (div a 2) k
+      | gcd a k > 1     = 0
+      | otherwise       = (-1)^(div((a-1)*(k-1))4) * jacobi k a
+    -- For Lucas sequences, we choose P = 1, Q = (1-D)/4
+    lucasUVQ :: Integer -> Integer -> Integer -> (Integer, Integer, Integer)
+    lucasUVQ n d = go
+      where q = div (1-d) 4
+            toEven r | odd r = r + n
+                     | otherwise = r
+            go 0 = (0, 2, 1)
+            go 1 = (1, 1, q)
+            go k | even k, (u, v, qk) <- go $ div k 2 = (rem (u*v) n, rem (v*v - 2*qk) n, rem (qk*qk) n)
+                 | (u, v, qk) <- go $ k-1 = (div (toEven $ u + v) 2, div (toEven $ d*u + v) 2, rem (qk*q) n)
+    -- For the Lucas test, we choose P = 1
+    lucasProbPrime :: Integer -> Integer -> Bool
+    lucasProbPrime d n
+      | (u, _, _) <- lucasUVQ n d (n+1)
+      = mod u n == 0
 
 func_slices :: [a] -> [[a]]
 func_slices xs = reverse . init . tails =<< inits xs
