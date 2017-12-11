@@ -278,8 +278,10 @@ instance Concrete TNum where
   func_simil x y | abs (x-y) <= 1 = 1
                  | otherwise      = 0
   
-  func_heads x = [1..x]
-  func_tails x = [x,x-1..1]
+  func_heads x | x >= 0    = [1 .. x]
+               | otherwise = [x .. -1]
+  func_tails x | x >= 0    = [x, x-1 .. 1]
+               | otherwise = [-1, -2 .. x]
 
 instance Concrete Char where
   isTruthy = not . C.isSpace
@@ -1156,10 +1158,12 @@ func_powstN n
           | otherwise = map (x:) (only (n-1) xs) `merge2` only n xs
 
 func_rangeN :: TNum -> TNum -> [TNum]
-func_rangeN a b = [a .. b]
+func_rangeN a b | a <= b    = [a .. b]
+                | otherwise = [a, a-1 .. b]
 
 func_rangeC :: Char -> Char -> [Char]
-func_rangeC a b = [a .. b]
+func_rangeC a b | a <= b    = [a .. b]
+                | otherwise = [a, pred a .. b]
 
 func_find :: (Husky a, Concrete b) => (a -> b) -> [a] -> a
 func_find f = func_head . func_filter f
@@ -1334,7 +1338,8 @@ func_adiags = func_init . go 1
           in diag : go (length diag + 1) (rests ++ suffix)
 
 func_lrange :: TNum -> [TNum]
-func_lrange n = [0 .. n-1]
+func_lrange n | n >= 0    = [0 .. n-1]
+              | otherwise = [n+1 .. 0]
 
 func_ixes :: [x] -> [TNum]
 func_ixes = zipWith const [1..]
