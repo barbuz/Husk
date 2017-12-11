@@ -94,7 +94,7 @@ commandsList = [
   ('I', bins "id"),
   ('`', bins "flip"),
   ('Γ', bins "list listN listF listNF"),
-  ('Σ', bins "sum trian concat"),
+  ('Σ', bins "sum chrsum trian concat"),
   ('Π', bins "prod fact cartes"),
   ('§', bins "fork fork2"),
   ('´', bins "argdup"),
@@ -388,6 +388,7 @@ builtinsList = [
   ("gaps",  forall "x" [] $ num ~> lst x ~> lst x),
   ("gaps2", forall "x" [] $ lst x ~> num ~> lst x),
   ("gapsL", forall "x" [] $ lst num ~> lst x ~> lst x),
+  ("chrsum",simply $ lst chr ~> num),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

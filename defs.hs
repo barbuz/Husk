@@ -1522,3 +1522,6 @@ func_gapsL ns = concat . zipWith go ns . func_cuts (abs <$> ns)
 
 func_cut2 :: [a] -> TNum -> [[a]]
 func_cut2 = flip func_cut
+
+func_chrsum :: [Char] -> TNum
+func_chrsum = func_sum . map func_ord
