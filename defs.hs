@@ -1532,3 +1532,6 @@ func_nubwN k = go [] . func_slice (abs k)
                        | null xss   = xs
                        | otherwise  = func_head xs : go (xs:ys) xss
         go _ []                     = []
+        
+func_revnum :: TNum -> TNum
+func_revnum = func_abas10 . func_rev . func_base10

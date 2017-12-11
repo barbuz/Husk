@@ -73,7 +73,7 @@ commandsList = [
   ('↕', bins "span"),
   ('←', bins "head fst predN predC"),
   ('→', bins "last snd succN succC"),
-  ('↔', bins "swap rev"),
+  ('↔', bins "swap rev revnum"),
   ('h', bins "init"),
   ('t', bins "tail"),
   ('ƒ', bins "fix"),
@@ -259,6 +259,7 @@ builtinsList = [
   ("divs",  simply $ num ~> lst num),
   ("bwand", simply $ num ~> num ~> num),
   ("bwor",  simply $ num ~> num ~> num),
+  ("revnum",simply $ num ~> num),
 
   -- List and pair manipulation
   ("empty", forall "x" [] $ lst x),
