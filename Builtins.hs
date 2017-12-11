@@ -121,7 +121,7 @@ commandsList = [
   ('▼', bins "min minl"),
   ('u', bins "nub"),
   ('ü', bins "nubon nubby"),
-  ('U', bins "nubw"),
+  ('U', bins "nubw nubwN"),
   ('w', bins "words unwords uwshow uwpshw"),
   ('¶', bins "lines unlines ulshow ulpshw"),
   ('p', bins "pfac"),
@@ -389,6 +389,7 @@ builtinsList = [
   ("gaps2", forall "x" [] $ lst x ~> num ~> lst x),
   ("gapsL", forall "x" [] $ lst num ~> lst x ~> lst x),
   ("chrsum",simply $ lst chr ~> num),
+  ("nubwN", forall "x" [con x] $ num ~> lst x ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),

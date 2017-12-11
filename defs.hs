@@ -1525,3 +1525,10 @@ func_cut2 = flip func_cut
 
 func_chrsum :: [Char] -> TNum
 func_chrsum = func_sum . map func_ord
+
+func_nubwN :: Concrete a => TNum -> [a] -> [a]
+func_nubwN k = go [] . func_slice (abs k)
+  where go ys (xs:xss) | elem xs ys = if k < 0 then [] else func_init xs
+                       | null xss   = xs
+                       | otherwise  = func_head xs : go (xs:ys) xss
+        go _ []                     = []
