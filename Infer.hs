@@ -308,10 +308,12 @@ infer env hint (ELine num) =
   do lineExpr <- gets $ (Map.! num) . lineExprs
      case lineExpr of
        Unprocessed expr -> do
-         newVar <- newTVar "l"
-         updateLines $ Map.insert num $ Processing newVar
-         (typ@(CType _ t), infExpr) <- infer env hint expr
-         unify newVar t
+         initTyp <- case hint of
+                      Just typ -> return typ
+                      Nothing  -> newTVar "l"
+         updateLines $ Map.insert num $ Processing initTyp
+         (typ@(CType _ resTyp), infExpr) <- infer env hint expr
+         unify initTyp resTyp
          newExpr <- substitute infExpr
          newTyp <- substitute typ
          updateLines $ Map.insert num $ Processed newExpr newTyp
