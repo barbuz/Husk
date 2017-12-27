@@ -11,7 +11,7 @@ import Expr
 import qualified Data.Set as Set
 import Data.Set ((\\))
 import qualified Data.Map as Map
-import Data.List (nub, unzip4)
+import Data.List (nub, unzip3)
 import Control.Monad.State
 import Control.Monad (when, guard)
 
@@ -417,6 +417,10 @@ typeInference env hint expr =
 
 -- Prune admissible types of builtins based on local patterns
 prune :: Exp [Lit Scheme] -> Exp [Lit Scheme]
+prune (EOp (ELit ops) (ELit largs) (ELit rargs)) = EOp (selectLits newOps ops) (selectLits newLargs largs) (selectLits newRargs rargs)
+  where (newOps, newLargs, newRargs) =
+          unzip3 [(op, larg, rarg) | op <- ops, larg <- largs, rarg <- rargs,
+                              not . null . inferSimple $ EOp (ELit [op]) (ELit [larg]) (ELit [rarg])]
 prune (EOp (ELit ops) larg (ELit rargs)) = EOp (selectLits newOps ops) (prune larg) (selectLits newRargs rargs)
   where (newOps, newRargs) =
           unzip [(op, rarg) | op <- ops, rarg <- rargs,
