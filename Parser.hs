@@ -36,7 +36,7 @@ pushNewVar = do
   let var = "x" ++ show (varSupply stat)
   putState stat{varStack = var : varStack stat,
                 varSupply = varSupply stat + 1}
-  return $ trace' ("pushed " ++ var) var
+  return $ trace' 2 ("pushed " ++ var) var
 
 -- Generate and append a new expression variable
 appendNewVar :: Parser ELabel
@@ -45,7 +45,7 @@ appendNewVar = do
   let var = "x" ++ show (varSupply stat)
   putState stat{varStack = varStack stat ++ [var],
                 varSupply = varSupply stat + 1}
-  return $ trace' ("appended " ++ var) var
+  return $ trace' 2 ("appended " ++ var) var
 
 -- Peek at a variable from the stack; extend stack if necessary
 peekVar :: Int -> Parser ELabel
@@ -55,14 +55,14 @@ peekVar ix = do
   if ix >= len
     then do
       vars <- forM [0..ix-len] $ const appendNewVar
-      return $ trace' ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (last vars)) $ last vars
-    else return $ trace' ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (stack !! ix)) $ stack !! ix
+      return $ trace' 2 ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (last vars)) $ last vars
+    else return $ trace' 2 ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (stack !! ix)) $ stack !! ix
 
 -- Pop a variable off the stack
 popVar :: Parser ()
 popVar = do
   stat <- getState
-  putState stat{varStack = trace' ("popping from " ++ show (varStack stat)) tail $ varStack stat}
+  putState stat{varStack = trace' 2 ("popping from " ++ show (varStack stat)) tail $ varStack stat}
 
 -- Parse a right paren or be at end of line
 rParen :: Parser ()
@@ -122,7 +122,7 @@ lineExpr = do
   expr <- expression
   overflowVars <- reverse . varStack <$> getState
   let lambdified = foldr EAbs expr overflowVars
-  return $ trace' (show lambdified) lambdified
+  return $ trace' 2 (show lambdified) lambdified
 
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])

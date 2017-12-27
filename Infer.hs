@@ -11,7 +11,7 @@ import Expr
 import qualified Data.Set as Set
 import Data.Set ((\\))
 import qualified Data.Map as Map
-import Data.List (nub)
+import Data.List (nub, unzip4)
 import Control.Monad.State
 import Control.Monad (when, guard)
 
@@ -194,6 +194,7 @@ data InfState = InfState {varSupply :: Int,
 -- Monad for performing backtracking type inference
 type Infer a = StateT InfState [] a
 
+-- Run a monadic computation with Infer, using given set of lines
 runInfer :: [Exp [Lit Scheme]] -> Infer a -> [(a, InfState)]
 runInfer exps t = runStateT t initState
   where initState = InfState {varSupply = 0,
@@ -223,7 +224,7 @@ updateLines f = do
 substitute :: (Show t, Types t) => t -> Infer t
 substitute t = do
   sub <- gets currSubst
-  return $ trace' ("substituting " ++ show t ++ " with " ++ show (Map.toList sub)) $ applySub sub t
+  return $ trace' 2 ("substituting " ++ show t ++ " with " ++ show (Map.toList sub)) $ applySub sub t
 
 -- Replace all bound variables with newly generated ones
 instantiate :: Scheme -> Infer CType
@@ -237,14 +238,14 @@ instantiate (Scheme vars ct) = do
 varBind :: TLabel -> Type -> Infer ()
 varBind name typ
   | TVar var <- typ, var == name   = return ()
-  | name `Set.member` freeVars typ = trace' "occurs check fail" $ fail ""
+  | name `Set.member` freeVars typ = trace' 2 "occurs check fail" $ fail ""
   | otherwise                      = updateSub $ Map.singleton name typ
 
 -- Most general unifier of two types
 -- Updates substitution in a way that makes them equal
 -- Fails if types can't be unified
 unify :: Type -> Type -> Infer ()
-unify t1 t2 | trace' ("unifying " ++ show t1 ++ " and " ++ show t2) False = undefined
+unify t1 t2 | trace' 2 ("unifying " ++ show t1 ++ " and " ++ show t2) False = undefined
 unify t1 t2 = do
   t1' <- substitute t1
   t2' <- substitute t2
@@ -260,21 +261,21 @@ unify t1 t2 = do
     unify' (TVar name) typ              = varBind name typ
     unify' typ (TVar name)              = varBind name typ
     unify' (TConc a) (TConc b) | a == b = return ()
-    unify' _ _                          = trace' "unification fail" $ fail ""
+    unify' _ _                          = trace' 2 "unification fail" $ fail ""
 
 -- Check typeclass constraints; remove those that hold, keep indeterminate ones, perform unifications, fail if any don't hold
 checkCons :: [TClass] -> Infer [TClass]
-checkCons (x:_) | trace' ("checking " ++ show x) False = undefined
+checkCons (x:_) | trace' 2 ("checking " ++ show x) False = undefined
 checkCons [] = return []
 checkCons (c:cs) = case {-traceShow' (c, holds c)-} holds c of
   Just (Enforce newCs unis) -> do
     mapM (uncurry unify) unis
     (newCs ++) <$> checkCons cs
-  Nothing  -> trace' "constraint fail" $ fail ""
+  Nothing  -> trace' 2 "constraint fail" $ fail ""
 
 -- Infer type of literal
 inferLit :: Lit Scheme -> Infer (CType, Exp (Lit CType))
-inferLit x | trace' ("chose " ++ show x) False = undefined
+inferLit x | trace' 2 ("chose " ++ show x) False = undefined
 inferLit lit@(Value name typ) =
   do newTyp <- instantiate typ
      return (newTyp, ELit $ Value name newTyp)
@@ -294,7 +295,7 @@ inferLit lit@(Vec2 kind typ) =
 -- type of whole expression, non-overloaded expression
 -- Second argument is type hint
 infer :: TypeEnv -> Maybe Type -> Exp [Lit Scheme] -> Infer (CType, Exp (Lit CType))
-infer env _ exp | trace' ("inferring " ++ show exp) False = undefined
+infer env _ exp | trace' 2 ("inferring " ++ show exp) False = undefined
 
 -- Variable: find type in environment, combine constraints, return type
 infer (TypeEnv env) _ (EVar name) = 
@@ -414,14 +415,34 @@ typeInference env hint expr =
      newTyp <- substitute typ
      return newTyp
 
+-- Prune admissible types of builtins based on local patterns
+prune :: Exp [Lit Scheme] -> Exp [Lit Scheme]
+prune (EOp (ELit ops) larg (ELit rargs)) = EOp (selectLits newOps ops) (prune larg) (selectLits newRargs rargs)
+  where (newOps, newRargs) =
+          unzip [(op, rarg) | op <- ops, rarg <- rargs,
+                              not . null . inferSimple $ EOp (ELit [op]) undef (ELit [rarg])]
+        undef = ELit [Value "undef" $ Scheme ["x"] $ CType [] $ TVar "x"]
+prune (EOp op larg rarg) = EOp op (prune larg) (prune rarg)
+prune (EApp larg rarg) = EApp (prune larg) (prune rarg)
+prune (EAbs var expr) = EAbs var $ prune expr
+prune (ELet var expr body) = ELet var (prune expr) (prune body)
+prune expr = expr
+
+selectLits :: [Lit Scheme] -> [Lit Scheme] -> Exp [Lit Scheme]
+selectLits news olds = ELit $ filter (`elem` news) olds
+
+-- Infer types of a single expression out of context
+inferSimple :: Exp [Lit Scheme] -> [(CType, InfState)]
+inferSimple expr = runInfer [] $ typeInference Map.empty (Scheme ["x"] $ CType [] $ TVar "x") expr
+
 -- Infer types of lines under a constraint
 inferType :: Bool -> Scheme -> [Exp [Lit Scheme]] -> [[(Int, CType, Exp (Lit CType))]]
-inferType constrainRes typeConstr exprs = trace' ("inferring program " ++ show exprs) $ map fst $ runInfer exprs $ do
+inferType constrainRes typeConstr exprs = trace' 1 ("inferring program " ++ show pruned) $ map fst $ runInfer pruned $ do
   CType infCons typ <- typeInference Map.empty typeConstr (ELine 0)
   when constrainRes $ do
     CType conCons genType <- instantiate typeConstr
-    trace' "applying constraints" $ unify genType typ
-    trace' "defaulting instances" $ flip mapM_ (nub $ infCons ++ conCons) $ \con -> do
+    trace' 1 "applying constraints" $ unify genType typ
+    trace' 1 "defaulting instances" $ flip mapM_ (nub $ infCons ++ conCons) $ \con -> do
       newCon <- checkCons =<< substitute [con]
       case newCon of
         []     -> return ()
@@ -432,6 +453,7 @@ inferType constrainRes typeConstr exprs = trace' ("inferring program " ++ show e
       newExp <- substitute exp
       newTyp <- substitute typ
       return (i, newTyp, newExp)
+  where pruned = trace' 1 ("pruning program " ++ show exprs) $ prune <$> exprs
 
 -- TESTS
 

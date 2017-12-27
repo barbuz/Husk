@@ -2,12 +2,12 @@ module Debug where
 
 import Debug.Trace
 
--- Debug flag
-debug = False
+-- Debug level (0/1/2)
+debug = 0
 
 -- Conditional debug functions
-trace' :: String -> b -> b
-trace' = if debug then trace else flip const
+trace' :: Int -> String -> b -> b
+trace' level = if debug >= level then trace else flip const
 
-traceShow' :: (Show a) => a -> b -> b
-traceShow' = if debug then traceShow else flip const
+traceShow' :: (Show a) => Int -> a -> b -> b
+traceShow' level = if debug >= level then traceShow else flip const

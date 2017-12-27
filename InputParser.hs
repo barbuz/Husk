@@ -13,7 +13,7 @@ import Control.Monad (foldM)
 type InputParser = Parsec String () (Maybe (String, Type))
 
 unifyInputs :: Type -> Type -> Maybe Type
-unifyInputs t1 t2 | trace' ("unifying input types " ++ show t1 ++ " and " ++ show t2) False = undefined
+unifyInputs t1 t2 | trace' 2 ("unifying input types " ++ show t1 ++ " and " ++ show t2) False = undefined
 unifyInputs (TPair t1 t2) (TPair s1 s2) = do
   r1 <- unifyInputs t1 s1
   r2 <- unifyInputs t2 s2
@@ -112,4 +112,4 @@ parseInput :: Int -> String -> Either String (Maybe (String, Type))
 parseInput inputIndex str =
   case parse (try input <|> plainStr) ("input" ++ show inputIndex) str of
     Left err -> Left $ show err
-    Right val -> Right $ trace' ("input " ++ show inputIndex ++ ", " ++ str ++ ", is " ++ show val) val
+    Right val -> Right $ trace' 1 ("input " ++ show inputIndex ++ ", " ++ str ++ ", is " ++ show val) val

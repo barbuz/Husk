@@ -97,7 +97,7 @@ main = do
   args <- getArgs
   let parsedArgs = getOpt RequireOrder consoleOpts args
   case parsedArgs of
-    (opts, (progOrFile : progArgs), []) -> traceShow' opts $ do
+    (opts, (progOrFile : progArgs), []) -> traceShow' 1 opts $ do
       errOrProg <- if InFile `elem` opts
                    then case find isFormat opts of
                           Just (Format Bytes) -> Right . getCommands . B.unpack <$> B.readFile progOrFile
