@@ -418,7 +418,12 @@ func_mod :: TNum -> TNum -> TNum
 func_mod b a = a `mod` b
 
 func_divds :: TNum -> TNum -> TNum
-func_divds b a = func_not $ func_mod b a
+func_divds b a =
+  if func_mod b a == 0
+  then if a == 0
+       then 1
+       else func_idiv b a
+  else 0
 
 func_neg :: TNum -> TNum
 func_neg x = -x
