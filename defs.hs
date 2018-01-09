@@ -1193,7 +1193,10 @@ func_findN f n = func_find f [n..]
 
 func_same :: (Concrete a) => [a] -> TNum
 func_same [] = 1
-func_same (x:xs) = boolToNum $ all (==x) xs
+func_same (x:xs) =
+  if all (==x) xs
+  then func_len xs + 2
+  else 0
 
 func_single :: [a] -> TNum
 func_single [_] = 1
@@ -1405,7 +1408,10 @@ func_sameon :: Concrete y => (x -> y) -> [x] -> TNum
 func_sameon f = func_same . map f
 
 func_sameby :: Concrete y => (x -> x -> y) -> [x] -> TNum
-func_sameby p xs = boolToNum $ and [isTruthy $ p x y | (x:ys) <- tails xs, y <- ys]
+func_sameby p xs =
+  if and [isTruthy $ p x y | (x:ys) <- tails xs, y <- ys]
+  then func_len xs + 1
+  else 0
 
 func_keyon :: Concrete y => (x -> y) -> [x] -> [[x]]
 func_keyon f = func_groupOn f . func_sorton f
