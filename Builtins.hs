@@ -41,7 +41,7 @@ cmd char = error $ "No builtin bound to character " ++ [char]
 commands :: String
 commands = map fst commandsList
 
--- Unused characters: ∟¿⌐$@HWYZ[]bjlqy{}ΔΦαβγζηθρςτχψ¥ȦḂĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
+-- Unused characters: ∟¿⌐$@HWZ[]bjlq{}ΔΦαβγζηθρςτχψ¥ȦḂĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
 
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
@@ -117,8 +117,8 @@ commandsList = [
   ('‡', bins "vec2"),
   ('O', bins "sort"),
   ('Ö', bins "sorton sortby"),
-  ('▲', bins "max maxl"),
-  ('▼', bins "min minl"),
+  ('▲', bins "maxl"),
+  ('▼', bins "minl"),
   ('u', bins "nub"),
   ('ü', bins "nubon nubby"),
   ('U', bins "nubw nubwN"),
@@ -189,8 +189,8 @@ commandsList = [
   ('Θ', bins "prep0"),
   ('Ξ', bins "merge merge2"),
   ('≈', bins "simil"),
-  ('◄', bins "minby minon minlby minlon"),
-  ('►', bins "maxby maxon maxlby maxlon"),
+  ('◄', bins "minlby minlon"),
+  ('►', bins "maxlby maxlon"),
   ('∂', bins "adiags"),
   ('ŀ', bins "lrange ixes"),
   ('ṡ', bins "srange rvixes"),
@@ -203,7 +203,9 @@ commandsList = [
   ('n', bins "bwand isect"),
   ('v', bins "bwor union ucons usnoc"),
   ('·', bins "comf"),
-  ('Ċ', bins "gaps gaps2 gapsL")
+  ('Ċ', bins "gaps gaps2 gapsL"),
+  ('y', bins "min"),
+  ('Y', bins "max")
   ]
 
 -- Compute builtins from space-delimited list
