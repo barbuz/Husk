@@ -1106,19 +1106,34 @@ func_cumcat :: [[a]] -> [[a]]
 func_cumcat = tail . scanl (++) []
 
 func_isanum :: Char -> TNum
-func_isanum = boolToNum . C.isAlphaNum
+func_isanum c =
+  if C.isAlphaNum c
+  then func_ord c
+  else 0
 
 func_isalph :: Char -> TNum
-func_isalph = boolToNum . C.isAlpha
+func_isalph c =
+  if C.isAlpha c
+  then func_ord c
+  else 0
 
 func_isuppr :: Char -> TNum
-func_isuppr = boolToNum . C.isUpper
+func_isuppr c =
+  if C.isUpper c
+  then func_ord c
+  else 0
 
 func_islowr :: Char -> TNum
-func_islowr = boolToNum . C.isLower
+func_islowr c =
+  if C.isLower c
+  then func_ord c
+  else 0
 
 func_isdigt :: Char -> TNum
-func_isdigt = boolToNum . C.isDigit
+func_isdigt c =
+  if C.isDigit c
+  then func_ord c
+  else 0
 
 func_touppr :: Char -> Char
 func_touppr = C.toUpper
