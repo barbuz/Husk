@@ -822,9 +822,13 @@ func_any f = go 1
           | isTruthy $ f x = n
           | otherwise      = go (n+1) xs
 
--- 1/0
+-- Length + 1 or 0
 func_all :: Concrete b => (a->b) -> [a] -> TNum
-func_all f = boolToNum . all (isTruthy . f)
+func_all f = go 1
+  where go n [] = n
+        go n (x:xs)
+          | isTruthy $ f x = go (n+1) xs
+          | otherwise      = 0
 
 func_trsp :: [[a]] -> [[a]]
 func_trsp = transpose
@@ -1395,7 +1399,8 @@ func_toadjN :: (((a, a) -> c) -> [(a,a)] -> b) -> (a -> a -> c) -> [a] -> b
 func_toadjN f g xs = func_decorN f g (func_tail xs) xs
 
 func_all2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
-func_all2 = func_toadjN func_all
+func_all2 _ [] = 1
+func_all2 pred xs = 1 + func_toadjN func_all pred xs
 
 func_any2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
 func_any2 = func_toadjN func_any
