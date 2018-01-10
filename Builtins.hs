@@ -41,7 +41,7 @@ cmd char = error $ "No builtin bound to character " ++ [char]
 commands :: String
 commands = map fst commandsList
 
--- Unused characters: ∟¿⌐$@HWZ[]bjlq{}ΔΦαβγζηθρςτχψ¥ȦḂĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
+-- Unused characters: ∟¿⌐$@HWZ[]bjlq{}ΔΦαβγζθρςτχψ¥ȦḂĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
 
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
@@ -205,7 +205,8 @@ commandsList = [
   ('·', bins "comf"),
   ('Ċ', bins "gaps gaps2 gapsL"),
   ('y', bins "min"),
-  ('Y', bins "max")
+  ('Y', bins "max"),
+  ('η', bins "onixsM onixsL onixsV onixsN")
   ]
 
 -- Compute builtins from space-delimited list
@@ -458,6 +459,10 @@ builtinsList = [
   ("sameby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> num),
   ("keyon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
   ("keyby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst x)),
+  ("onixsM",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> lst (lst (tup x y))) ~> lst x ~> lst (lst y)),
+  ("onixsL",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> lst (tup x y)) ~> lst x ~> lst y),
+  ("onixsV",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> tup x y) ~> lst x ~> y),
+  ("onixsN",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> y) ~> lst x ~> y),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

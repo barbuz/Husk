@@ -1561,3 +1561,17 @@ func_nubwN k = go [] . func_slice (abs k)
         
 func_revnum :: TNum -> TNum
 func_revnum = func_abas10 . func_rev . func_base10
+
+
+
+func_onixsM :: (((a, TNum) -> a) -> [(a, TNum)] -> [[(a, b)]]) -> [a] -> [[b]]
+func_onixsM f xs = func_decorM f const xs [1..]
+
+func_onixsL :: (((a, TNum) -> a) -> [(a, TNum)] -> [(a, b)]) -> [a] -> [b]
+func_onixsL f xs = func_decorL f const xs [1..]
+
+func_onixsV :: (((a, TNum) -> a) -> [(a, TNum)] -> (a, b)) -> [a] -> b
+func_onixsV f xs = func_decorV f const xs [1..]
+
+func_onixsN :: (((a, TNum) -> a) -> [(a, TNum)] -> b) -> [a] -> b
+func_onixsN f xs = func_decorN f const xs [1..]
