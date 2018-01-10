@@ -1164,9 +1164,8 @@ func_small = boolToNum . (<= 1) . abs
 func_twice :: (a -> a) -> (a -> a)
 func_twice f = \x -> f (f x)
 
--- Mod in range [1..m] or [m..-1]
-func_mod1 :: TNum -> TNum -> TNum
-func_mod1 m n | s <- signum m = s + mod (n-s) m
+func_divmod :: TNum -> TNum -> [TNum]
+func_divmod m n = [func_idiv m n, func_mod m n]
 
 func_powstN :: TNum -> [a] -> [[a]]
 func_powstN n
