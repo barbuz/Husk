@@ -187,7 +187,7 @@ commandsList = [
   ('Ḋ', bins "divs"),
   ('δ', bins "decorM decorL decorV decorN"),
   ('Θ', bins "prep0"),
-  ('Ξ', bins "merge merge2"),
+  ('Ξ', bins "merge"),
   ('≈', bins "simil"),
   ('◄', bins "minlby minlon"),
   ('►', bins "maxlby maxlon"),
@@ -394,6 +394,7 @@ builtinsList = [
   ("gapsL", forall "x" [] $ lst num ~> lst x ~> lst x),
   ("chrsum",simply $ lst chr ~> num),
   ("nubwN", forall "x" [con x] $ num ~> lst x ~> lst x),
+  ("merge", forall "x" [con x] $ lst (lst x) ~> lst x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -441,8 +442,6 @@ builtinsList = [
   ("decorL",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> lst (tup x u)) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> lst u),
   ("decorV",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> tup x u) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> u),
   ("decorN",forall "xyzu" [] $ ((tup x y ~> z) ~> lst (tup x y) ~> u) ~> (x ~> y ~> z) ~> lst x ~> lst y ~> u),
-  ("merge", forall "xy" [con y] $ (x ~> x ~> y) ~> lst (lst x) ~> lst x),
-  ("merge2",forall "xy" [con y] $ (x ~> y) ~> lst (lst x) ~> lst x),
   ("minby", forall "xy" [con y] $ (x ~> x ~> y) ~> x ~> x ~> x),
   ("maxby", forall "xy" [con y] $ (x ~> x ~> y) ~> x ~> x ~> x),
   ("minon", forall "xy" [con y] $ (x ~> y) ~> x ~> x ~> x),

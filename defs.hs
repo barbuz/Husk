@@ -1281,25 +1281,21 @@ func_halfL xs = go xs xs where
         go    _      zs    = [[],zs]
 
 -- Merge a potentially infinite number of potentially infinite lists
--- Each list is assumed to be sorted with respect to comparison predicate f
--- If there are more than two lists, the heads are assumed to be sorted with respect to f as well
-func_merge :: (Concrete b) => (a -> a -> b) -> [[a]] -> [a]
-func_merge f = go
-  where go [] = []
-        go [xs] = xs
-        go ([]:xss) = go xss
-        go [xs, []] = xs
-        go [xs@(x:_), ys@(y:_)] | not . isTruthy $ f x y = go [ys, xs]
-        go ((x:xs):yss) = x : go (put xs yss)
-        put [] yss = yss
+-- Each list is assumed to be sorted
+-- If there are more than two lists, the heads are assumed to be sorted as well
+func_merge :: (Concrete a) => [[a]] -> [a]
+func_merge [] = []
+func_merge [xs] = xs
+func_merge ([]:xss) = func_merge xss
+func_merge [xs, []] = xs
+func_merge [xs@(x:_), ys@(y:_)] | x > y = func_merge [ys, xs]
+func_merge ((x:xs):yss) = x : func_merge (put xs yss)
+  where put [] yss = yss
         put xs [] = [xs]
         put xs ([]:yss) = put xs yss
         put xs@(x:_) yss@(ys@(y:_):zss)
-         | isTruthy $ f x y = xs : yss
-         | otherwise        = ys : put xs zss
-
-func_merge2 :: (Concrete b) => (a -> b) -> [[a]] -> [a]
-func_merge2 f = func_merge (\x y -> f x `func_ge` f y)
+         | x <= y    = xs : yss
+         | otherwise = ys : put xs zss
 
 -- Minima and maxima with custom comparison
 -- p x y means x is greater then y
