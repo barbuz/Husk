@@ -3,7 +3,7 @@ module Builtins (bins, cmd, commands) where
 import Expr
 
 -- Utilities for writing types
-[x,y,z,u,v,w,n,m] = map (TVar . pure) "xyzuvwnm"
+[x,y,z,u,v,w,t,n,m] = map (TVar . pure) "xyzuvwtnm"
 
 num :: Type
 num = TConc TNum
@@ -202,7 +202,7 @@ commandsList = [
   ('A', bins "mean"),
   ('n', bins "bwand isect"),
   ('v', bins "bwor union ucons usnoc"),
-  ('·', bins "comf"),
+  ('·', bins "comf comf2 comf3 comf4"),
   ('Ċ', bins "gaps gaps2 gapsL"),
   ('y', bins "min"),
   ('Y', bins "max"),
@@ -484,6 +484,9 @@ builtinsList = [
   ("combin",forall "xyz" [] $ (y ~> y ~> z) ~> (x ~> y) ~> (x ~> x ~> z)),
   ("branch",forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> x) ~> (v ~> y) ~> (u ~> v ~> z)),
   ("comf",  forall "xyzu" [] $ (x ~> y ~> z) ~> (u ~> y) ~> (x ~> u ~> z)),
+  ("comf2", forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> v ~> y) ~> (x ~> u ~> v ~> z)),
+  ("comf3", forall "xyzuvw" [] $ (x ~> y ~> z) ~> (u ~> v ~> w ~> y) ~> (x ~> u ~> v ~> w ~> z)),
+  ("comf4", forall "xyzuvwt" [] $ (x ~> y ~> z) ~> (u ~> v ~> w ~> t ~> y) ~> (x ~> u ~> v ~> w ~> t ~> z)),
 
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> num),

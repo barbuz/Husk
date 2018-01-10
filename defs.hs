@@ -1539,6 +1539,15 @@ func_subset xs (y:ys) | Just zs <- del y xs = func_subset zs ys
 func_comf :: (x -> y -> z) -> (u -> y) -> x -> u -> z
 func_comf f g = \x y -> f x $ g y
 
+func_comf2 :: (x -> y -> z) -> (u -> v -> y) -> x -> u -> v -> z
+func_comf2 f g = \x y z -> f x $ g y z
+
+func_comf3 :: (x -> y -> z) -> (u -> v -> w -> y) -> x -> u -> v -> w -> z
+func_comf3 f g = \x y z u -> f x $ g y z u
+
+func_comf4 :: (x -> y -> z) -> (u -> v -> w -> t -> y) -> x -> u -> v -> w -> t -> z
+func_comf4 f g = \x y z u v -> f x $ g y z u v
+
 func_gaps :: (Husky a) => TNum -> [a] -> [a]
 func_gaps n = func_gapsL $ repeat n
 
