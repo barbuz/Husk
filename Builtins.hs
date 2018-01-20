@@ -206,7 +206,7 @@ commandsList = [
   ('Ċ', bins "gaps gaps2 gapsL"),
   ('y', bins "min"),
   ('Y', bins "max"),
-  ('η', bins "onixsM onixsL onixsV onixsN")
+  ('η', bins "onixes")
   ]
 
 -- Compute builtins from space-delimited list
@@ -458,10 +458,7 @@ builtinsList = [
   ("sameby",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> num),
   ("keyon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
   ("keyby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst x)),
-  ("onixsM",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> lst (lst (tup x y))) ~> lst x ~> lst (lst y)),
-  ("onixsL",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> lst (tup x y)) ~> lst x ~> lst y),
-  ("onixsV",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> tup x y) ~> lst x ~> y),
-  ("onixsN",forall "xy" [] $ ((tup x num ~> x) ~> lst (tup x num) ~> y) ~> lst x ~> y),
+  ("onixes",forall "xy" [] $ ((num ~> x) ~> lst num ~> y) ~> lst x ~> y),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),
