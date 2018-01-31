@@ -1395,8 +1395,11 @@ func_toadjN :: (((a, a) -> c) -> [(a,a)] -> b) -> (a -> a -> c) -> [a] -> b
 func_toadjN f g xs = func_decorN f g (func_tail xs) xs
 
 func_all2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
-func_all2 _ [] = 0
-func_all2 pred xs = 1 + func_toadjN func_all pred xs
+func_all2 _ [] = 1
+func_all2 pred xs =
+  case func_toadjN func_all pred xs of
+    0 -> 0
+    n -> n + 1
 
 func_any2 :: Concrete y => (x -> x -> y) -> [x] -> TNum
 func_any2 = func_toadjN func_any
