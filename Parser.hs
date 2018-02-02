@@ -165,15 +165,26 @@ lineExpr = do
   putState state{varStack = []}
   expr <- expression
   overflowVars <- varStack <$> getState
-  lambdified <- foldM lambdify expr $ trace' ("lambdifying " ++ show expr ++ " with " ++ show overflowVars) overflowVars
+  lambdified <- lambdify expr $ trace' ("lambdifying " ++ show expr ++ " with " ++ show overflowVars) overflowVars
   return $ trace' (show lambdified) lambdified
 
--- Add one block of lambdas to an expression
-lambdify :: Exp [Lit Scheme] -> (Maybe String, Maybe String) -> Parser (Exp [Lit Scheme])
-lambdify expr (Just var1, Just var2) = return $ EAbs var2 $ EApp (EAbs var1 expr) $ EVar var2
-lambdify expr (Just var1, Nothing)   = return $ EAbs var1 expr
-lambdify expr (Nothing,   Just var2) = return $ EAbs var2 $ EApp expr $ EVar var2
-lambdify expr (Nothing,   Nothing)   = do var <- genVar "c"; return $ EAbs (var ++ "_") expr
+-- Add blocks of lambdas to an expression
+lambdify :: Exp [Lit Scheme] -> [(Maybe String, Maybe String)] -> Parser (Exp [Lit Scheme])
+lambdify expr pairs = go expr pairs []
+  where go expr ((Just var1, Just var2) : rest) vars = do
+          innerExpr <- go expr rest (vars ++ [EVar var2])
+          return $ EAbs var2 $ EAbs var1 innerExpr
+        go expr ((Just var1, Nothing)   : rest) vars = do
+          innerExpr <- go expr rest vars
+          return $ EAbs var1 innerExpr
+        go expr ((Nothing,   Just var2) : rest) vars = do
+          innerExpr <- go expr rest (vars ++ [EVar var2])
+          return $ EAbs var2 innerExpr
+        go expr ((Nothing,   Nothing)   : rest) vars = do
+          var <- genVar "c"
+          innerExpr <- go expr rest vars
+          return $ EAbs (var ++ "_") innerExpr
+        go expr [] vars = return $ foldl EApp expr vars
 
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
@@ -261,21 +272,21 @@ intseq = do
 lambda :: Parser (Exp [Lit Scheme])
 lambda = do
   lam <- oneOf "λμξφψχ"
-  let numArgs = case lam of
+  let blocks = case lam of
         'λ' -> 1
         'μ' -> 2
         'ξ' -> 3
         'φ' -> 1
         'ψ' -> 2
         'χ' -> 3
-  expr <- iterate wrap expression !! numArgs
+  expr <- wrap expression blocks
   rParen
   return $ if lam `elem` "φψχ" then EApp (bins "fix") expr else expr
   where
-    wrap parser = do
-      pushBlock (False, False)
+    wrap parser blocks = do
+      sequence $ replicate blocks $ pushBlock (False, False)
       expr <- parser
-      vars <- popBlock
+      vars <- sequence $ replicate blocks popBlock
       lambdify expr vars
 
 -- Parse a lambda argument
