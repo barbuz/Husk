@@ -170,7 +170,7 @@ lineExpr = do
 
 -- Add blocks of lambdas to an expression
 lambdify :: Exp [Lit Scheme] -> [(Maybe String, Maybe String)] -> Parser (Exp [Lit Scheme])
-lambdify expr pairs = go expr pairs []
+lambdify expr pairs = go expr (reverse pairs) []
   where go expr ((Just var1, Just var2) : rest) vars = do
           innerExpr <- go expr rest (vars ++ [EVar var2])
           return $ EAbs var2 $ EAbs var1 innerExpr
