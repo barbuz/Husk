@@ -8,13 +8,13 @@ import PrattParser
 import DecompressString
 import Text.Parsec
 import Text.Parsec.Char
-import Control.Monad (forM)
+import Control.Monad (forM, foldM)
 import qualified Data.Map as Map
 import Data.List (elemIndex)
 import Data.Maybe (catMaybes)
 
 -- Parser state
-data PState = PState {varStack :: [ELabel],
+data PState = PState {varStack :: [(Maybe ELabel, Maybe ELabel)],
                       varSupply :: Int,
                       numLines :: Int,
                       unmarked :: [Int]}
@@ -29,40 +29,84 @@ parseExpr str = case runParser multiline initState "" str of
   Right val -> Right val
   where initState = PState [] 0 0 []
 
--- Generate and push a new expression variable
-pushNewVar :: Parser ELabel
-pushNewVar = do
+-- Generate a new expression variable
+genVar :: String -> Parser ELabel
+genVar s = do
   stat <- getState
-  let var = "x" ++ show (varSupply stat)
-  putState stat{varStack = var : varStack stat,
-                varSupply = varSupply stat + 1}
-  return $ trace' 2 ("pushed " ++ var) var
+  let var = s ++ show (varSupply stat)
+  putState stat{varSupply = varSupply stat + 1}
+  return $ trace' 2 ("created " ++ var) var
 
--- Generate and append a new expression variable
-appendNewVar :: Parser ELabel
-appendNewVar = do
+-- Push a block, possibly with generated expression variables
+pushBlock :: (Bool, Bool) -> Parser ()
+pushBlock (gen1, gen2) = do
+  var1 <- if gen1
+          then Just <$> genVar "x"
+          else return Nothing
+  var2 <- if gen2
+          then Just <$> genVar "x"
+          else return Nothing
   stat <- getState
-  let var = "x" ++ show (varSupply stat)
-  putState stat{varStack = varStack stat ++ [var],
-                varSupply = varSupply stat + 1}
-  return $ trace' 2 ("appended " ++ var) var
+  putState stat{varStack = trace' 2 ("pushed " ++ show var1 ++ ", " ++ show var2) $ (var1, var2) : varStack stat}
+
+-- Append a block, possibly with generated expression variables
+appendBlock :: (Bool, Bool) -> Parser (Maybe ELabel, Maybe ELabel)
+appendBlock (gen1, gen2) = do
+  var1 <- if gen1
+          then Just <$> genVar "y"
+          else return Nothing
+  var2 <- if gen2
+          then Just <$> genVar "y"
+          else return Nothing
+  stat <- getState
+  putState stat{varStack = varStack stat ++ [(var1, var2)]}
+  return $ trace' 2 ("appended " ++ show var1 ++ ", " ++ show var2) (var1, var2)
+
+-- Create a variable at a specific stack index
+putVarAt :: Int -> Parser ELabel
+putVarAt ix = do
+  newVar <- genVar "z"
+  stat <- getState
+  let (before, (var1, var2) : after) = splitAt (div ix 2) $ varStack stat
+  putState $ if even ix
+             then stat{varStack = before ++ (Just newVar, var2) : after}
+             else stat{varStack = before ++ (var1, Just newVar) : after}
+  return newVar
 
 -- Peek at a variable from the stack; extend stack if necessary
 peekVar :: Int -> Parser ELabel
 peekVar ix = do
   stack <- varStack <$> getState
   let len = length stack
-  if ix >= len
+  if ix >= 2 * len
     then do
-      vars <- forM [0..ix-len] $ const appendNewVar
-      return $ trace' 2 ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (last vars)) $ last vars
-    else return $ trace' 2 ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show (stack !! ix)) $ stack !! ix
+      vars <- forM [0 .. div ix 2 - len - 1] $ const $ appendBlock (False, False)
+      newVar <-
+        if even ix
+        then do
+          (Just var, Nothing) <- appendBlock (True, False)
+          return var
+        else do
+          (Nothing, Just var) <- appendBlock (False, True)
+          return var
+      return $ message stack newVar
+    else
+      let (var1, var2) = stack !! div ix 2
+          maybeVar = if even ix then var1 else var2
+      in case maybeVar of
+           Just var -> return $ message stack var
+           Nothing -> do
+             var <- putVarAt ix
+             return $ message stack var
+  where message stack var = trace' 2 ("peeked " ++ show ix ++ " from " ++ show stack ++ ", got " ++ show var) var
 
--- Pop a variable off the stack
-popVar :: Parser ()
-popVar = do
+-- Pop a 2-variable block off the stack
+popBlock :: Parser (Maybe ELabel, Maybe ELabel)
+popBlock = do
   stat <- getState
-  putState stat{varStack = trace' 2 ("popping from " ++ show (varStack stat)) tail $ varStack stat}
+  let stack = varStack stat
+  putState stat{varStack = trace' 2 ("popping from " ++ show stack) $ tail stack}
+  return $ head stack
 
 -- Parse a right paren or be at end of line
 rParen :: Parser ()
@@ -113,16 +157,34 @@ multiline = do
                 go (EAbs name exp) = EAbs name (go exp)
                 go (ELet name exp body) = ELet name (go exp) (go body)
                 go e = e
-
+                
 -- Parse a line of Husk code
 lineExpr :: Parser (Exp [Lit Scheme])
 lineExpr = do
   state <- getState
   putState state{varStack = []}
   expr <- expression
-  overflowVars <- reverse . varStack <$> getState
-  let lambdified = foldr EAbs expr overflowVars
+  overflowVars <- varStack <$> getState
+  lambdified <- lambdify expr $ trace' 2 ("lambdifying " ++ show expr ++ " with " ++ show overflowVars) overflowVars
   return $ trace' 2 (show lambdified) lambdified
+
+-- Add blocks of lambdas to an expression
+lambdify :: Exp [Lit Scheme] -> [(Maybe String, Maybe String)] -> Parser (Exp [Lit Scheme])
+lambdify expr pairs = go expr (reverse pairs) []
+  where go expr ((Just var1, Just var2) : rest) vars = do
+          innerExpr <- go expr rest (vars ++ [EVar var2])
+          return $ EAbs var2 $ ELet var1 (EApp (bins "flipap") $ EVar var2) innerExpr
+        go expr ((Just var1, Nothing)   : rest) vars = do
+          innerExpr <- go expr rest vars
+          return $ EAbs var1 innerExpr
+        go expr ((Nothing,   Just var2) : rest) vars = do
+          innerExpr <- go expr rest (vars ++ [EVar var2])
+          return $ EAbs var2 innerExpr
+        go expr ((Nothing,   Nothing)   : rest) vars = do
+          var <- genVar "c"
+          innerExpr <- go expr rest vars
+          return $ EAbs (var ++ "_") innerExpr
+        go expr [] vars = return $ foldl EApp expr vars
 
 -- Parse an expression
 expression :: Parser (Exp [Lit Scheme])
@@ -210,22 +272,22 @@ intseq = do
 lambda :: Parser (Exp [Lit Scheme])
 lambda = do
   lam <- oneOf "λμξφψχ"
-  let numArgs = case lam of
+  let blocks = case lam of
         'λ' -> 1
         'μ' -> 2
         'ξ' -> 3
         'φ' -> 1
         'ψ' -> 2
         'χ' -> 3
-  expr <- iterate lambdify expression !! numArgs
+  expr <- wrap expression blocks
   rParen
   return $ if lam `elem` "φψχ" then EApp (bins "fix") expr else expr
   where
-    lambdify parser = do
-      var <- pushNewVar
+    wrap parser blocks = do
+      sequence $ replicate blocks $ pushBlock (False, False)
       expr <- parser
-      popVar
-      return $ EAbs var expr
+      vars <- sequence $ replicate blocks popBlock
+      lambdify expr vars
 
 -- Parse a lambda argument
 lambdaArg :: Parser (Exp [Lit Scheme])

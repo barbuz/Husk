@@ -1575,6 +1575,8 @@ func_revnum :: TNum -> TNum
 func_revnum = func_abas10 . func_rev . func_base10
 
 
-
 func_onixes :: Husky a => ((TNum -> a) -> [TNum] -> b) -> [a] -> b
 func_onixes f xs = f (func_index2 xs) $ func_ixes xs
+
+func_flipap :: b -> (a -> b -> c) -> a -> c
+func_flipap = flip flip

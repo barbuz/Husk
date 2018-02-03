@@ -483,6 +483,7 @@ builtinsList = [
   ("comf2", forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> v ~> y) ~> (x ~> u ~> v ~> z)),
   ("comf3", forall "xyzuvw" [] $ (x ~> y ~> z) ~> (u ~> v ~> w ~> y) ~> (x ~> u ~> v ~> w ~> z)),
   ("comf4", forall "xyzuvwt" [] $ (x ~> y ~> z) ~> (u ~> v ~> w ~> t ~> y) ~> (x ~> u ~> v ~> w ~> t ~> z)),
+  ("flipap",forall "xyz" [] $ y ~> (x ~> y ~> z) ~> (x ~> z)),
 
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> num),

@@ -343,7 +343,7 @@ infer _ hint (ELit lits) = do lit <- lift lits
 infer env hint (EAbs name exp) =
   do newVar <- case hint of
                  Just (TFun arg _) -> return arg
-                 Nothing           -> newTVar "b"
+                 _                 -> newTVar "b"
      let TypeEnv envMinusName = remove env name
          newEnv = TypeEnv $ Map.union envMinusName $ Map.singleton name $ Scheme [] $ CType [] newVar
      (CType cons typ, newExp) <- case hint of
