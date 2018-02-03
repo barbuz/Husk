@@ -173,7 +173,7 @@ lambdify :: Exp [Lit Scheme] -> [(Maybe String, Maybe String)] -> Parser (Exp [L
 lambdify expr pairs = go expr (reverse pairs) []
   where go expr ((Just var1, Just var2) : rest) vars = do
           innerExpr <- go expr rest (vars ++ [EVar var2])
-          return $ EAbs var2 $ EAbs var1 innerExpr
+          return $ EAbs var2 $ ELet var1 (EApp (bins "flipap") $ EVar var2) innerExpr
         go expr ((Just var1, Nothing)   : rest) vars = do
           innerExpr <- go expr rest vars
           return $ EAbs var1 innerExpr

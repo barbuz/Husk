@@ -477,6 +477,7 @@ builtinsList = [
   ("combin",forall "xyz" [] $ (y ~> y ~> z) ~> (x ~> y) ~> (x ~> x ~> z)),
   ("branch",forall "xyzuv" [] $ (x ~> y ~> z) ~> (u ~> x) ~> (v ~> y) ~> (u ~> v ~> z)),
   ("comf",  forall "xyzu" [] $ (x ~> y ~> z) ~> (u ~> y) ~> (x ~> u ~> z)),
+  ("flipap",forall "xyz" [] $ y ~> (x ~> y ~> z) ~> (x ~> z)),
 
   -- Boolean functions and comparisons
   ("lt",    forall "x" [con x] $ x ~> x ~> num),

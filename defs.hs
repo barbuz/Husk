@@ -1535,3 +1535,6 @@ func_nubwN k = go [] . func_slice (abs k)
         
 func_revnum :: TNum -> TNum
 func_revnum = func_abas10 . func_rev . func_base10
+
+func_flipap :: b -> (a -> b -> c) -> a -> c
+func_flipap = flip flip
