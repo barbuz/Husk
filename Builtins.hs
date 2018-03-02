@@ -41,7 +41,7 @@ cmd char = error $ "No builtin bound to character " ++ [char]
 commands :: String
 commands = map fst commandsList
 
--- Unused characters: ∟¿⌐$@HWZ[]bjlq{}ΔΦαβγζθρςτχψ¥ȦḂĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
+-- Unused characters: ∟¿⌐$@HZ[]bjlq{}ΔΦαβγζθρςτχψȦḂĖḢĿṄẆẎŻȧḃċıȷṅẇẋẏÄÏÜŸØäïÿ◊
 
 -- Assoc list of commands that can occur in source
 commandsList :: [(Char, Exp [Lit Scheme])]
@@ -67,7 +67,7 @@ commandsList = [
   ('L', bins "len nlen"),
   ('#', bins "countf count count' count2"),
   ('N', bins "nats"),
-  ('!', bins "index index2"),
+  ('!', bins "index index2 idx2d idx2d2"),
   ('↑', bins "take take2 takew"),
   ('↓', bins "drop drop2 dropw"),
   ('↕', bins "span"),
@@ -159,7 +159,7 @@ commandsList = [
   ('^', bins "power"),
   ('□', bins "square isanum"),
   ('√', bins "sqrt isalph"),
-  ('C', bins "cut cut2 cuts"),
+  ('C', bins "cut cut2 cuts cutL"),
   ('X', bins "slice"),
   ('Ẋ', bins "mapad2 mapad3"),
   ('J', bins "join join' joinE joinV"),
@@ -206,7 +206,9 @@ commandsList = [
   ('Ċ', bins "gaps gaps2 gapsL"),
   ('y', bins "min"),
   ('Y', bins "max"),
-  ('η', bins "onixes")
+  ('η', bins "onixes"),
+  ('¥', bins "ixsof ixsof2"),
+  ('W', bins "where where2")
   ]
 
 -- Compute builtins from space-delimited list
@@ -395,6 +397,11 @@ builtinsList = [
   ("chrsum",simply $ lst chr ~> num),
   ("nubwN", forall "x" [con x] $ num ~> lst x ~> lst x),
   ("merge", forall "x" [con x] $ lst (lst x) ~> lst x),
+  ("cutL",  forall "xy" [] $ lst (lst x) ~> lst y ~> lst (lst y)),
+  ("ixsof", forall "x" [con x] $ x ~> lst x ~> lst num),
+  ("ixsof2",forall "x" [con x] $ lst x ~> x ~> lst num),
+  ("idx2d", forall "x" [] $ tup num num ~> lst (lst x) ~> x),
+  ("idx2d2",forall "x" [] $ lst (lst x) ~> tup num num ~> x),
 
   -- Higher order functions
   ("map",   forall "xy" [] $ (x ~> y) ~> (lst x ~> lst y)),
@@ -459,6 +466,8 @@ builtinsList = [
   ("keyon", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst (lst x)),
   ("keyby", forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst (lst x)),
   ("onixes",forall "xy" [] $ ((num ~> x) ~> lst num ~> y) ~> lst x ~> y),
+  ("where", forall "xy" [con y] $ (x ~> y) ~> lst x ~> lst num),
+  ("where2",forall "xy" [con y] $ (x ~> x ~> y) ~> lst x ~> lst num),
   
   -- Combinators
   ("hook",  forall "xyz" [] $ (x ~> y ~> z) ~> (x ~> y) ~> x ~> z),

@@ -1580,3 +1580,27 @@ func_onixes f xs = f (func_index2 xs) $ func_ixes xs
 
 func_flipap :: b -> (a -> b -> c) -> a -> c
 func_flipap = flip flip
+
+func_cutL :: [[a]] -> [b] -> [[b]]
+func_cutL ((_:xs):xss) (y:ys) | (zs:zss) <- func_cutL (xs:xss) ys = (y:zs):zss
+func_cutL ([]:xss) ys = [] : func_cutL xss ys
+func_cutL [] _ = []
+func_cutL _ [] = []
+
+func_ixsof :: (Concrete a) => a -> [a] -> [TNum]
+func_ixsof x ys = [i | (i, y) <- zip [1..] ys, y == x]
+
+func_ixsof2 :: (Concrete a) => [a] -> a -> [TNum]
+func_ixsof2 = flip func_ixsof
+
+func_where :: (Concrete b) => (a -> b) -> [a] -> [TNum]
+func_where f xs = [i | (i, x) <- zip [1..] xs, isTruthy $ f x]
+
+func_where2 :: (Concrete b) => (a -> a -> b) -> [a] -> [TNum]
+func_where2 = func_toadjN func_where
+
+func_idx2d :: Husky a => (TNum, TNum) -> [[a]] -> a
+func_idx2d (x, y) = func_index y . func_index x
+
+func_idx2d2 :: Husky a => [[a]] -> (TNum, TNum) -> a
+func_idx2d2 = flip func_idx2d
