@@ -174,7 +174,7 @@ instance Floating TNum where
 
 instance RealFrac TNum where
   properFraction a@(_ :% 0) = (0, a)
-  properFraction (p :% q) | r <- div p q = (fromInteger r, (p - r) :% q)
+  properFraction (p :% q) | r <- quot p q = (fromInteger r, (p - r) :% q)
   properFraction (TDbl a) | (n, r) <- properFraction a = (n, TDbl r)
 
 -- Class of all Husk types (used for defaulting)
