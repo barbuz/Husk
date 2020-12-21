@@ -6,6 +6,7 @@ import Expr
 import Builtins
 import PrattParser
 import DecompressString
+import Codepage
 import Text.Parsec
 import Text.Parsec.Char
 import Control.Monad (forM, foldM)
@@ -223,7 +224,9 @@ float = do
 character :: Parser (Exp [Lit Scheme])
 character = do
   quote <- char '\''
-  c <- anyChar
+  coded <- anyChar
+  let c :: Char
+      c = toEnum $ findByte coded
   return $ ELit [Value (show c) $ Scheme [] $ CType [] $ TConc TChar]
 
 -- Parse a string
@@ -240,11 +243,11 @@ str = do
       maybeEscape <- optionMaybe $ char '\\' >> anyChar
       case maybeEscape of
         Nothing -> return plainText
-        Just c -> do plainText2 <- content; return $ plainText++c:plainText2
+        Just c -> do plainText2 <- content; return $ plainText ++ toEnum (findByte c) : plainText2
     decode '¶' = '\n'
     decode '¨' = '"'
     decode '¦' = '\\'
-    decode  c  =  c
+    decode  c  = toEnum $ findByte c
 
 -- Parse a compressed string
 comprstr :: Parser (Exp [Lit Scheme])

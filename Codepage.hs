@@ -46,11 +46,14 @@ aliases = [('¤', "cur"), ('½', "hlf"), ('↕', "ud"),  ('↑', "up"),  ('↓',
 getCommands :: [Word8] -> String
 getCommands = map $ (codepage !!) . fromEnum
 
+-- Get the position of a character in the code page
+findByte :: Char -> Int
+findByte byte | Just ix <- elemIndex byte codepage = ix
+              | otherwise = error "Bad byte"
+
 -- Convert a program to list of bytes
 getBytes :: String -> [Word8]
 getBytes = map $ toEnum . findByte
-  where findByte byte | Just ix <- elemIndex byte codepage = ix
-                      | otherwise = error "Bad byte"
 
 -- Get the alias of a character
 getAlias :: Char -> String
