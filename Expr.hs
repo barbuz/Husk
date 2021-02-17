@@ -25,7 +25,9 @@ instance (Show lit) => Show (Exp lit) where
   show (EVar name) = name
   show (ELine n) = "line" ++ show n
   show (ELit lit) = show lit
-  show (EApp a b) = show a ++ "(" ++ show b ++ ")"
+  show (EApp a b) | show a == "app" = show b
+                  | show a `elem` words "com4 com3 com2 com" = "(" ++ show b ++ ")`" ++ show a ++ "`"
+                  | otherwise       = show a ++ "(" ++ show b ++ ")"
   show (EOp a b c) = show $ EApp (EApp a b) c
   show (EAbs name exp) = "(\\" ++ name ++ "." ++ show exp ++ ")"
   show (ELet name exp body) = "let " ++ name ++ "=(" ++ show exp ++ ") in " ++ show body
