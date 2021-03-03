@@ -153,5 +153,6 @@ main = do
                             Right (lineExprs : _) -> do writeFile outfile $ produceFile lineExprs
                                                         (_, Just hout, _, _) <- createProcess (proc "runhaskell" (outfile : map fst typedArgs)){ std_out = CreatePipe }
                                                         result <- hGetContents hout
+                                                        hSetBuffering stdout NoBuffering
                                                         putStr result
     (_, _, errs) -> putStrLn $ concat errs ++ usageInfo "Usage: main [OPTION...] [FILE|EXPR] [INPUT...]" consoleOpts
