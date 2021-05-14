@@ -1,4 +1,10 @@
+{-# LANGUAGE UndecidableInstances, FlexibleInstances, FlexibleContexts, BangPatterns #-}
+
+module IntSeq where
 -- Built-in integer sequences
+
+import Data.List
+import Defs
 
 func_intseq :: Char -> [TNum]
 
@@ -37,18 +43,8 @@ func_intseq 'f' = fibs
   where
     fibs = 1 : 1 : zipWith (+) fibs (tail fibs)
 
---Primes (quite efficient implementation, but not the most efficient)
-func_intseq 'p' = 2 : oddprimes
-  where 
-    oddprimes = sieve [3,5..] 9 oddprimes
-    sieve (x:xs) q ps@ ~(p:t)
-      | x < q     = x : sieve xs q ps
-      | otherwise =     sieve (xs `minus` [q, q+2*p..]) (head t^2) t
-    minus (x:xs) (y:ys) = case (compare x y) of 
-           LT -> x : minus  xs  (y:ys)
-           EQ ->     minus  xs     ys 
-           GT ->     minus (x:xs)  ys
-    minus  xs     _     = xs
+--Primes (defined in Defs.hs)
+func_intseq 'p' = primes_list
 
 --Ruler sequence (exponent of highest power of 2 dividing n), OEIS A007814
 func_intseq 'r' = 0:concatMap(\x->[x+1,0])(func_intseq 'r')

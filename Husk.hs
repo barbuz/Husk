@@ -71,14 +71,14 @@ consoleOpts = [Option ['b'] ["bytes"] (NoArg $ Format Bytes) "take input as byte
         parseFormat "v" = Verbose
         parseFormat _ = error "Bad format specifier"
 
--- Template files as String constants
-templateFile :: String
-templateFile = [litFile|header.hs|] ++ "\n" ++ [litFile|defs.hs|] ++ "\n" ++ [litFile|intSeq.hs|] ++ "\n"
+-- Imports needed for transpiled file
+fileImports :: String
+fileImports = unlines $ map ("import "++) $ ["Defs", "IntSeq", "System.Environment (getArgs)"]
 
 -- Produce Haskell file from list of type-inferred lines
 produceFile :: [(Int, CType, Exp (Lit CType))] -> String
 produceFile exprs =
-  templateFile ++
+  fileImports ++
   progLines ++
   "main :: IO ()\n" ++
   "main = do{[" ++ intercalate "," argList ++ "] <- getArgs; " ++

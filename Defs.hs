@@ -1,4 +1,16 @@
+{-# LANGUAGE UndecidableInstances, FlexibleInstances, FlexibleContexts, BangPatterns #-}
+
+module Defs where
 -- Built-in functions
+
+import Data.Function (fix)
+import qualified Data.Char as C
+import           Data.Char (chr,ord)
+import Data.List
+import qualified Data.Set as S (member, insert, singleton)
+import Data.Ord (comparing)
+import Data.Bits ((.&.), (.|.))
+import Data.Ratio ((%), numerator, denominator)
 
 import Numeric (showFFloat)
 
@@ -365,6 +377,20 @@ instance (Concrete a, Concrete b) => Concrete (a, b) where
 
 roundAway :: Double -> Integer
 roundAway d = if d<0 then floor d else ceiling d
+
+--Primes (quite efficient implementation, but not the most efficient)
+primes_list = 2 : oddprimes
+  where
+    oddprimes = sieve [3,5..] 9 oddprimes
+    sieve (x:xs) q ps@ ~(p:t)
+      | x < q     = x : sieve xs q ps
+      | otherwise =     sieve (xs `minus` [q, q+2*p..]) (head t^2) t
+    minus (x:xs) (y:ys) = case (compare x y) of
+           LT -> x : minus  xs  (y:ys)
+           EQ ->     minus  xs     ys
+           GT ->     minus (x:xs)  ys
+    minus  xs     _     = xs
+
 
 -- Built-in functions
 
@@ -1041,7 +1067,7 @@ func_isprime :: TNum -> TNum
 func_isprime p | n :% 1 <- p,
                  n >= 2,
                  probablePrime n
-               = func_oelem (func_intseq 'p') p
+               = func_oelem primes_list p
                | otherwise = 0
   where
     probablePrime :: Integer -> Bool
